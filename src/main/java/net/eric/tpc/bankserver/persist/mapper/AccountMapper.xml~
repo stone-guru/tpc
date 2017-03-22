@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.eric.tpc.bankserver.persist.Mapper">
+  
+  <resultMap type="net.eric.tpc.bankserver.entity.Account" id="accountMap">
+    <id column="ACCT_NUMBER" property="acctNumber"/>
+    <result column="BALANCE" property="balance"/>
+    <result column="BANK_CODE" property="bankCode"/>
+    <result column="OPENING_TIME" property="openingTime"/>
+    <result column="LAST_MODI_TIME" property="lastModiTime"/>
+  </resultMap>
+  
+  <update id="createAccountTable">
+    CREATE TABLE ACCOUNT(
+         AcctNumber VARCHAR(36) NOT NULL,
+		 BALANCE Numeric(16,2) not null, "
+			+ "primary key (AcctNumber)) ";
+  </update>
+  <select id="selectAccount" resultMap="accountMap">
+    select * from T_ACCOUNT where ACCT_NUMBER = #{acctNumber}
+  </select>
+</mapper>

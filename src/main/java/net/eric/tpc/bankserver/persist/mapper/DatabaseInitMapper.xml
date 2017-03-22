@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.eric.tpc.bankserver.persist.DatabaseInit">
+  
+  <update id="createAccountTable">
+    CREATE TABLE ACCOUNT(
+      ACCT_NUMBER VARCHAR(24) NOT NULL,
+      ACCT_NAME  VARCHAR(24) NOT NULL,
+      BANK_CODE VARCHAR(12) NOT NULL,
+      BALANCE NUMERIC(16,2) NOT NULL,
+      OPENING_TIME TIMESTAMP,
+      LAST_MODI_TIME TIMESTAMP,
+      PRIMARY KEY (ACCT_NUMBER))
+  </update>
+
+   <update id="createDepositMessageTable">
+    CREATE TABLE DEPOSIT_MESSAGE(
+      MESSAGE_NUMBER VARCHAR(24) NOT NULL,
+      VERSION VARCHAR(16) NOT NULL,
+      LAUNCH_TIME TIMESTAMP,
+      SENDER VARCHAR(16) NOT NULL,
+      RECEIVER VARCHAR(16) NOT NULL,
+      TYPE CHAR(1) NOT NULL,
+      BANK_CODE VARCHAR(12) NOT NULL,
+      ACCT_NUMBER VARCHAR(24) NOT NULL,
+      AMOUNT NUMERIC(16,2) NOT NULL,
+      DOC_NUMBER VARCHAR(24) NOT NULL,
+      TRANS_SN VARCHAR(24) NOT NULL
+      )
+  </update>
+
+</mapper>
