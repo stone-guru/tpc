@@ -8,15 +8,16 @@
     <id column="ACCT_NUMBER" property="acctNumber"/>
     <result column="BALANCE" property="balance"/>
     <result column="BANK_CODE" property="bankCode"/>
+    <result column="ACCT_TYPE" property="type"/>
     <result column="OPENING_TIME" property="openingTime"/>
     <result column="LAST_MODI_TIME" property="lastModiTime"/>
   </resultMap>
   
   <insert id="insert" parameterType="Account">
     INSERT INTO ACCOUNT
-       (ACCT_NUMBER, ACCT_NAME, BANK_CODE, BALANCE, OPENING_TIME, LAST_MODI_TIME)
+       (ACCT_NUMBER, ACCT_NAME, BANK_CODE, ACCT_TYPE, BALANCE, OPENING_TIME, LAST_MODI_TIME)
     VALUES
-       (#{acctNumber}, #{acctName}, #{bankCode}, #{balance}, #{openingTime}, #{lastModiTime});
+       (#{acctNumber}, #{acctName}, #{bankCode}, #{type}, #{balance}, #{openingTime}, #{lastModiTime});
   </insert>
 
   <update id="modifyBalance" parameterType="Pair">

@@ -6,12 +6,18 @@
   <typeAliases>
     <typeAlias alias="Pair" type="net.eric.tpc.common.Pair"/>  
     <typeAlias alias="Account" type="net.eric.tpc.bankserver.entity.Account"/>
-    <typeAlias alias="DepositMessage" type="net.eric.tpc.biz.DepositMessage"/>
+    <typeAlias alias="TransferMessage" type="net.eric.tpc.biz.TransferMessage"/>
   </typeAliases>
   
   <typeHandlers>
     <typeHandler handler="net.eric.tpc.bankserver.persist.MessageTypeHandler" 
                 javaType="net.eric.tpc.biz.MessageType"
+                jdbcType="CHAR"/>
+    <typeHandler handler="net.eric.tpc.bankserver.persist.TransTypeHandler" 
+                javaType="net.eric.tpc.biz.TransType"
+                jdbcType="CHAR"/>
+    <typeHandler handler="net.eric.tpc.bankserver.persist.AccountTypeHandler" 
+                javaType="net.eric.tpc.bankserver.entity.AccountType"
                 jdbcType="CHAR"/>
   </typeHandlers>
   
@@ -30,6 +36,6 @@
   <mappers>
     <mapper resource="net/eric/tpc/bankserver/persist/mapper/DatabaseInitMapper.xml"/>
     <mapper resource="net/eric/tpc/bankserver/persist/mapper/AccountMapper.xml"/>
-    <mapper resource="net/eric/tpc/bankserver/persist/mapper/DepositMessageMapper.xml"/>
+    <mapper resource="net/eric/tpc/bankserver/persist/mapper/TransferMessageMapper.xml"/>
   </mappers>
 </configuration>
