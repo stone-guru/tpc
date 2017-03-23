@@ -1,4 +1,4 @@
-package net.eric.tpc.bankserver;
+package net.eric.tpc.bankserver.service;
 
 public class AccountRepository {
 
