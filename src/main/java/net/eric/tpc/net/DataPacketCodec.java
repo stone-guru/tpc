@@ -21,21 +21,22 @@ public class DataPacketCodec {
 		JSONArray array = JSONArray.fromObject(j.get("participants"));
 
 		List<Node> nodes = new ArrayList<Node>();
-		for (@SuppressWarnings("rawtypes")
-		Iterator it = array.iterator(); it.hasNext();) {
+		@SuppressWarnings("rawtypes")
+		Iterator it = array.iterator();
+		while (it.hasNext()) {
 			Node n = (Node) JSONObject.toBean((JSONObject) it.next(), Node.class);
 			nodes.add(n);
 		}
 		transNodes.setParticipants(nodes);
 		return transNodes;
 	}
-	
-	public static String encodeDataPacket(DataPacket packet){
+
+	public static String encodeDataPacket(DataPacket packet) {
 		return JSONObject.fromObject(packet).toString();
 	}
-	
-	public static DataPacket decodeDataPacket(String s){
+
+	public static DataPacket decodeDataPacket(String s) {
 		JSONObject obj = JSONObject.fromObject(s);
-		return (DataPacket)JSONObject.toBean(obj, DataPacket.class);
+		return (DataPacket) JSONObject.toBean(obj, DataPacket.class);
 	}
 }

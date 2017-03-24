@@ -1,39 +1,49 @@
 package net.eric.tpc.net;
 
+import net.eric.tpc.proto.Node;
+
 public class DataPacket {
 	
-	public static DataPacket readOnlyPacket(String code, String content) {
-		return new DataPacket(code, content) {
+	public static DataPacket readOnlyPacket(String code, String param1) {
+		return new DataPacket(code, param1) {
 			@Override
 			public void setCode(String s) {
 				throw new UnsupportedOperationException("code of readonlyPacket cannot be changed");
 			}
 
 			@Override
-			public void setContent(String content) {
-				throw new UnsupportedOperationException("content of readonlyPacket cannot be changed");
+			public void setParam1(String content) {
+				throw new UnsupportedOperationException("param1 of readonlyPacket cannot be changed");
 			}
 		};
 	}
 
+	
 	public static final String HEART_BEAT = "HEART_BEAT";
+	public static final String HEART_BEAT_ANSWER = "HEART_BEAT_ANSWER";
+	
 	public static final String BEGIN_TRANS = "BEGIN_TRANS";
-	public static final String START_2PC = "START_2PC";
+	public static final String BEGIN_TRANS_OK = "BEGIN_TRANS_ANSWER";
+	
 	public static final String VOTE_REQ = "VOTE_REQ";
-	public static final String ANSWER_YES = "ANSWER_YES";
-	public static final String ANSWER_NO = "ANSWER_NO";
-	public static final String COMMIT = "COMMIT";
-	public static final String ABORT = "ABORT";
-	public static final String BIZ_MESSAGE = "BIZ_MESSAGE";
-	public static final String CMD_OK = "CMD_OK";
+	public static final String VOTE_ANSWER = "VOTE_ANSWER";
+	
+	public static final String TRANS_DECISION = "TRANS_DECISION";
+	
+	public static final String BIZ_REQUEST = "BIZ_REQUEST";
+	public static final String BIZ_ACCEPT = "BIZ_ACCEPT";
+	
 	public static final String BAD_COMMNAD = "BAD_COMMAND";
-
+	
+	public static final String ERROR = "ERROR";
+	
 	private String code;
-	private String content;
-
-	public DataPacket(String code, String content) {
+	private String param1;
+	private String param2;
+	
+	public DataPacket(String code, String param1) {
 		this.code = code;
-		this.content = content;
+		this.param1 = param1;
 	}
 
 	public DataPacket() {
@@ -47,16 +57,16 @@ public class DataPacket {
 		this.code = code;
 	}
 
-	public String getContent() {
-		return content;
+	public String getParam1() {
+		return param1;
 	}
 
-	public void setContent(String content) {
-		this.content = content;
+	public void setParam1(String param1) {
+		this.param1 = param1;
 	}
 
 	@Override
 	public String toString() {
-		return "DataPacket [code=" + code + ", content=" + content + "]";
+		return "DataPacket [code=" + code + ", content=" + param1 + "]";
 	}
 }

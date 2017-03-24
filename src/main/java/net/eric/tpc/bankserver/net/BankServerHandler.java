@@ -105,10 +105,10 @@ public class BankServerHandler extends IoHandlerAdapter {
 		}
 
 		public DataPacket process(DataPacket request, TransactionState state) {
-			TransactionNodes transNodes = DataPacketCodec.decodeTransactionNodes(request.getContent());
+			TransactionNodes transNodes = DataPacketCodec.decodeTransactionNodes(request.getParam1());
 
 			if (BankServerHandler.this.transManager.beginTrans(transNodes, state)) {
-				return new DataPacket(DataPacket.CMD_OK, new Date().toString());
+				return new DataPacket(DataPacket.BEGIN_TRANS_OK, new Date().toString());
 			} else {
 				return new DataPacket(DataPacket.BAD_COMMNAD, "XXX");
 			}

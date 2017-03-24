@@ -25,11 +25,7 @@ public abstract class AbstractTransCoordiantor<B> {
 		List<Pair<Node, B>> tasks = bizStrategy().splitTask(biz);
 		List<Node> nodes = getParticipants(tasks);
 
-		if(!this.askBeginTrans(xid, nodes)){
-			return false;
-		}
-		
-		if(!this.sendBusinessMessage(xid, tasks)){
+		if(!this.askBeginTrans(xid, tasks)){
 			return false;
 		}
 
@@ -86,13 +82,14 @@ public abstract class AbstractTransCoordiantor<B> {
 		return voteResult;
 	}
 
-	private boolean askBeginTrans(String xid, List<Node> nodes) {
+	private boolean askBeginTrans(String xid, List<Pair<Node, B>> tasks) {
+		List<Node> nodes = getParticipants(tasks);
 		TransactionNodes transNodes = new TransactionNodes(xid, mySelf(), nodes);
-		Future<CommunicateResult> fcr = communicator().askBeginTrans(transNodes);
+		Future<CommuResult> fcr = communicator().askBeginTrans(transNodes);
 		
 		dtLogger().recordBeginTrans(transNodes);
 		
-		CommunicateResult beginTransResult = null;
+		CommuResult beginTransResult = null;
 		try {
 			beginTransResult = fcr.get();
 		} catch (InterruptedException e) {
@@ -102,7 +99,7 @@ public abstract class AbstractTransCoordiantor<B> {
 		}
 		if (beginTransResult == null) {
 			this.abandomTrans(xid, nodes);
-		}else if(!beginTransResult.noError()){
+		}else if(!beginTransResult.isAllOK()){
 			this.abandomTrans(xid, beginTransResult.getSuccessNodes());
 		}
 		return true;
