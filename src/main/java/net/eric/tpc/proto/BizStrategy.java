@@ -9,8 +9,8 @@ import net.eric.tpc.common.ErrorMessage;
 import net.eric.tpc.common.Pair;
 
 public interface BizStrategy<B> {
-	
-	List<Pair<Node, B>> splitTask(B b) throws BankException;
+    
+    List<Pair<Node, B>> splitTask(B b) throws BankException;
 
-	Optional<ErrorMessage> checkTransRequest(B b);
+    Optional<ErrorMessage> checkTransRequest(B b);
 }

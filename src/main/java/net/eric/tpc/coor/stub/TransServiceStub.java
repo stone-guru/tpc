@@ -10,29 +10,29 @@ import java.net.Socket;
 import net.eric.tpc.biz.TransferMessage;
 
 public class TransServiceStub {
-	private Socket socket ;
+    private Socket socket ;
 
-	public boolean connect() throws Exception {
-		 socket = new Socket("localhost", 10024);
-		 return true;
-	}
+    public boolean connect() throws Exception {
+         socket = new Socket("localhost", 10024);
+         return true;
+    }
 
-	public String request(TransferMessage msg) throws Exception {
-		OutputStream os = socket.getOutputStream();
-		PrintWriter writer = new PrintWriter(os);
-		
-		InputStream is = socket.getInputStream();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		
-		writer.println("hello");
-		writer.flush();
-		String s = reader.readLine();
-		
-		return s;
-	}
+    public String request(TransferMessage msg) throws Exception {
+        OutputStream os = socket.getOutputStream();
+        PrintWriter writer = new PrintWriter(os);
+        
+        InputStream is = socket.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        
+        writer.println("hello");
+        writer.flush();
+        String s = reader.readLine();
+        
+        return s;
+    }
 
-	public boolean close() throws Exception {
-		socket.close();
-		return true;
-	}
+    public boolean close() throws Exception {
+        socket.close();
+        return true;
+    }
 }

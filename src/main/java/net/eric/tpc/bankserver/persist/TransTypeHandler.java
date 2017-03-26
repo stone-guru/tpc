@@ -13,49 +13,49 @@ import net.eric.tpc.biz.TransType;
 
 public class TransTypeHandler extends BaseTypeHandler<TransType> {
 
-	@Override
-	public void setNonNullParameter(PreparedStatement ps, int i, TransType parameter, JdbcType jdbcType)
-			throws SQLException {
-		if(parameter == null){
-			ps.setString(i, null);
-		}
-		ps.setString(i, parameter.code());
-	}
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, TransType parameter, JdbcType jdbcType)
+            throws SQLException {
+        if(parameter == null){
+            ps.setString(i, null);
+        }
+        ps.setString(i, parameter.code());
+    }
 
-	@Override
-	public TransType getNullableResult(ResultSet rs, String columnName) throws SQLException {
-		if(rs.wasNull()){
-			return null;
-		}
-		String code = rs.getString(columnName);
-		return this.typeFromString(code);
-	}
+    @Override
+    public TransType getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        if(rs.wasNull()){
+            return null;
+        }
+        String code = rs.getString(columnName);
+        return this.typeFromString(code);
+    }
 
-	@Override
-	public TransType getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
-		if(rs.wasNull()){
-			return null;
-		}
-		String code = rs.getString(columnIndex);
-		return this.typeFromString(code);
-	}
+    @Override
+    public TransType getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        if(rs.wasNull()){
+            return null;
+        }
+        String code = rs.getString(columnIndex);
+        return this.typeFromString(code);
+    }
 
-	@Override
-	public TransType getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
-		if(cs.wasNull()){
-			return null;
-		}
-		String code = cs.getString(columnIndex);
-				
-		return this.typeFromString(code);
-	}
-	
-	private TransType typeFromString(String code){
-		TransType t = TransType.fromCode(code);
-		if(t == null){
-			throw new PersistException("Unknown code for MessageType(" + code + ")");
-		}
-		return t;
-	}
+    @Override
+    public TransType getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        if(cs.wasNull()){
+            return null;
+        }
+        String code = cs.getString(columnIndex);
+                
+        return this.typeFromString(code);
+    }
+    
+    private TransType typeFromString(String code){
+        TransType t = TransType.fromCode(code);
+        if(t == null){
+            throw new PersistException("Unknown code for MessageType(" + code + ")");
+        }
+        return t;
+    }
 
 }
