@@ -4,36 +4,18 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class TransferMessage {
-	private String messageNumber;
+	public static String INCOME = "INCOME";
+	public static String PAYMENT = "PAYMENT";
+
+	private String transSN;
 	private Date launchTime;
-	private String version;
-	private String sender;
-	private String receiver;
-	private MessageType messageType;
 	private String receivingBankCode;
 	private AccountIdentity account;
 	private AccountIdentity oppositeAccount;
-	private TransType transType;
-	private String transSN;
+	private String transType;
 	private BigDecimal amount;
 	private String voucherNumber;
 	private String summary;
-
-	public MessageType getMessageType() {
-		return messageType;
-	}
-
-	public void setMessageType(MessageType type) {
-		this.messageType = type;
-	}
-
-	public String getMessageNumber() {
-		return messageNumber;
-	}
-
-	public void setMessageNumber(String messageNumber) {
-		this.messageNumber = messageNumber;
-	}
 
 	public Date getLaunchTime() {
 		return launchTime;
@@ -41,30 +23,6 @@ public class TransferMessage {
 
 	public void setLaunchTime(Date launchTime) {
 		this.launchTime = launchTime;
-	}
-
-	public String getVersion() {
-		return version;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
-	public String getSender() {
-		return sender;
-	}
-
-	public void setSender(String sender) {
-		this.sender = sender;
-	}
-
-	public String getReceiver() {
-		return receiver;
-	}
-
-	public void setReceiver(String receiver) {
-		this.receiver = receiver;
 	}
 
 	public String getReceivingBankCode() {
@@ -91,11 +49,11 @@ public class TransferMessage {
 		this.oppositeAccount = oppositeAccount;
 	}
 
-	public TransType getTransType() {
+	public String getTransType() {
 		return transType;
 	}
 
-	public void setTransType(TransType transType) {
+	public void setTransType(String transType) {
 		this.transType = transType;
 	}
 
@@ -131,4 +89,12 @@ public class TransferMessage {
 		this.transSN = transSN;
 	}
 
+	@Override
+	public String toString() {
+		return "TransferMessage [transSN=" + transSN + ", launchTime=" + launchTime + ", receivingBankCode="
+				+ receivingBankCode + ", account=" + account + ", oppositeAccount=" + oppositeAccount + ", transType="
+				+ transType + ", amount=" + amount + ", voucherNumber=" + voucherNumber + ", summary=" + summary + "]";
+	}
+
+	
 }

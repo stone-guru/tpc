@@ -24,6 +24,11 @@ public class CommuResult {
 		this.results = ImmutableList.copyOf(r.results);
 	}
 
+	public CommuResult(int n, Iterable<PeerResult> results){
+		this.wantedCount = n;
+		this.results = ImmutableList.copyOf(results);
+	}
+	
 	public int wantedCount() {
 		return this.wantedCount;
 	}
@@ -66,32 +71,32 @@ public class CommuResult {
 		return list;
 	}
 	
-	public boolean regFailure(Node node, String errorCode, String errorReason) {
-		return this.regResult(new PeerResult(node, errorCode, errorReason));
-	}
+//	public boolean regFailure(Node node, String errorCode, String errorReason) {
+//		return this.regResult(new PeerResult(node, errorCode, errorReason));
+//	}
 
-	public boolean regSuccess(Node node, Object r) {
-		assert (node != null);
-		assert (r != null);
-		return regResult(new PeerResult(node, r));
-	}
-
-	private boolean regResult(PeerResult r) {
-		if (this.isResultExists(r.peer())) {
-			return false;
-		}
-		this.results.add(r);
-		return true;
-	}
-
-	private boolean isResultExists(Node node) {
-		for (PeerResult r : this.results) {
-			if (r.peer().equals(node)) {
-				return true;
-			}
-		}
-		return false;
-	}
+//	public boolean regSuccess(Node node, Object r) {
+//		assert (node != null);
+//		assert (r != null);
+//		return regResult(new PeerResult(node, r));
+//	}
+//
+//	private boolean regResult(PeerResult r) {
+//		if (this.isResultExists(r.peer())) {
+//			return false;
+//		}
+//		this.results.add(r);
+//		return true;
+//	}
+//
+//	private boolean isResultExists(Node node) {
+//		for (PeerResult r : this.results) {
+//			if (r.peer().equals(node)) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
 	private void checkResultSize() {
 		if (this.results.size() > wantedCount) {
@@ -106,19 +111,25 @@ public class CommuResult {
 	};
 
 	public static class PeerResult {
-		private boolean isRight;
+		private boolean hasError;
+		private boolean isDone;
 		private String errorCode;
 		private String errorReason;
 		private Object result;
 		private Node peer;
 
-		public PeerResult(Node peer, Object result) {
+		public PeerResult(Node peer, Object result){
+			this(peer, result, true);
+		}
+		
+		public PeerResult(Node peer, Object result, boolean isDone) {
 			assert (peer != null);
 			if (result == null) {
 				throw new NullPointerException("result can not be null");
 			}
 
-			this.isRight = true;
+			this.hasError = false;
+			this.isDone = isDone;
 			this.peer = peer;
 			this.result = result;
 		}
@@ -128,36 +139,51 @@ public class CommuResult {
 				throw new NullPointerException("errorCode can not be null");
 			}
 
-			this.isRight = false;
+			this.hasError = true;
+			this.isDone = true;
 			this.peer = peer;
 			this.errorCode = errorCode;
 			this.errorReason = errorReason;
 		}
 
+		public PeerResult asDone(){
+			if(this.hasError){
+				throw new IllegalStateException("PeerResult contain error, can not be regard as Done");
+			}
+			if(this.isDone){
+				return this;
+			}
+			return new PeerResult(this.peer, this.result);
+		}
+		
 		public Node peer() {
 			return this.peer;
 		}
 
+		public boolean isDone(){
+			return this.isDone;
+		}
+		
 		public boolean isRight() {
-			return this.isRight;
+			return !this.hasError && this.isDone;
 		}
 
 		public String errorCode() {
-			if (this.isRight) {
+			if (!this.hasError) {
 				throw new IllegalStateException("This CommuResult is right, has no errorCode");
 			}
 			return this.errorCode;
 		}
 
 		public String errorReason() {
-			if (this.isRight) {
+			if (!this.hasError) {
 				throw new IllegalStateException("This CommuResult is right, has no errorReason");
 			}
 			return this.errorReason;
 		}
 
 		public Object result() {
-			if (!this.isRight) {
+			if (this.hasError) {
 				throw new IllegalStateException("This CommuResult is not right, has no result");
 			}
 			return this.result;

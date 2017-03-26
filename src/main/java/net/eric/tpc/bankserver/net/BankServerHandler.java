@@ -13,13 +13,14 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 
+import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.DataPacketCodec;
 import net.eric.tpc.net.HeartBeatRequestHandler;
 import net.eric.tpc.net.RequestHandler;
 import net.eric.tpc.net.UnknowCommandRequestHandler;
+import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.TransactionManager;
-import net.eric.tpc.proto.TransactionNodes;
 import net.eric.tpc.proto.TransactionState;
 
 public class BankServerHandler extends IoHandlerAdapter {
@@ -64,6 +65,7 @@ public class BankServerHandler extends IoHandlerAdapter {
 		session.setAttribute(BankServerHandler.TRANS_SESSION_ITEM, new TransactionState());
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void messageReceived(IoSession session, Object message) throws Exception {
 		final String s = message.toString().trim();
@@ -105,10 +107,10 @@ public class BankServerHandler extends IoHandlerAdapter {
 		}
 
 		public DataPacket process(DataPacket request, TransactionState state) {
-			TransactionNodes transNodes = DataPacketCodec.decodeTransactionNodes(request.getParam1());
-
-			if (BankServerHandler.this.transManager.beginTrans(transNodes, state)) {
-				return new DataPacket(DataPacket.BEGIN_TRANS_OK, new Date().toString());
+			TransStartRec transNodes = DataPacketCodec.decodeTransStartRec(request.getParam1());
+			TransferMessage transMsg = DataPacketCodec.decodeTransferMessage(request.getParam2());
+			if (BankServerHandler.this.transManager.beginTrans(transNodes, transMsg, state)) {
+				return new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, DataPacket.YES);
 			} else {
 				return new DataPacket(DataPacket.BAD_COMMNAD, "XXX");
 			}

@@ -2,8 +2,6 @@ package net.eric.tpc.coor.stub;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
@@ -15,18 +13,18 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.textline.LineDelimiter;
 import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
-import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.SocketConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
-import net.eric.tpc.biz.TransferMessage;
+import com.google.common.base.Optional;
+
+import net.eric.tpc.common.Pair;
 import net.eric.tpc.net.CommunicationRound;
+import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.DataPacketCodec;
 import net.eric.tpc.proto.Node;
-import net.eric.tpc.proto.TransactionNodes;
 
 public class MinaChannel {
 	private SocketConnector connector;
@@ -64,7 +62,11 @@ public class MinaChannel {
 		return this.node;
 	}
 
-	public void sendRequest(Object request) {
+	public void sendMessage(Object request){
+		this.sendMessage(request, false);
+	}
+	
+	public void sendMessage(Object request, boolean sendOnly) {
 		final WriteFuture writeFuture = session.write(request);
 		writeFuture.awaitUninterruptibly();
 		if (!writeFuture.isWritten()) {
@@ -72,6 +74,9 @@ public class MinaChannel {
 				CommunicationRound round = roundRef.get();
 				round.regFailure(this.node, "ERROR_SEND", writeFuture.getException().getMessage());
 			}
+		}else if (sendOnly){
+			CommunicationRound round = roundRef.get();
+			round.regMessage(node, true);
 		}
 	}
 
@@ -102,8 +107,19 @@ public class MinaChannel {
 		connector.dispose();
 		return true;
 	}
-	
+
 	private static class SocketHandler extends IoHandlerAdapter {
+
+		@Override
+		public void sessionClosed(IoSession session) throws Exception {
+			Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
+			if (opt.isPresent()) {
+				CommunicationRound round = opt.get().fst();
+				Node node = opt.get().snd();
+				round.connectionClosed(node);
+			}
+			super.sessionClosed(session);
+		}
 
 		@Override
 		public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
@@ -113,28 +129,45 @@ public class MinaChannel {
 
 		@Override
 		public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-			// TODO Auto-generated method stub
 			super.exceptionCaught(session, cause);
 		}
 
 		@Override
 		public void messageReceived(IoSession session, Object message) throws Exception {
+			System.out.println("Got message from " + session.getServiceAddress().toString() + ", " + message);
+			Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
+			if (opt.isPresent()) {
+				CommunicationRound round = opt.get().fst();
+				Node node = opt.get().snd();
+				round.regMessage(node, message);
+			}
+		}
+
+		private Optional<Pair<CommunicationRound, Node>> currentRound(IoSession session) {
+			@SuppressWarnings("unchecked")
 			AtomicReference<CommunicationRound> roundRef = (AtomicReference<CommunicationRound>) session
 					.getAttribute("ROUND_REF");
 			if (roundRef.get() == null) {
-				return;
+				System.out.println("No communication round object found, abandom result");
+				return Optional.absent();
 			}
 
 			CommunicationRound round = roundRef.get();
 			if (!round.isWithinRound()) {
-				return;
+				System.out.println("Not in communication round, abandom result");
 			}
+			if (round.roundType() != RoundType.DOUBLE_SIDE) {
+				System.out.println("This round does not require answer, abandom result");
+				return Optional.absent();
+			}
+
 			Node node = (Node) session.getAttribute("PEER");
-			if(node == null){
+
+			if (node == null) {
 				System.out.println("No PEER node set");
-				return;
+				return Optional.absent();
 			}
-			round.regSuccess(node, message);
+			return Optional.of(Pair.asPair(round, node));
 		}
 	}
 }

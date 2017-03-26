@@ -1,6 +1,20 @@
 package net.eric.tpc.common;
 
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Lists;
+
 public class Pair<T1, T2> {
+	
+	public static <A, B> List<A> keyList(List<Pair<A, B>> assoc){
+		List<A> keys = Lists.newArrayList();
+		for(Pair<A, B> p : assoc){
+			keys.add(p.fst);
+		}
+		return keys;
+	}
+	
 	
 	public static <A, B> Pair<A, B> asPair(A a, B b){
 		return new Pair<A, B>(a, b);

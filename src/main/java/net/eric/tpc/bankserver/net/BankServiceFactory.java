@@ -2,19 +2,19 @@ package net.eric.tpc.bankserver.net;
 
 import org.apache.mina.core.service.IoHandlerAdapter;
 
+import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.proto.AbstractTransManager;
 import net.eric.tpc.proto.TransactionManager;
 
 public class BankServiceFactory {
-	@SuppressWarnings("rawtypes")
-	private static TransactionManager transManager = null;
+	private static TransactionManager<TransferMessage> transManager = null;
 	
 	
-	public static TransactionManager getTransactionManager(){
+	public static TransactionManager<TransferMessage> getTransactionManager(){
 		if(transManager != null){
 			return transManager;
 		}
-		transManager = new AbstractTransManager();
+		transManager = new AbstractTransManager<TransferMessage>();
 		return transManager;
 	}
 	

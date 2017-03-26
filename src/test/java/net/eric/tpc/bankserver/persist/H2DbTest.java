@@ -50,15 +50,15 @@ public class H2DbTest {
 		TransferMessageDao dmDao = session.getMapper(TransferMessageDao.class);
 		TransferMessage msg = new TransferMessage();
 
-		msg.setVersion("1.1");
-		msg.setMessageNumber("2193239888");
-		msg.setLaunchTime(new Date());
-		msg.setSender("BOC Server");
-		msg.setReceiver("KOT Server");
-		msg.setMessageType(MessageType.NORMAL);
+//		msg.setVersion("1.1");
+//		msg.setMessageNumber("2193239888");
+//		msg.setLaunchTime(new Date());
+//		msg.setSender("BOC Server");
+//		msg.setReceiver("KOT Server");
+//		msg.setMessageType(MessageType.NORMAL);
 
 		msg.setTransSN("982872393");
-		msg.setTransType(TransType.INCOME);
+		msg.setTransType(TransferMessage.INCOME);
 
 		msg.setAccount(new AccountIdentity("mike", "BOC"));
 		msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));

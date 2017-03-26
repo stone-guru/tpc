@@ -6,20 +6,20 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.eric.tpc.proto.Node;
-import net.eric.tpc.proto.TransactionNodes;
+import net.eric.tpc.proto.TransStartRec;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 public class Main {
 
 	public static void main(String[] args) {
-		TransactionNodes transNodes = new TransactionNodes("TR09282", new Node("localhost", 987),
+		TransStartRec transNodes = new TransStartRec("TR09282", new Node("localhost", 987),
 				Arrays.asList(new Node("198.1.1.1", 10011), new Node("198.2.2.2", 10088)));
 		String s = JSONObject.fromObject(transNodes).toString();
 		System.out.println(s);
 		
 		JSONObject j = JSONObject.fromObject(s);
-		TransactionNodes nodes2 = (TransactionNodes) JSONObject.toBean(j, TransactionNodes.class);
+		TransStartRec nodes2 = (TransStartRec) JSONObject.toBean(j, TransStartRec.class);
 		
 		JSONArray array = JSONArray.fromObject(j.get("participants"));
 		

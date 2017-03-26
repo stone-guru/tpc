@@ -3,15 +3,15 @@ package net.eric.tpc.proto;
 import java.util.Collections;
 import java.util.List;
 
-public class TransactionNodes {
+public class TransStartRec {
 	private String xid;
 	private Node coordinator;
 	private List<Node> participants = Collections.emptyList();
 
-	public TransactionNodes(){
+	public TransStartRec(){
 	}
 	
-	public TransactionNodes(String xid, Node coordinator, List<Node> participants) {
+	public TransStartRec(String xid, Node coordinator, List<Node> participants) {
 		super();
 		this.xid = xid;
 		this.coordinator = coordinator;
@@ -44,6 +44,6 @@ public class TransactionNodes {
 
 	@Override
 	public String toString() {
-		return "TransactionNodes [xid=" + xid + ", coordinator=" + coordinator + ", participants=" + participants + "]";
+		return "TransStartRec [xid=" + xid + ", coordinator=" + coordinator + ", participants=" + participants + "]";
 	}
 }

@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface DtLogger {
 	String generateXid();
-	String recordBeginTrans(TransactionNodes transNodes);
+	String recordBeginTrans(TransStartRec transNodes);
 	void recordVote(String xid, Vote vote);
 	void recordDecision(String xid, Decision decsion);
 	void markFinished(String xid);
