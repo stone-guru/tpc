@@ -6,7 +6,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
@@ -23,11 +22,11 @@ import com.google.common.base.Optional;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
-import net.eric.tpc.net.DataPacket;
-import net.eric.tpc.net.DataPacketCodec;
 import net.eric.tpc.proto.Node;
 
 public class MinaChannel {
+    private static final Logger logger = LoggerFactory.getLogger(MinaChannel.class);
+    
     private SocketConnector connector;
     private IoSession session;
     private Node node;
@@ -44,14 +43,14 @@ public class MinaChannel {
         this.connector = new NioSocketConnector();
         this.connector.setConnectTimeoutMillis(3000);
         DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();
-        filterChain.addLast("codec", new ProtocolCodecFilter(this.codecFactory)); //new TextLineCodecFactory(Charset.forName("UTF-8"))));
+        filterChain.addLast("codec", new ProtocolCodecFilter(this.codecFactory)); 
         // connector.getSessionConfig().setUseReadOperation(true);
         this.connector.setHandler(new SocketHandler());
         ConnectFuture future = connector.connect(new InetSocketAddress(node.getAddress(), node.getPort()));
-        System.out.println("Ask connect");
+        //System.out.println("Ask connect");
         future.awaitUninterruptibly();
         this.session = future.getSession();
-        System.out.println("Connect ok");
+        //System.out.println("Connect ok");
         session.setAttribute("ROUND_REF", this.roundRef);
         session.setAttribute("PEER", this.node);
         return true;
@@ -84,8 +83,11 @@ public class MinaChannel {
     }
 
     public boolean close() throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("MinaChannel.close entry");
+        }
         CloseFuture future = session.getCloseFuture();
-        future.awaitUninterruptibly(1000);
+        future.awaitUninterruptibly(2000);
         connector.dispose();
         return true;
     }

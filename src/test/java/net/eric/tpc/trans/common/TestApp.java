@@ -3,7 +3,6 @@ package net.eric.tpc.trans.common;
 import static net.eric.tpc.common.Pair.asPair;
 
 import java.math.BigDecimal;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -11,13 +10,13 @@ import java.util.concurrent.Future;
 
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
-import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import net.eric.tpc.biz.AccountIdentity;
+import net.eric.tpc.biz.TransType;
 import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.coor.stub.MinaCommunicator;
@@ -39,7 +38,7 @@ public class TestApp extends MinaCommunicator {
             // app.executeHttpCommand();
             app.executeStartTrans();
         } finally {
-            app.shutdown();
+            app.close();
         }
     }
 
@@ -60,7 +59,7 @@ public class TestApp extends MinaCommunicator {
 
         TransferMessage msg = new TransferMessage();
         msg.setTransSN("982872393");
-        msg.setTransType(TransferMessage.INCOME);
+        msg.setTransType(TransType.INCOME);
         msg.setLaunchTime(new Date());
         msg.setAccount(new AccountIdentity("mike", "BOC"));
         msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));
@@ -85,12 +84,15 @@ public class TestApp extends MinaCommunicator {
             } finally {
                 // this.roundRef.get().clearLatch();
             }
+            
+            @SuppressWarnings("unused")
             CoorCommuResult r = result.get();
 
         }
         super.closeConnections();
     }
 
+    @SuppressWarnings("unused")
     private void executeHttpCommand() {
         List<Node> nodes = ImmutableList.of(new Node("www.baidu.com", 80), // new
                 // Node("locafdsflhost",

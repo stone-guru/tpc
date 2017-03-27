@@ -1,18 +1,20 @@
 package net.eric.tpc.coor.stub;
 
+import static net.eric.tpc.common.Pair.asPair;
+
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
 
 import net.eric.tpc.biz.BizErrorCode;
 import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.common.Configuration;
-import net.eric.tpc.common.Pair;
-import static net.eric.tpc.common.Pair.*;
+import net.eric.tpc.common.Either;
 import net.eric.tpc.proto.CoorBizStrategy;
 import net.eric.tpc.proto.Node;
 
@@ -20,13 +22,21 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferMessage> {
 
     private Configuration config = new Configuration();
 
-    public List<Pair<Node, TransferMessage>> splitTask(TransferMessage b) {
+    public Either<ActionResult, TaskPartition<TransferMessage>> splitTask(TransferMessage b) {
+        ActionResult checkResult = basicCheckTransRequest(b);
+        if (!checkResult.isOK()) {
+            return Either.left(checkResult);
+        }
+
         Node boc = config.getNode("BOC").get();
         Node ccb = config.getNode("CCB").get();
-        return ImmutableList.of(asPair(boc, b), asPair(ccb, b));
+        return Either.right(//
+                new TaskPartition<TransferMessage>(b, //
+                        ImmutableList.of(asPair(boc, b), asPair(ccb, b))));
     }
 
-    public ActionResult checkTransRequest(TransferMessage m) {
+    
+    private ActionResult basicCheckTransRequest(TransferMessage m) {
         ActionResult r = checkFieldMissing(m);
         if (!r.isOK()) {
             return r;
@@ -114,5 +124,17 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferMessage> {
         }
 
         return ActionResult.OK;
+    }
+
+    @Override
+    public Future<ActionResult> canCommit(TransferMessage b) {
+        // FIXME
+        return Futures.immediateFuture(ActionResult.OK);
+    }
+
+    @Override
+    public Future<ActionResult> commit(TransferMessage b) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

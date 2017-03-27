@@ -2,9 +2,9 @@ package net.eric.tpc.proto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -14,6 +14,19 @@ import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.net.PeerResult2;
 
 public class CoorCommuResult {
+    
+    public static ActionResult force(Future<CoorCommuResult> future) {
+        try {
+            CoorCommuResult result = future.get();
+            if (result.isAllOK()) {
+                return ActionResult.OK;
+            } else {
+                return result.getAnError();
+            }
+        } catch (Exception e) {
+            return ActionResult.innerError(e.getMessage());
+        }
+    }
 
     private int wantedCount;
     private List<PeerResult2> results;
@@ -28,11 +41,11 @@ public class CoorCommuResult {
         this.results = ImmutableList.copyOf(r.results);
     }
 
-    public CoorCommuResult(int n, Iterable<PeerResult2> results){
+    public CoorCommuResult(int n, Iterable<PeerResult2> results) {
         this.wantedCount = n;
         this.results = ImmutableList.copyOf(results);
     }
-    
+
     public int wantedCount() {
         return this.wantedCount;
     }
@@ -51,36 +64,36 @@ public class CoorCommuResult {
         return isAllDone() && Iterables.all(this.results, CoorCommuResult.IS_RIGHT);
     }
 
-    public List<PeerResult2> okResults(){
+    public List<PeerResult2> okResults() {
         return ImmutableList.copyOf(Iterables.filter(this.results, PeerResult2.class));
     }
-    
-    public <T> List<T> okResultAs(Function<Object, T> f){
+
+    public <T> List<T> okResultAs(Function<Object, T> f) {
         List<T> list = new ArrayList<T>();
-        for(PeerResult2 r : this.results){
-            if(r.isRight()){
+        for (PeerResult2 r : this.results) {
+            if (r.isRight()) {
                 list.add(f.apply(r.result()));
             }
         }
         return list;
     }
-    
-    public ActionResult getAnError(){
-        if(!isAllDone()){
+
+    public ActionResult getAnError() {
+        if (!isAllDone()) {
             return ActionResult.PEER_NO_REPLY;
         }
-        for(PeerResult2 r : this.results){
-            if(!r.isRight()){
-               return r.errorMessage();
+        for (PeerResult2 r : this.results) {
+            if (!r.isRight()) {
+                return r.errorMessage();
             }
         }
         return ActionResult.INNER_ERROR;
     }
-    
-    public List<Node> getSuccessNodes(){
+
+    public List<Node> getSuccessNodes() {
         List<Node> list = new ArrayList<Node>();
-        for(PeerResult2 r : this.results){
-            if(r.isRight()){
+        for (PeerResult2 r : this.results) {
+            if (r.isRight()) {
                 list.add(r.peer());
             }
         }

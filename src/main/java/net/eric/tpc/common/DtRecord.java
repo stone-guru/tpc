@@ -1,4 +1,4 @@
-package net.eric.tpc.proto;
+package net.eric.tpc.common;
 
 import java.util.Date;
 

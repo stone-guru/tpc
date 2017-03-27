@@ -10,6 +10,7 @@ import java.util.Date;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.biz.AccountIdentity;
+import net.eric.tpc.biz.TransType;
 import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.proto.Node;
@@ -19,7 +20,7 @@ public class JavaSerialize {
     private static DataPacket genDataPacket(){
         TransferMessage msg = new TransferMessage();
         msg.setTransSN("982872393");
-        msg.setTransType(TransferMessage.INCOME);
+        msg.setTransType(TransType.INCOME);
         msg.setLaunchTime(new Date());
         msg.setAccount(new AccountIdentity("mike", "BOC"));
         msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));

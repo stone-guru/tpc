@@ -1,15 +1,23 @@
 package net.eric.tpc.net;
 
+import com.google.common.base.Optional;
+
+import net.eric.tpc.common.ShouldNotHappenException;
 import net.eric.tpc.proto.PeerTransactionState;
 
-public class UnknowCommandRequestHandler implements RequestHandler {
-
+public class UnknowCommandRequestHandler<B> implements RequestHandler<B> {
+    @Override
     public String getCorrespondingCode() {
-        return null;
+        throw new ShouldNotHappenException();
     }
 
-    public DataPacket process(DataPacket request, PeerTransactionState state) {
-        return new DataPacket(DataPacket.BAD_COMMNAD, request.getCode());
+    @Override
+    public Optional<DataPacket>  process(DataPacket request, PeerTransactionState<B> state) {
+        return Optional.of(new DataPacket(DataPacket.BAD_COMMNAD, request.getCode()));
     }
 
+    @Override
+    public boolean requireTransState() {
+        return false;
+    }
 }

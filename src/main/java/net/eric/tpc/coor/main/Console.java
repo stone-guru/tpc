@@ -23,6 +23,6 @@ public class Console {
         
         System.out.println(result);
 
-        communicator.shutdown();
+        communicator.close();
     }
 }

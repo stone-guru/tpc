@@ -1,67 +1,44 @@
 package net.eric.tpc.coor.stub;
 
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import net.eric.tpc.proto.CoorDtLogger;
+import com.google.common.base.Optional;
+
+import net.eric.tpc.biz.TransferMessage;
+import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.proto.Decision;
-import net.eric.tpc.proto.DtRecord;
+import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Vote;
 
-public class CoorDtLoggerDbImpl implements CoorDtLogger {
+public class CoorDtLoggerDbImpl implements DtLogger<TransferMessage> {
+    private static final Logger logger = LoggerFactory.getLogger(CoorDtLoggerDbImpl.class);
 
     @Override
-    public String generateXid() {
-        // TODO Auto-generated method stub
+    public String recordBeginTrans(TransStartRec transStartRec, TransferMessage bill) {
+        logger.info("CoorDtLoggerDbImpl.recordBeginTrans", transStartRec.toString());
         return null;
     }
 
     @Override
-    public String recordBeginTrans(TransStartRec transNodes) {
-        // TODO Auto-generated method stub
-        return null;
+    public void recordDecision(String xid, Decision decision) {
+        logger.info("CoorDtLoggerDbImpl.recordDecision", xid + ", " + decision);
     }
 
     @Override
-    public void recordVote(String xid, Vote vote) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void recordDecision(String xid, Decision decsion) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void markFinished(String xid) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public List<DtRecord> getUnfinishedTrans() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Decision getDecisionFor(String xid) {
-        // TODO Auto-generated method stub
-        return null;
+    public Optional<Decision>  getDecisionFor(String xid) {
+        throw new UnImplementedException();
     }
 
     @Override
     public void recordStart2PC(String xid) {
-        // TODO Auto-generated method stub
-
+        logger.info("CoorDtLoggerDbImpl.recordStart2PC", xid);
     }
 
     @Override
-    public void abandomTrans(String xid) {
-        // TODO Auto-generated method stub
-
+    public void recordVoteResult(String xid, Vote vote) {
+        logger.info("CoorDtLoggerDbImpl.recordVoteResult", xid + ", " +vote);
     }
 
 }

@@ -2,12 +2,12 @@ package net.eric.tpc.proto;
 
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
+import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.common.Pair;
 
 public interface CoorCommunicator<B> {
-    boolean connectPanticipants(List<Node> nodes);
+    ActionResult connectPanticipants(List<Node> nodes);
 
     Future<CoorCommuResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, B>> tasks);
 
@@ -15,7 +15,5 @@ public interface CoorCommunicator<B> {
 
     Future<CoorCommuResult> gatherVote(String xid, List<Node> nodes);
 
-    void closeConnections();
-
-    void shutdown();
+    void close();
 }

@@ -8,6 +8,9 @@ public class DataPacket implements Serializable {
 
     public static DataPacket readOnlyPacket(String code, Object param1, Object param2) {
         return new DataPacket(code, param1, param2) {
+
+            private static final long serialVersionUID = -6995521228594324183L;
+
             @Override
             public void setCode(String s) {
                 throw new UnsupportedOperationException("code of readonlyPacket cannot be changed");
@@ -37,8 +40,8 @@ public class DataPacket implements Serializable {
     
     public static final String TRANS_DECISION = "TRANS_DECISION";
 
-    public static final String BIZ_REQUEST = "BIZ_REQUEST";
-    public static final String BIZ_ACCEPT = "BIZ_ACCEPT";
+    public static final String DECISION_QUERY = "DECISION_QUERY";
+    public static final String DECISION_ANSWER = "DECISION_ANSWER";
 
     public static final String BAD_COMMNAD = "BAD_COMMAND";
 
@@ -46,6 +49,7 @@ public class DataPacket implements Serializable {
     
     public static final String YES = "YES";
     public static final String NO = "NO";
+    public static final String UNKNOWN = "UNKNOWN";
 
     private String code;
     private Object param1;

@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
@@ -37,7 +36,6 @@ public class CommunicationRound {
 
     private CountDownHolder latch;
     private ExecutorService commuTaskPool;
-    private ExecutorService sequenceTaskPool;
 
     public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType,
             PeerResult2.Assembler assembler) {
@@ -45,7 +43,6 @@ public class CommunicationRound {
         this.wantedCount = n;
         this.roundType = roundType;
         this.assembler = assembler;
-        this.sequenceTaskPool = sequenceTaskPool;
         this.latch = new CountDownHolder(n);
     }
 

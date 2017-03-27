@@ -7,16 +7,14 @@ import java.util.Date;
 public class TransferMessage implements Serializable {
 
     private static final long serialVersionUID = -8098090408729937278L;
+   
     
-    public static String INCOME = "INCOME";
-    public static String PAYMENT = "PAYMENT";
-
     private String transSN;
     private Date launchTime;
     private String receivingBankCode;
     private AccountIdentity account;
     private AccountIdentity oppositeAccount;
-    private String transType;
+    private TransType transType;
     private BigDecimal amount;
     private String voucherNumber;
     private String summary;
@@ -53,11 +51,11 @@ public class TransferMessage implements Serializable {
         this.oppositeAccount = oppositeAccount;
     }
 
-    public String getTransType() {
+    public TransType getTransType() {
         return transType;
     }
 
-    public void setTransType(String transType) {
+    public void setTransType(TransType transType) {
         this.transType = transType;
     }
 

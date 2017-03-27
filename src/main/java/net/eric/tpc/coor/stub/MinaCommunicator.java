@@ -7,12 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
@@ -20,13 +17,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import net.eric.tpc.biz.BizErrorCode;
 import net.eric.tpc.biz.TransferMessage;
+import net.eric.tpc.common.ActionResult;
+import net.eric.tpc.common.Either;
 import net.eric.tpc.common.Pair;
+import net.eric.tpc.common.ShouldNotHappenException;
+import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.DataPacket;
@@ -36,7 +35,6 @@ import net.eric.tpc.proto.CoorCommunicator;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.Node;
 import net.eric.tpc.proto.TransStartRec;
-import net.eric.tpc.proto.VoteResult;
 
 public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
 
@@ -55,24 +53,29 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
     };
 
     protected Map<Node, MinaChannel> channelMap = Collections.emptyMap();
-    protected ExecutorService commuTaskpool = Executors.newCachedThreadPool();
-    private ExecutorService sequenceTaskPool = Executors.newSingleThreadExecutor();
+    protected ExecutorService commuTaskPool;
+    private ExecutorService sequenceTaskPool;
     protected AtomicReference<CommunicationRound> roundRef = new AtomicReference<CommunicationRound>(null);
     private ProtocolCodecFactory codecFactory;
 
     public MinaCommunicator(ProtocolCodecFactory codecFactory) {
-        this.codecFactory = codecFactory;
+        this( Executors.newCachedThreadPool(),  Executors.newSingleThreadExecutor(), codecFactory);
     }
 
+    public MinaCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool, ProtocolCodecFactory codecFactory){
+        this.commuTaskPool = commuTaskPool;
+        this.sequenceTaskPool = sequenceTaskPool;
+        this.codecFactory = codecFactory;
+    }
+    
     @Override
-    public boolean connectPanticipants(List<Node> nodes) {
-        Optional<Map<Node, MinaChannel>> opt = this.connectOrAbort(nodes);
-        if (!opt.isPresent()) {
-            System.out.println("Not all node connected");
-            return false;
+    public ActionResult connectPanticipants(List<Node> nodes) {
+        Either<ActionResult, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes);
+        if (either.isRight()) {
+            this.channelMap = either.getRight();
+            return ActionResult.OK;
         }
-        this.channelMap = opt.get();
-        return true;
+        return either.getLeft();
     }
 
     @Override
@@ -123,29 +126,38 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
             return PeerResult2.fail(node, BizErrorCode.PEER_PRTC_ERROR, packet.toString());
         }
     };
-    
+
     public void notifyDecision(String xid, Decision decision, List<Node> nodes) {
+        List<Pair<Node, Object>> requests = Lists.newArrayList();
+        
+        for (Node node : nodes) {
+            String code = null;
+            if (decision == Decision.COMMIT) {
+                code = DataPacket.YES;
+            } else if (decision == Decision.ABORT) {
+                code = DataPacket.NO;
+            } else {
+                throw new UnImplementedException();
+            }
+            
+            final DataPacket packet = new DataPacket(DataPacket.TRANS_DECISION, xid, code);
+            requests.add(asPair(node, (Object) packet));
+        }
+        
+        @SuppressWarnings("unused")
+        Future<CoorCommuResult> dontCare = this.sendMessage(requests);
     }
 
-    public void shutdown() {
-        Future<Void> t = this.closeChannels(this.channelMap.values());
-        try {
-            t.get();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+    public void close() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("start to close connections");
         }
-        this.commuTaskpool.shutdown();
-        this.sequenceTaskPool.shutdown();
+        @SuppressWarnings("unused")
+        Future<Void> canNotCare = this.closeChannels(this.channelMap.values());
     }
 
     private Future<Void> closeChannels(final Iterable<MinaChannel> channels) {
         Callable<Void> closeAction = new Callable<Void>() {
-            private final CountDownLatch closeActionLatch = new CountDownLatch(Iterables.size(channels));
-
             @Override
             public Void call() throws Exception {
                 if (logger.isDebugEnabled()) {
@@ -158,20 +170,13 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
                                 channel.close();
                             } catch (Exception e) {
                                 logger.error("close channel error", e);
-                            } finally {
-                                closeActionLatch.countDown();
-                            }
+                            } 
                         }
                     };
-                    commuTaskpool.submit(closeTask);
-                }
-                try {
+                    commuTaskPool.submit(closeTask);
                     if (logger.isDebugEnabled()) {
-                        logger.debug("wait closeAction latch");
+                        logger.debug("closeTask submited");
                     }
-                    closeActionLatch.await(5, TimeUnit.SECONDS);
-                } catch (Exception e) {
-                    logger.error("Wait close connections", e);
                 }
                 return null;
             }
@@ -214,7 +219,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
                             System.out.println("after call channel send");
                         }
                     };
-                    commuTaskpool.submit(task);
+                    commuTaskPool.submit(task);
                 }
             }
         };
@@ -245,7 +250,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
                             }
                         }
                     };
-                    commuTaskpool.submit(task);
+                    commuTaskPool.submit(task);
                 }
             }
         };
@@ -255,7 +260,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
     }
 
     private CommunicationRound newRound(int peerCount, RoundType roundType, PeerResult2.Assembler assembler) {
-        CommunicationRound round = new CommunicationRound(this.commuTaskpool, this.sequenceTaskPool, peerCount,
+        CommunicationRound round = new CommunicationRound(this.commuTaskPool, this.sequenceTaskPool, peerCount,
                 roundType, assembler);
         return round;
     }
@@ -264,29 +269,30 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         closeChannels(this.channelMap.values());
     }
 
-    private Optional<Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes) {
+    private Either<ActionResult, Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes) {
         Future<CoorCommuResult> future = connectAll(nodes);
-        CoorCommuResult result;
-        try {
-            result = future.get();
-            // this.displayConnectResult(result);
-            System.out.println("Got async connect Future");
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return Optional.absent();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            return Optional.absent();
-        }
-        if (result.isAllOK()) {
-            Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();
-            for (PeerResult2 r : result.getResults()) {
-                map.put(r.peer(), (MinaChannel) r.result());
-            }
-            return Optional.of(map);
+        ActionResult ar = CoorCommuResult.force(future);
+        if (!future.isDone()) {
+            // Can do nothing
+            return Either.left(ar);
         }
 
-        closeChannels(result.okResultAs(MinaCommunicator.OBJECT_AS_CHANNEL));
-        return Optional.absent();
+        CoorCommuResult result = null;
+        try {
+            result = future.get();
+        } catch (Exception e) {
+            throw new ShouldNotHappenException();
+        }
+
+        if (!result.isAllOK()) {
+            closeChannels(result.okResultAs(MinaCommunicator.OBJECT_AS_CHANNEL));
+            return Either.left(ar);
+        }
+
+        Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();
+        for (PeerResult2 r : result.getResults()) {
+            map.put(r.peer(), (MinaChannel) r.result());
+        }
+        return Either.right(map);
     }
 }

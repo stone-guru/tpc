@@ -58,7 +58,7 @@ public class H2DbTest {
 //        msg.setMessageType(MessageType.NORMAL);
 
         msg.setTransSN("982872393");
-        msg.setTransType(TransferMessage.INCOME);
+        msg.setTransType(TransType.INCOME);
 
         msg.setAccount(new AccountIdentity("mike", "BOC"));
         msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));

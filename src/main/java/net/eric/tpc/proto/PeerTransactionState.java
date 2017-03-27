@@ -6,12 +6,13 @@ import net.eric.tpc.common.ActionResult;
 
 public class PeerTransactionState<B> {
     public static enum Stage {
-        NONE, BEGIN, VOTED, DECIDED
+        NONE, BEGIN, VOTED, DECIDED, ENDED
     }
 
     private Stage stage = Stage.NONE;
     private String xid;
     private Vote vote;
+    private Decision decision;
     private Future<ActionResult> voteResult;
     private B bizEntity;
     
@@ -55,5 +56,11 @@ public class PeerTransactionState<B> {
         this.bizEntity = bizEntity;
     }
 
-    
+    public Decision getDecision() {
+        return decision;
+    }
+
+    public void setDecision(Decision decision) {
+        this.decision = decision;
+    }
 }

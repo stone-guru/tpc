@@ -2,16 +2,15 @@ package net.eric.tpc.coor.stub;
 
 import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.proto.AbstractCoorTransManager;
+import net.eric.tpc.proto.CommunicatorFactory;
 import net.eric.tpc.proto.CoorBizStrategy;
-import net.eric.tpc.proto.CoorCommunicator;
-import net.eric.tpc.proto.CoorDtLogger;
+import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Node;
-import net.eric.tpc.proto.Vote;
 
 public class CoorTransManagerImpl extends AbstractCoorTransManager<TransferMessage> {
 
     @Override
-    protected CoorDtLogger dtLogger() {
+    protected DtLogger<TransferMessage> dtLogger() {
         return this.dtLogger;
     }
 
@@ -21,21 +20,16 @@ public class CoorTransManagerImpl extends AbstractCoorTransManager<TransferMessa
     }
 
     @Override
-    protected CoorCommunicator<TransferMessage> communicator() {
-        return this.communicator;
+    protected CommunicatorFactory<TransferMessage> communicatorFactory() {
+        return this.communicatorFactory;
     }
 
     @Override
     protected Node mySelf() {
         return this.myself;
     }
-
-    @Override
-    protected Vote selfVote(String xid, TransferMessage biz) {
-        return null;
-    }
     
-    public void setDtLogger(CoorDtLogger dtLogger) {
+    public void setDtLogger(DtLogger<TransferMessage> dtLogger) {
         this.dtLogger = dtLogger;
     }
 
@@ -43,18 +37,16 @@ public class CoorTransManagerImpl extends AbstractCoorTransManager<TransferMessa
         this.bizStrategy = bizStrategy;
     }
 
-    public void setCommunicator(CoorCommunicator<TransferMessage> communicator) {
-        this.communicator = communicator;
+    public void setCommunicatorFactory(CommunicatorFactory<TransferMessage> communicator) {
+        this.communicatorFactory = communicator;
     }
 
     public void setMyself(Node myself) {
         this.myself = myself;
     }
 
-
-
-    private CoorDtLogger dtLogger;
+    private DtLogger<TransferMessage> dtLogger;
     private CoorBizStrategy<TransferMessage> bizStrategy;
-    private CoorCommunicator<TransferMessage> communicator;
+    private CommunicatorFactory<TransferMessage> communicatorFactory;
     private Node myself = new Node("localhost", 7878);
 }
