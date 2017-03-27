@@ -5,12 +5,12 @@ import java.util.List;
 import com.google.common.base.Optional;
 
 import net.eric.tpc.common.BankException;
-import net.eric.tpc.common.ErrorMessage;
+import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.common.Pair;
 
-public interface BizStrategy<B> {
-    
+public interface CoorBizStrategy<B> {
+
     List<Pair<Node, B>> splitTask(B b) throws BankException;
 
-    Optional<ErrorMessage> checkTransRequest(B b);
+    ActionResult checkTransRequest(B b);
 }

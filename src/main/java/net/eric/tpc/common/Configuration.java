@@ -8,10 +8,13 @@ import com.google.common.base.Optional;
 import net.eric.tpc.proto.Node;
 
 public class Configuration {
+    public static String BANK_NODE_PREFIX = "";
+    
     private Map<String, Node> nodeMap = new HashMap<String, Node>();
 
     public Configuration() {
-
+        nodeMap.put("BOC", new Node("localhost", 10021));
+        nodeMap.put("CCB", new Node("localhost", 10022));
     }
 
     public boolean isBankNodeExists(String bankCode) {
@@ -20,7 +23,7 @@ public class Configuration {
         }
     }
 
-    public Optional<Node> geNode(String bankCode) {
+    public Optional<Node> getNode(String bankCode) {
         synchronized (nodeMap) {
             if (!nodeMap.containsKey(bankCode)) {
                 return Optional.absent();

@@ -1,12 +1,15 @@
 package net.eric.tpc.common;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
 
-public class Pair<T1, T2> {
+public class Pair<T1, T2>  implements Serializable{
     
+    private static final long serialVersionUID = 2034602565707969200L;
+
     public static <A, B> List<A> keyList(List<Pair<A, B>> assoc){
         List<A> keys = Lists.newArrayList();
         for(Pair<A, B> p : assoc){

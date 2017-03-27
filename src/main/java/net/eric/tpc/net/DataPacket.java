@@ -1,21 +1,25 @@
 package net.eric.tpc.net;
 
-public class DataPacket {
+import java.io.Serializable;
 
-    public static DataPacket readOnlyPacket(String code, String param1) {
-        return new DataPacket(code, param1) {
+public class DataPacket implements Serializable {
+
+    private static final long serialVersionUID = 6971835564417011087L;
+
+    public static DataPacket readOnlyPacket(String code, Object param1, Object param2) {
+        return new DataPacket(code, param1, param2) {
             @Override
             public void setCode(String s) {
                 throw new UnsupportedOperationException("code of readonlyPacket cannot be changed");
             }
 
             @Override
-            public void setParam1(String content) {
+            public void setParam1(Object content) {
                 throw new UnsupportedOperationException("param1 of readonlyPacket cannot be changed");
             }
             
             @Override
-            public void setParam2(String param2) {
+            public void setParam2(Object param2) {
                 throw new UnsupportedOperationException("param2 of readonlyPacket cannot be changed");
             }
         };
@@ -28,6 +32,9 @@ public class DataPacket {
     public static final String BEGIN_TRANS = "BEGIN_TRANS";
     public static final String BEGIN_TRANS_ANSWER = "BEGIN_TRANS_ANSWER";
 
+    public static final String VOTE_REQ = "VOTE_REQ";
+    public static final String VOTE_ANSWER = "VOTE_ANSWER";
+    
     public static final String TRANS_DECISION = "TRANS_DECISION";
 
     public static final String BIZ_REQUEST = "BIZ_REQUEST";
@@ -41,14 +48,14 @@ public class DataPacket {
     public static final String NO = "NO";
 
     private String code;
-    private String param1;
-    private String param2;
+    private Object param1;
+    private Object param2;
 
-    public DataPacket(String code, String param1) {
+    public DataPacket(String code, Object param1) {
         this(code, param1, "");
     }
 
-    public DataPacket(String code, String param1, String param2) {
+    public DataPacket(String code, Object param1, Object param2) {
         this.code = code;
         this.param1 = param1;
         this.param2 = param2;
@@ -70,20 +77,20 @@ public class DataPacket {
         this.code = code;
     }
 
-    public String getParam1() {
+    public Object getParam1() {
         return param1;
     }
 
-    public void setParam1(String param1) {
+    public void setParam1(Object param1) {
         this.param1 = param1;
     }
 
     
-    public String getParam2() {
+    public Object getParam2() {
         return param2;
     }
 
-    public void setParam2(String param2) {
+    public void setParam2(Object param2) {
         this.param2 = param2;
     }
 

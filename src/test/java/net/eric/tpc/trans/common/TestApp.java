@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
+import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
 import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 
 import com.google.common.base.Optional;
@@ -21,31 +22,42 @@ import net.eric.tpc.biz.TransferMessage;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.coor.stub.MinaCommunicator;
 import net.eric.tpc.net.PeerResult2;
-import net.eric.tpc.proto.CommuResult;
+import net.eric.tpc.proto.CoorCommuResult;
 import net.eric.tpc.proto.Node;
 import net.eric.tpc.proto.TransStartRec;
 
 public class TestApp extends MinaCommunicator {
 
-    
     public static void main(String[] args) throws Exception {
-        
-        TestApp app = new TestApp(new TextLineCodecFactory(Charset.forName("UTF-8")));
 
+        // TestApp app = new TestApp(new
+        // TextLineCodecFactory(Charset.forName("UTF-8")));
+
+        TestApp app = new TestApp(new ObjectSerializationCodecFactory());
         try {
             // app.connectOrAbort(nodes);
-            //app.executeHttpCommand();
+            // app.executeHttpCommand();
             app.executeStartTrans();
         } finally {
             app.shutdown();
         }
     }
 
-    public TestApp(ProtocolCodecFactory codecFactory){
+    public TestApp(ProtocolCodecFactory codecFactory) {
         super(codecFactory);
     }
-    
+
     private void executeStartTrans() throws Exception {
+
+        Node boc = new Node("localhost", 10021);
+        Node ccb = new Node("localhost", 10022);
+
+        // Node abc = new Node("localhost", 10023);
+        // Node bdc = new Node("localhost", 10024);
+
+        // super.connectPanticipants(ImmutableList.of(boc, bbc));// , abc,
+        // bdc));
+
         TransferMessage msg = new TransferMessage();
         msg.setTransSN("982872393");
         msg.setTransType(TransferMessage.INCOME);
@@ -57,25 +69,26 @@ public class TestApp extends MinaCommunicator {
         msg.setSummary("for cigrate");
         msg.setVoucherNumber("BIK09283-33843");
 
-        Node boc = new Node("localhost", 10021);
-        Node bbc = new Node("localhost", 10022);
-//        Node abc = new Node("localhost", 10023);
-//        Node bdc = new Node("localhost", 10024);
+        TransStartRec st = new TransStartRec("KJDF000001", new Node("localhost", 9001), ImmutableList.of(boc, ccb));// ,
+                                                                                                                    // abc,
+                                                                                                                    // bdc));
+        super.connectPanticipants(ImmutableList.of(boc, ccb));
+        for (int i = 0; i < 2; i++) {
 
-        TransStartRec st = new TransStartRec("KJDF000001", new Node("localhost", 9001),
-                ImmutableList.of(boc, bbc));//, abc, bdc));
+            Future<CoorCommuResult> result = null;
+            try {
+                result = this.askBeginTrans(st, ImmutableList.of(asPair(boc, msg), asPair(ccb, msg)));// ,
+                                                                                                      // asPair(abc,
+                                                                                                      // msg),
+                                                                                                      // asPair(bdc,
+                                                                                                      // msg)));
+            } finally {
+                // this.roundRef.get().clearLatch();
+            }
+            CoorCommuResult r = result.get();
 
-        super.connectPanticipants(ImmutableList.of(boc, bbc));//, abc, bdc));
-        Future<CommuResult> result = null;
-        try {
-             result = this.askBeginTrans(st,
-                    ImmutableList.of(asPair(boc, msg), asPair(bbc, msg)));//, asPair(abc, msg), asPair(bdc, msg)));
-        } finally {
-            this.roundRef.get().clearLatch();
         }
-        CommuResult r = result.get();
-
-        displayConnectResult(r);
+        super.closeConnections();
     }
 
     private void executeHttpCommand() {
@@ -87,9 +100,9 @@ public class TestApp extends MinaCommunicator {
         this.connectPanticipants(nodes);
 
         List<Pair<Node, Object>> requests = this.generateHttpCommand(nodes);
-        Future<CommuResult> resultFuture = sendRequest(requests, new HttpHeaderAssembler());
+        Future<CoorCommuResult> resultFuture = sendRequest(requests, new HttpHeaderAssembler());
         try {
-            CommuResult result = resultFuture.get();
+            CoorCommuResult result = resultFuture.get();
             for (String s : result.okResultAs(TestApp.OBJECT_AS_STRING)) {
                 System.out.println(s);
             }
@@ -129,20 +142,4 @@ public class TestApp extends MinaCommunicator {
         }
     }
 
-    public void displayConnectResult(CommuResult result) {
-        if (result.isAllDone()) {
-            System.out.println("All action is done");
-        } else {
-            System.out.println("Not all action is done");
-        }
-
-        for (PeerResult2 pr : result.getResults()) {
-            if (pr.isRight()) {
-                System.out.println("Action done for" + pr.peer());
-
-            } else {
-                System.out.println("Action fail for " + pr.peer() + ", by " + pr.errorMessage());
-            }
-        }
-    }
 }

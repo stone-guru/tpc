@@ -4,111 +4,115 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.biz.BizErrorCode;
 import net.eric.tpc.biz.TransferMessage;
+import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.common.Configuration;
-import net.eric.tpc.common.ErrorMessage;
 import net.eric.tpc.common.Pair;
-import net.eric.tpc.proto.BizStrategy;
+import static net.eric.tpc.common.Pair.*;
+import net.eric.tpc.proto.CoorBizStrategy;
 import net.eric.tpc.proto.Node;
 
-public class AbcBizStrategy implements BizStrategy<TransferMessage> {
-    private Configuration config;
+public class AbcBizStrategy implements CoorBizStrategy<TransferMessage> {
+
+    private Configuration config = new Configuration();
 
     public List<Pair<Node, TransferMessage>> splitTask(TransferMessage b) {
-        return null;
+        Node boc = config.getNode("BOC").get();
+        Node ccb = config.getNode("CCB").get();
+        return ImmutableList.of(asPair(boc, b), asPair(ccb, b));
     }
 
-    public Optional<ErrorMessage> checkTransRequest(TransferMessage m) {
-        Optional<ErrorMessage> msg = checkFieldMissing(m);
-        if(msg.isPresent()){
-            return msg;
+    public ActionResult checkTransRequest(TransferMessage m) {
+        ActionResult r = checkFieldMissing(m);
+        if (!r.isOK()) {
+            return r;
         }
-        
-        if(!config.isBankNodeExists(m.getAccount().getBankCode())){
-            return Optional.of(ErrorMessage.create(BizErrorCode.NO_BANK_NODE, m.getAccount().getBankCode()));
+
+        if (!config.isBankNodeExists(m.getAccount().getBankCode())) {
+            return ActionResult.create(BizErrorCode.NO_BANK_NODE, m.getAccount().getBankCode());
         }
-        
-        if(!config.isBankNodeExists(m.getOppositeAccount().getBankCode())){
-            return Optional.of(ErrorMessage.create(BizErrorCode.NO_BANK_NODE, m.getOppositeAccount().getBankCode()));
+
+        if (!config.isBankNodeExists(m.getOppositeAccount().getBankCode())) {
+            return ActionResult.create(BizErrorCode.NO_BANK_NODE, m.getOppositeAccount().getBankCode());
         }
-        
+
         long now = new Date().getTime();
-        if(m.getLaunchTime().getTime() > now){
-            return Optional.of(ErrorMessage.create(BizErrorCode.TIME_IS_FUTURE,  m.getLaunchTime().toString()));
-        }
-        
-        if(m.getAmount().compareTo(BigDecimal.ZERO) <= 0){
-            return Optional.of(ErrorMessage.create(BizErrorCode.AMOUNT_LE_ZERO, m.getAmount().toString()));
+        if (m.getLaunchTime().getTime() > now) {
+            return ActionResult.create(BizErrorCode.TIME_IS_FUTURE, m.getLaunchTime().toString());
         }
 
-        if(m.getAccount().equals(m.getOppositeAccount())){
-            return Optional.of(ErrorMessage.create(BizErrorCode.SAME_ACCOUNT, m.getAccount().toString()));
+        if (m.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return ActionResult.create(BizErrorCode.AMOUNT_LE_ZERO, m.getAmount().toString());
         }
-        
-        return Optional.absent();
+
+        if (m.getAccount().equals(m.getOppositeAccount())) {
+            return ActionResult.create(BizErrorCode.SAME_ACCOUNT, m.getAccount().toString());
+        }
+
+        return ActionResult.OK;
     }
 
-    Optional<ErrorMessage> checkFieldMissing(TransferMessage m) {
+    private ActionResult checkFieldMissing(TransferMessage m) {
         if (m == null) {
             throw new NullPointerException("TransferMessage is null");
         }
 
         if (Strings.isNullOrEmpty(m.getTransSN())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "TransSN"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "TransSN");
         }
 
         if (m.getLaunchTime() == null) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "launchTime"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "launchTime");
         }
 
         if (Strings.isNullOrEmpty(m.getReceivingBankCode())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "ReceivingBankCode"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "ReceivingBankCode");
         }
 
         if (Strings.isNullOrEmpty(m.getVoucherNumber())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "VoucherNumber"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "VoucherNumber");
         }
 
         if (m.getAccount() == null) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "Account"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "Account");
         }
 
         if (Strings.isNullOrEmpty(m.getAccount().getBankCode())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "Account.BankCode"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "Account.BankCode");
         }
 
         if (Strings.isNullOrEmpty(m.getAccount().getNumber())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "Account.Number"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "Account.Number");
         }
 
         if (m.getOppositeAccount() == null) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "OppositeAccount"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "OppositeAccount");
         }
 
         if (Strings.isNullOrEmpty(m.getOppositeAccount().getBankCode())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "OppositeAccount.BankCode"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "OppositeAccount.BankCode");
         }
 
         if (Strings.isNullOrEmpty(m.getOppositeAccount().getNumber())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "OppositeAccount.Number"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "OppositeAccount.Number");
         }
 
         if (m.getAmount() == null) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "Amount"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "Amount");
         }
 
         if (m.getTransType() == null) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "TransType"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "TransType");
         }
 
         if (Strings.isNullOrEmpty(m.getSummary())) {
-            return Optional.of(ErrorMessage.create(BizErrorCode.MISS_FIELD, "Summary"));
+            return ActionResult.create(BizErrorCode.MISS_FIELD, "Summary");
         }
 
-        return Optional.absent();
+        return ActionResult.OK;
     }
 }

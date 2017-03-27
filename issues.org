@@ -1,0 +1,5 @@
+* TPC issues
+
+** TransStartRec . participans should under control for use java core list to prevent unserialize faile
+** MinaChannel use mina's AttritubleKey to store var to IOSession in. ROUNT_REF and NODE
+

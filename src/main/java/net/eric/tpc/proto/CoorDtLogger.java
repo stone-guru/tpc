@@ -2,7 +2,7 @@ package net.eric.tpc.proto;
 
 import java.util.List;
 
-public interface DtLogger {
+public interface CoorDtLogger {
     String generateXid();
     String recordBeginTrans(TransStartRec transNodes);
     void recordVote(String xid, Vote vote);

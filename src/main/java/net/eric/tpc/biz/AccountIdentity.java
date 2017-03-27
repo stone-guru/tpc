@@ -1,6 +1,11 @@
 package net.eric.tpc.biz;
 
-public class AccountIdentity {
+import java.io.Serializable;
+
+public class AccountIdentity implements Serializable {
+
+    private static final long serialVersionUID = -853641288345606146L;
+    
     private String bankCode;
     private String number;
 

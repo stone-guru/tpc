@@ -1,9 +1,13 @@
 package net.eric.tpc.proto;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-public class TransStartRec {
+public class TransStartRec implements Serializable {
+    
+    private static final long serialVersionUID = -2699980236712941307L;
+    
     private String xid;
     private Node coordinator;
     private List<Node> participants = Collections.emptyList();

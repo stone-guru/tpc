@@ -4,29 +4,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.net.PeerResult2;
 
-public class CommuResult {
+public class CoorCommuResult {
 
     private int wantedCount;
     private List<PeerResult2> results;
 
-    public CommuResult(int n) {
+    public CoorCommuResult(int n) {
         this.wantedCount = n;
         this.results = Lists.newArrayList();
     }
 
-    public CommuResult(CommuResult r) {
+    public CoorCommuResult(CoorCommuResult r) {
         this.wantedCount = r.wantedCount;
         this.results = ImmutableList.copyOf(r.results);
     }
 
-    public CommuResult(int n, Iterable<PeerResult2> results){
+    public CoorCommuResult(int n, Iterable<PeerResult2> results){
         this.wantedCount = n;
         this.results = ImmutableList.copyOf(results);
     }
@@ -46,7 +48,7 @@ public class CommuResult {
 
     public boolean isAllOK() {
         checkResultSize();
-        return isAllDone() && Iterables.all(this.results, CommuResult.IS_RIGHT);
+        return isAllDone() && Iterables.all(this.results, CoorCommuResult.IS_RIGHT);
     }
 
     public List<PeerResult2> okResults(){
@@ -63,6 +65,18 @@ public class CommuResult {
         return list;
     }
     
+    public ActionResult getAnError(){
+        if(!isAllDone()){
+            return ActionResult.PEER_NO_REPLY;
+        }
+        for(PeerResult2 r : this.results){
+            if(!r.isRight()){
+               return r.errorMessage();
+            }
+        }
+        return ActionResult.INNER_ERROR;
+    }
+    
     public List<Node> getSuccessNodes(){
         List<Node> list = new ArrayList<Node>();
         for(PeerResult2 r : this.results){
@@ -72,33 +86,6 @@ public class CommuResult {
         }
         return list;
     }
-    
-//    public boolean regFailure(Node node, String errorCode, String errorReason) {
-//        return this.regResult(new PeerResult2(node, errorCode, errorReason));
-//    }
-
-//    public boolean regSuccess(Node node, Object r) {
-//        assert (node != null);
-//        assert (r != null);
-//        return regResult(new PeerResult2(node, r));
-//    }
-//
-//    private boolean regResult(PeerResult2 r) {
-//        if (this.isResultExists(r.peer())) {
-//            return false;
-//        }
-//        this.results.add(r);
-//        return true;
-//    }
-//
-//    private boolean isResultExists(Node node) {
-//        for (PeerResult2 r : this.results) {
-//            if (r.peer().equals(node)) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
 
     private void checkResultSize() {
         if (this.results.size() > wantedCount) {

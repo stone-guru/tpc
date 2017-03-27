@@ -1,12 +1,14 @@
 package net.eric.tpc.net;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
@@ -16,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
-import net.eric.tpc.proto.CommuResult;
+import net.eric.tpc.proto.CoorCommuResult;
 import net.eric.tpc.proto.Node;
 
 public class CommunicationRound {
@@ -34,18 +36,21 @@ public class CommunicationRound {
     private ConcurrentMap<Node, PeerResult2> resultMap = new ConcurrentHashMap<Node, PeerResult2>();
 
     private CountDownHolder latch;
-    private ExecutorService pool;
+    private ExecutorService commuTaskPool;
+    private ExecutorService sequenceTaskPool;
 
-    public CommunicationRound(ExecutorService pool, int n, RoundType roundType, PeerResult2.Assembler assembler) {
-        this.pool = pool;
+    public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType,
+            PeerResult2.Assembler assembler) {
+        this.commuTaskPool = pool;
         this.wantedCount = n;
         this.roundType = roundType;
         this.assembler = assembler;
+        this.sequenceTaskPool = sequenceTaskPool;
         this.latch = new CountDownHolder(n);
     }
 
-    public CommunicationRound(ExecutorService pool, int n, RoundType roundType) {
-        this(pool, n, roundType, PeerResult2.ONE_ITEM_ASSEMBLER);
+    public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType) {
+        this(pool, sequenceTaskPool, n, roundType, PeerResult2.ONE_ITEM_ASSEMBLER);
     }
 
     public RoundType roundType() {
@@ -56,25 +61,33 @@ public class CommunicationRound {
         return this.wantedCount;
     }
 
-    synchronized public Future<CommuResult> getResult() {
+    synchronized public Future<CoorCommuResult> getResult() {
         if (!this.isWithinRound()) {
             return Futures.immediateFuture(this.generateResult());
         }
-        Callable<CommuResult> task = new Callable<CommuResult>() {
-            public CommuResult call() throws Exception {
+        Callable<CoorCommuResult> task = new Callable<CoorCommuResult>() {
+            public CoorCommuResult call() throws Exception {
                 CommunicationRound.this.latch.await();
                 return CommunicationRound.this.generateResult();
             }
         };
-        return pool.submit(task);
+        return commuTaskPool.submit(task);
     }
 
     public void clearLatch() {
         this.latch.clear();
     }
 
-    private CommuResult generateResult() {
-        return new CommuResult(this.wantedCount, this.resultMap.values());
+    private CoorCommuResult generateResult() {
+        final CoorCommuResult result = new CoorCommuResult(this.wantedCount, this.resultMap.values());
+        if (logger.isDebugEnabled()) {
+            List<PeerResult2> okResults = result.okResults();
+            logger.debug(" CommuResult want " + result.wantedCount() + ", got ok result " + okResults.size());
+            for (PeerResult2 pr : result.getResults()) {
+                logger.debug(pr.toString());
+            }
+        }
+        return result;
     }
 
     public boolean isWithinRound() {

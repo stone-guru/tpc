@@ -1,7 +1,6 @@
 package net.eric.tpc.coor.stub;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
@@ -14,9 +13,10 @@ import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 import org.apache.mina.transport.socket.SocketConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
@@ -83,27 +83,6 @@ public class MinaChannel {
         }
     }
 
-    public DataPacket request(DataPacket request) throws Exception {
-
-        final String s = DataPacketCodec.encodeDataPacket(request);
-
-        final WriteFuture writeFuture = session.write(s);
-        writeFuture.awaitUninterruptibly();
-        if (writeFuture.getException() != null) {
-            return new DataPacket("ERROR", "Write error: " + writeFuture.getException().getMessage());
-        }
-
-        final ReadFuture readFuture = session.read();
-        readFuture.awaitUninterruptibly();
-
-        if (readFuture.getException() != null) {
-            return new DataPacket("ERROR", "Read error: " + readFuture.getException().getMessage());
-        }
-
-        final String responseString = readFuture.getMessage().toString();
-        return DataPacketCodec.decodeDataPacket(responseString);
-    }
-
     public boolean close() throws Exception {
         CloseFuture future = session.getCloseFuture();
         future.awaitUninterruptibly(1000);
@@ -112,6 +91,7 @@ public class MinaChannel {
     }
 
     private static class SocketHandler extends IoHandlerAdapter {
+        private static final Logger logger = LoggerFactory.getLogger(SocketHandler.class);
 
         @Override
         public void sessionClosed(IoSession session) throws Exception {
@@ -137,7 +117,9 @@ public class MinaChannel {
 
         @Override
         public void messageReceived(IoSession session, Object message) throws Exception {
-            System.out.println("Got message from " + session.getServiceAddress().toString() + ", " + message);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Got message from " + session.getServiceAddress().toString() + ", " + message);
+            }
             Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
             if (opt.isPresent()) {
                 CommunicationRound round = opt.get().fst();
@@ -151,23 +133,32 @@ public class MinaChannel {
             AtomicReference<CommunicationRound> roundRef = (AtomicReference<CommunicationRound>) session
                     .getAttribute("ROUND_REF");
             if (roundRef.get() == null) {
-                System.out.println("No communication round object found, abandom result");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("No communication round object found, abandom result");
+                }
                 return Optional.absent();
             }
 
             CommunicationRound round = roundRef.get();
             if (!round.isWithinRound()) {
-                System.out.println("Not in communication round, abandom result");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Not in communication round, abandom result");
+                }
+                return Optional.absent();
             }
             if (round.roundType() != RoundType.DOUBLE_SIDE) {
-                System.out.println("This round does not require answer, abandom result");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("This round does not require answer, abandom result");
+                }
                 return Optional.absent();
             }
 
             Node node = (Node) session.getAttribute("PEER");
 
             if (node == null) {
-                System.out.println("No PEER node set");
+                if (logger.isDebugEnabled()) {
+                    logger.debug("No PEER node set");
+                }
                 return Optional.absent();
             }
             return Optional.of(Pair.asPair(round, node));

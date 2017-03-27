@@ -2,7 +2,7 @@ package net.eric.tpc.net;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.common.ErrorMessage;
+import net.eric.tpc.common.ActionResult;
 import net.eric.tpc.common.SysErrorCode;
 import net.eric.tpc.proto.Node;
 
@@ -20,18 +20,18 @@ public class PeerResult2 {
     }
 
     public static PeerResult2 refuse(Node node, String code, String reason) {
-        return new PeerResult2(node, State.REFUSED, null, new ErrorMessage(code, reason));
+        return new PeerResult2(node, State.REFUSED, null, new ActionResult(code, reason));
     }
 
-    public static PeerResult2 refuse(Node node, ErrorMessage error) {
+    public static PeerResult2 refuse(Node node, ActionResult error) {
         return new PeerResult2(node, State.REFUSED, null, error);
     }
 
     public static PeerResult2 fail(Node node, String code, String reason) {
-        return new PeerResult2(node, State.FAILED, null, new ErrorMessage(code, reason));
+        return new PeerResult2(node, State.FAILED, null, new ActionResult(code, reason));
     }
 
-    public static PeerResult2 fail(Node node, ErrorMessage error) {
+    public static PeerResult2 fail(Node node, ActionResult error) {
         return new PeerResult2(node, State.FAILED, null, error);
     }
 
@@ -67,10 +67,10 @@ public class PeerResult2 {
     };
     private Node peer;
     private State state;
-    private ErrorMessage error;
+    private ActionResult error;
     private Object result;
 
-    private PeerResult2(Node peer, State state, Object result, ErrorMessage error) {
+    private PeerResult2(Node peer, State state, Object result, ActionResult error) {
         this.peer = peer;
         this.state = state;
         this.result = result;
@@ -110,7 +110,7 @@ public class PeerResult2 {
         return this.result;
     }
 
-    public ErrorMessage errorMessage() {
+    public ActionResult errorMessage() {
         if (!this.hasError()) {
             throw new IllegalStateException("This PeerResult is right, has no errorCode");
         }
@@ -131,4 +131,10 @@ public class PeerResult2 {
         return this.error.getDescription();
     }
 
+    @Override
+    public String toString() {
+        return "PeerResult2 [peer=" + peer + ", state=" + state + ", error=" + error + ", result=" + result + "]";
+    }
+
+    
 }

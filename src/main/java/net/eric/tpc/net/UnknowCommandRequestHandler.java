@@ -1,6 +1,6 @@
 package net.eric.tpc.net;
 
-import net.eric.tpc.proto.TransactionState;
+import net.eric.tpc.proto.PeerTransactionState;
 
 public class UnknowCommandRequestHandler implements RequestHandler {
 
@@ -8,7 +8,7 @@ public class UnknowCommandRequestHandler implements RequestHandler {
         return null;
     }
 
-    public DataPacket process(DataPacket request, TransactionState state) {
+    public DataPacket process(DataPacket request, PeerTransactionState state) {
         return new DataPacket(DataPacket.BAD_COMMNAD, request.getCode());
     }
 

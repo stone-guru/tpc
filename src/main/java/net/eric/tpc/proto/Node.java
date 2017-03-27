@@ -1,8 +1,11 @@
 package net.eric.tpc.proto;
 
-public class Node {
+import java.io.Serializable;
 
+public class Node implements Serializable{
 
+    private static final long serialVersionUID = -196279432426379129L;
+    
     private String address;
     private int port;
 

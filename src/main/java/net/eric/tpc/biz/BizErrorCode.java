@@ -11,6 +11,6 @@ public class BizErrorCode {
     
     public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
     public static final String REFUSE_TRANS = "REFUSE_TRANS";
-    
+    public static final String REFUSE_COMMIT = "REFUSE_COMMIT";
     private BizErrorCode(){}
 }
