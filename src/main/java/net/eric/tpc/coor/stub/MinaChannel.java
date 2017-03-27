@@ -26,31 +26,52 @@ import net.eric.tpc.proto.Node;
 
 public class MinaChannel {
     private static final Logger logger = LoggerFactory.getLogger(MinaChannel.class);
-    
-    private SocketConnector connector;
+
+    private static SocketConnector sharedConnector = null;
+
+    synchronized public static void initSharedConnector(ProtocolCodecFactory codecFactory) {
+        if (MinaChannel.sharedConnector != null) {
+            throw new IllegalStateException("sharedConnector has been initialized");
+        }
+
+        SocketConnector connector = new NioSocketConnector();
+        connector.setConnectTimeoutMillis(3000);
+        DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();
+        filterChain.addLast("codec", new ProtocolCodecFilter(codecFactory));
+        // connector.getSessionConfig().setUseReadOperation(true);
+        connector.setHandler(new SocketHandler());
+        MinaChannel.sharedConnector = connector;
+    }
+
+    public static SocketConnector getSharedConnector() {
+        if (MinaChannel.sharedConnector == null) {
+            throw new IllegalStateException("sharedConnector not initialized, call InitSharedConnector first");
+        }
+        return MinaChannel.sharedConnector;
+    }
+
+    public static void disposeConnector() {
+        if (sharedConnector != null) {
+            if (!sharedConnector.isDisposed()) {
+                sharedConnector.dispose();
+            }
+        }
+    }
+
     private IoSession session;
     private Node node;
     private AtomicReference<CommunicationRound> roundRef;
-    private ProtocolCodecFactory codecFactory;
-    
-    public MinaChannel(Node node, ProtocolCodecFactory codecFactory, AtomicReference<CommunicationRound> roundRef) {
+
+    public MinaChannel(Node node, AtomicReference<CommunicationRound> roundRef) {
         this.node = node;
         this.roundRef = roundRef;
-        this.codecFactory = codecFactory;
     }
 
     public boolean connect() throws Exception {
-        this.connector = new NioSocketConnector();
-        this.connector.setConnectTimeoutMillis(3000);
-        DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();
-        filterChain.addLast("codec", new ProtocolCodecFilter(this.codecFactory)); 
-        // connector.getSessionConfig().setUseReadOperation(true);
-        this.connector.setHandler(new SocketHandler());
+        SocketConnector connector = MinaChannel.getSharedConnector();
         ConnectFuture future = connector.connect(new InetSocketAddress(node.getAddress(), node.getPort()));
-        //System.out.println("Ask connect");
         future.awaitUninterruptibly();
         this.session = future.getSession();
-        //System.out.println("Connect ok");
         session.setAttribute("ROUND_REF", this.roundRef);
         session.setAttribute("PEER", this.node);
         return true;
@@ -64,10 +85,10 @@ public class MinaChannel {
         return this.node;
     }
 
-    public void sendMessage(Object request){
+    public void sendMessage(Object request) {
         this.sendMessage(request, false);
     }
-    
+
     public void sendMessage(Object request, boolean sendOnly) {
         final WriteFuture writeFuture = session.write(request);
         writeFuture.awaitUninterruptibly();
@@ -76,20 +97,18 @@ public class MinaChannel {
                 CommunicationRound round = roundRef.get();
                 round.regFailure(this.node, "ERROR_SEND", writeFuture.getException().getMessage());
             }
-        }else if (sendOnly){
+        } else if (sendOnly) {
             CommunicationRound round = roundRef.get();
             round.regMessage(node, true);
         }
     }
 
-    public boolean close() throws Exception {
+    public void close() throws Exception {
         if (logger.isDebugEnabled()) {
             logger.debug("MinaChannel.close entry");
         }
         CloseFuture future = session.getCloseFuture();
         future.awaitUninterruptibly(2000);
-        connector.dispose();
-        return true;
     }
 
     private static class SocketHandler extends IoHandlerAdapter {
@@ -108,7 +127,6 @@ public class MinaChannel {
 
         @Override
         public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
-            // TODO Auto-generated method stub
             super.sessionIdle(session, status);
         }
 

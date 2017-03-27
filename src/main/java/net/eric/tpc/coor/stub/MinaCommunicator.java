@@ -56,18 +56,16 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
     protected ExecutorService commuTaskPool;
     private ExecutorService sequenceTaskPool;
     protected AtomicReference<CommunicationRound> roundRef = new AtomicReference<CommunicationRound>(null);
-    private ProtocolCodecFactory codecFactory;
 
     public MinaCommunicator(ProtocolCodecFactory codecFactory) {
-        this( Executors.newCachedThreadPool(),  Executors.newSingleThreadExecutor(), codecFactory);
+        this(Executors.newCachedThreadPool(), Executors.newSingleThreadExecutor());
     }
 
-    public MinaCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool, ProtocolCodecFactory codecFactory){
+    public MinaCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool) {
         this.commuTaskPool = commuTaskPool;
         this.sequenceTaskPool = sequenceTaskPool;
-        this.codecFactory = codecFactory;
     }
-    
+
     @Override
     public ActionResult connectPanticipants(List<Node> nodes) {
         Either<ActionResult, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes);
@@ -129,7 +127,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
 
     public void notifyDecision(String xid, Decision decision, List<Node> nodes) {
         List<Pair<Node, Object>> requests = Lists.newArrayList();
-        
+
         for (Node node : nodes) {
             String code = null;
             if (decision == Decision.COMMIT) {
@@ -139,11 +137,11 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
             } else {
                 throw new UnImplementedException();
             }
-            
+
             final DataPacket packet = new DataPacket(DataPacket.TRANS_DECISION, xid, code);
             requests.add(asPair(node, (Object) packet));
         }
-        
+
         @SuppressWarnings("unused")
         Future<CoorCommuResult> dontCare = this.sendMessage(requests);
     }
@@ -170,7 +168,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
                                 channel.close();
                             } catch (Exception e) {
                                 logger.error("close channel error", e);
-                            } 
+                            }
                         }
                     };
                     commuTaskPool.submit(closeTask);
@@ -237,8 +235,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
                 for (final Node node : nodes) {
                     Runnable task = new Runnable() {
                         public void run() {
-                            MinaChannel channel = new MinaChannel(node, MinaCommunicator.this.codecFactory,
-                                    MinaCommunicator.this.roundRef);
+                            MinaChannel channel = new MinaChannel(node, MinaCommunicator.this.roundRef);
                             try {
                                 channel.connect();
                                 round.regMessage(node, channel);
@@ -295,4 +292,5 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         }
         return Either.right(map);
     }
+
 }
