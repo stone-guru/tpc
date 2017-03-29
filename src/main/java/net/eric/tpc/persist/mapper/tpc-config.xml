@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <settings>
+    <setting name="logImpl" value="SLF4J"/>
+  </settings>
+  
+  <typeAliases>
+    <typeAlias alias="Pair" type="net.eric.tpc.common.Pair"/>  
+    <typeAlias alias="Decision" type="net.eric.tpc.proto.Decision"/>  
+    <typeAlias alias="Vote" type="net.eric.tpc.proto.Vote"/>  
+    <typeAlias alias="Pair" type="net.eric.tpc.common.Pair"/>  
+    <typeAlias alias="DtRecord" type="net.eric.tpc.entity.DtRecord"/>
+    <typeAlias alias="Account" type="net.eric.tpc.entity.Account"/>
+    <typeAlias alias="TransferBill" type="net.eric.tpc.entity.TransferBill"/>
+  </typeAliases>
+  
+  <typeHandlers>
+    <typeHandler handler="net.eric.tpc.persist.VoteTypeHandler" 
+                javaType="net.eric.tpc.proto.Vote"
+                jdbcType="CHAR"/>
+    <typeHandler handler="net.eric.tpc.persist.DecisionTypeHandler" 
+                javaType="net.eric.tpc.proto.Decision"
+                jdbcType="CHAR"/>                
+    <typeHandler handler="net.eric.tpc.persist.AccountTypeHandler" 
+                javaType="net.eric.tpc.entity.AccountType"
+                jdbcType="CHAR"/>
+  </typeHandlers>
+  
+  <environments default="default">
+    <environment id="default">
+      <transactionManager type="JDBC">
+      </transactionManager>
+      <dataSource type="POOLED">
+        <property name="driver" value="org.h2.Driver"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="sa"/>
+        <property name="password" value=""/>
+        
+      </dataSource>
+    </environment>
+  </environments>
+
+  <mappers>
+    <mapper resource="net/eric/tpc/persist/mapper/DatabaseInitMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/AccountMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/TransferBillMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>
+  </mappers>
+  
+</configuration>

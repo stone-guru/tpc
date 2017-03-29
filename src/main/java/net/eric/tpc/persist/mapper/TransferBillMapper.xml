@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.eric.tpc.persist.TransferBillDao">
+  
+  <insert id="insert" parameterType="TransferBill">
+    INSERT INTO TRANSFER_BILL(
+      TRANS_SN,
+      LAUNCH_TIME,
+      RECEIVING_BANK_CODE,
+      ACCT_NUMBER,
+      ACCT_BANK_CODE,
+      OPP_ACCT_NUMBER,
+      OPP_ACCT_BANK_CODE,
+      AMOUNT,
+      SUMMARY,
+      VOUCHER_NUMBER
+    )VALUES(
+	#{transSN},
+        #{launchTime},
+	#{receivingBankCode},
+        #{account.number},
+        #{account.bankCode},
+	#{oppositeAccount.number},
+        #{oppositeAccount.bankCode},
+        #{amount},
+        #{summary},
+        #{voucherNumber}
+    )
+  </insert>
+
+  <update id="updateLock" parameterType="Pair">
+    UPDATE TRANSFER_BILL
+    SET LOCKING_TRANS = #{snd}
+    WHERE TRANS_SN = #{fst}
+  </update>
+
+</mapper>

@@ -1,83 +1,140 @@
 package net.eric.tpc.net;
 
-import net.eric.tpc.proto.Node;
+import com.google.common.base.Optional;
+
+import net.eric.tpc.common.ActionStatus;
+import net.eric.tpc.common.Node;
+import net.eric.tpc.common.SysErrorCode;
 
 public class PeerResult {
-    private boolean hasError;
-    private boolean isDone;
-    private String errorCode;
-    private String errorReason;
-    private Object result;
+    public static enum State {
+        PENDING, APPROVED, REFUSED, FAILED
+    };
+
+    public static PeerResult pending(Node node, Object result) {
+        return new PeerResult(node, State.PENDING, result, null);
+    }
+
+    public static PeerResult approve(Node node, Object result) {
+        return new PeerResult(node, State.APPROVED, result, null);
+    }
+
+    public static PeerResult refuse(Node node, String code, String reason) {
+        return new PeerResult(node, State.REFUSED, null, new ActionStatus(code, reason));
+    }
+
+    public static PeerResult refuse(Node node, ActionStatus error) {
+        return new PeerResult(node, State.REFUSED, null, error);
+    }
+
+    public static PeerResult fail(Node node, String code, String reason) {
+        return new PeerResult(node, State.FAILED, null, new ActionStatus(code, reason));
+    }
+
+    public static PeerResult fail(Node node, ActionStatus error) {
+        return new PeerResult(node, State.FAILED, null, error);
+    }
+
+    public static interface Assembler {
+        PeerResult start(Node node, Object message);
+
+        PeerResult fold(Node node, PeerResult previous, Object message);
+
+        PeerResult finish(Node node, Optional<PeerResult> previous);
+    }
+
+    public static abstract class OneItemAssembler implements Assembler {
+        @Override
+        public PeerResult fold(Node node, PeerResult previous, Object message) {
+            return previous;
+        }
+
+        @Override
+        public PeerResult finish(Node node, Optional<PeerResult> previous) {
+            if (previous.isPresent()) {
+                return previous.get();
+            } else {
+                return PeerResult.fail(node, SysErrorCode.NO_RESPONSE, "no data from " + node.toString());
+            }
+        }
+    }
+
+    public static final Assembler ONE_ITEM_ASSEMBLER = new OneItemAssembler() {
+        @Override
+        public PeerResult start(Node node, Object message) {
+            return PeerResult.approve(node, message);
+        }
+    };
     private Node peer;
+    private State state;
+    private ActionStatus error;
+    private Object result;
 
-    public PeerResult(Node peer, Object result){
-        this(peer, result, true);
-    }
-    
-    public PeerResult(Node peer, Object result, boolean isDone) {
-        assert (peer != null);
-        if (result == null) {
-            throw new NullPointerException("result can not be null");
-        }
-
-        this.hasError = false;
-        this.isDone = isDone;
+    private PeerResult(Node peer, State state, Object result, ActionStatus error) {
         this.peer = peer;
+        this.state = state;
         this.result = result;
+        this.error = error;
     }
 
-    public PeerResult(Node peer, String errorCode, String errorReason) {
-        if (errorCode == null) {
-            throw new NullPointerException("errorCode can not be null");
-        }
-
-        this.hasError = true;
-        this.isDone = true;
-        this.peer = peer;
-        this.errorCode = errorCode;
-        this.errorReason = errorReason;
+    public boolean hasError() {
+        return this.state == State.REFUSED || this.state == State.FAILED;
     }
 
-    public PeerResult asDone(){
-        if(this.hasError){
+    public boolean isDone() {
+        return this.state != State.PENDING;
+    }
+
+    public boolean isRight() {
+        return this.state == State.APPROVED;
+    }
+
+    public PeerResult asDone() {
+        if (this.hasError()) {
             throw new IllegalStateException("PeerResult contain error, can not be regard as Done");
         }
-        if(this.isDone){
+        if (this.isDone()) {
             return this;
         }
-        return new PeerResult(this.peer, this.result);
+        return PeerResult.approve(this.peer, this.result);
     }
-    
+
     public Node peer() {
         return this.peer;
     }
 
-    public boolean isDone(){
-        return this.isDone;
-    }
-    
-    public boolean isRight() {
-        return !this.hasError && this.isDone;
-    }
-
-    public String errorCode() {
-        if (!this.hasError) {
-            throw new IllegalStateException("This CommuResult is right, has no errorCode");
-        }
-        return this.errorCode;
-    }
-
-    public String errorReason() {
-        if (!this.hasError) {
-            throw new IllegalStateException("This CommuResult is right, has no errorReason");
-        }
-        return this.errorReason;
-    }
-
     public Object result() {
-        if (this.hasError) {
-            throw new IllegalStateException("This CommuResult is not right, has no result");
+        if (this.hasError()) {
+            throw new IllegalStateException("This PeerResult is not right, has no result");
         }
         return this.result;
     }
+
+    public ActionStatus errorMessage() {
+        if (!this.hasError()) {
+            throw new IllegalStateException("This PeerResult is right, has no errorCode");
+        }
+        return this.error;
+    }
+
+    public String errorCode() {
+        if (!this.hasError()) {
+            throw new IllegalStateException("This PeerResult is right, has no errorCode");
+        }
+        return this.error.getCode();
+    }
+
+    public String errorDescription() {
+        if (!this.hasError()) {
+            throw new IllegalStateException("This PeerResult is right, has no errorDescription");
+        }
+        return this.error.getDescription();
+    }
+
+    @Override
+    public String toString() {
+        return "PeerResult2 [peer=" + peer + ", state=" + state + ", error=" + error + ", result=" + result + "]";
+    }
+
+    
 }

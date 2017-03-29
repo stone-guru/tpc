@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.eric.tpc.bankserver.persist.DatabaseInit">
+
+    <update id="createDtTable">
+      CREATE TABLE DT_RECORD(
+      XID          VARCHAR(24) NOT NULL,
+      START_TIME   TIMESTAMP NOT NULL,
+      COORDINATOR  VARCHAR(24) NOT NULL, 
+      PARTICIPANTS VARCHAR(128) NOT NULL,
+      START_2PC    BOOL NOT NULL,
+      VOTE         VARCHAR(8),
+      VOTE_TIME    TIMESTAMP,
+      DECISION     VARCHAR(8),
+      FINISH_TIME  TIMESTAMP,
+      BIZ_MESSSGE  BINARY(4096),
+      PRIMARY KEY (XID))
+    </update>
+    
+  <update id="createAccountTable">
+    CREATE TABLE ACCOUNT(
+      ACCT_NUMBER VARCHAR(24) NOT NULL,
+      ACCT_NAME  VARCHAR(24) NOT NULL,
+      ACCT_TYPE  VARCHAR(8) NOT NULL,
+      BANK_CODE VARCHAR(12) NOT NULL,
+      OVERDRAFT_LIMIT NUMERIC(16,2) NOT NULL,
+      BALANCE NUMERIC(16,2) NOT NULL,
+      OPENING_TIME TIMESTAMP,
+      LAST_MODI_TIME TIMESTAMP,
+      LOCKING_TRANS VARCHAR(24),
+      PRIMARY KEY (ACCT_NUMBER))
+  </update>
+
+   <update id="createTransferMessageTable">
+    CREATE TABLE TRANSFER_BILL(
+      TRANS_SN VARCHAR(24) NOT NULL,
+      LAUNCH_TIME TIMESTAMP NOT NULL,
+      RECEIVING_BANK_CODE VARCHAR(12) NOT NULL,
+      ACCT_NUMBER VARCHAR(24) NOT NULL,
+      ACCT_BANK_CODE VARCHAR(12) NOT NULL,
+      OPP_ACCT_NUMBER VARCHAR(24) NOT NULL,
+      OPP_ACCT_BANK_CODE VARCHAR(12) NOT NULL,
+      AMOUNT NUMERIC(16,2) NOT NULL,
+      SUMMARY VARCHAR(48) NOT NULL,
+      VOUCHER_NUMBER VARCHAR(24) NOT NULL,
+      LOCKING_TRANS VARCHAR(24),
+      PRIMARY KEY(TRANS_SN))
+  </update>
+
+</mapper>

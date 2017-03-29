@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.eric.tpc.persist.DtRecordDao">
+  
+  <resultMap type="DtRecord" id="dtRecord">
+    <id column="XID" property="xid"/>
+    <result column="START_TIME" property="startTime"/>
+    <result column="COORDINATOR" property="coordinator"/>
+    <result column="PARTICIPANTS" property="pariticipants"/>
+    <result column="START_2PC" property="start2PC"/>
+    <result column="VOTE" property="vote"/>
+    <result column="VOTE_TIME" property="voteTime"/>
+    <result column="DECISION" property="decision"/>
+    <result column="FINISH_TIME" property="finishTime"/>
+    <result column="BIZ_MESSSGE" property="bizMessage"/>
+  </resultMap>
+  
+  <insert id="insert" parameterType="DtRecord">
+    INSERT INTO DT_RECORD
+       (XID, START_TIME, COORDINATOR, PARTICIPANTS, START_2PC, BIZ_MESSSGE)
+    VALUES
+       (#{xid}, #{startTime}, #{coordinator}, #{pariticipants}, #{start2PC}, #{bizMessage})
+  </insert>
+
+  <update id="updateVote" parameterType="DtRecord">
+    UPDATE DT_RECORD
+    SET VOTE = #{vote},
+        VOTE_TIME = #{voteTime}
+    WHERE XID = #{xid}
+  </update>
+  
+  <update id="updateDecision" parameterType="DtRecord">
+    UPDATE DT_RECORD
+    SET DECISION = #{decision},
+        FINISH_TIME = #{finishTime}
+    WHERE XID = #{xid}
+  </update>
+  
+  <select id="selectDecision" resultType="Decision" parameterType="String">
+    SELECT DECISION
+    FROM DT_RECORD 
+    WHERE XID = #{xid}
+  </select>
+  
+</mapper>

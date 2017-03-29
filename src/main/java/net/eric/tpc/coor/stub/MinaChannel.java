@@ -19,10 +19,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.common.Node;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
-import net.eric.tpc.proto.Node;
 
 public class MinaChannel {
     private static final Logger logger = LoggerFactory.getLogger(MinaChannel.class);

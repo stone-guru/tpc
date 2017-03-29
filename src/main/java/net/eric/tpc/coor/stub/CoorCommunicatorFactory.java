@@ -6,14 +6,14 @@ import java.util.concurrent.Executors;
 
 import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
 
-import net.eric.tpc.biz.TransferMessage;
-import net.eric.tpc.common.ActionResult;
+import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.Either;
+import net.eric.tpc.common.Node;
+import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.CommunicatorFactory;
-import net.eric.tpc.proto.CoorCommunicator;
-import net.eric.tpc.proto.Node;
+import net.eric.tpc.proto.Communicator;
 
-public class CoorCommunicatorFactory implements CommunicatorFactory<TransferMessage> {
+public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill> {
 
     private ExecutorService commuTaskPool = Executors.newCachedThreadPool();
     private ExecutorService sequenceTaskPool = Executors.newSingleThreadExecutor();
@@ -23,10 +23,10 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferMess
     }
 
     @Override
-    public Either<ActionResult, CoorCommunicator<TransferMessage>> getCommunicator(List<Node> peers) {
-        CoorCommunicator<TransferMessage> communicator = new MinaCommunicator(this.commuTaskPool,
+    public Either<ActionStatus, Communicator<TransferBill>> getCommunicator(List<Node> peers) {
+        Communicator<TransferBill> communicator = new MinaCommunicator(this.commuTaskPool,
                 this.sequenceTaskPool);
-        ActionResult result = communicator.connectPanticipants(peers);
+        ActionStatus result = communicator.connectPanticipants(peers);
         if (result.isOK()) {
             return Either.right(communicator);
         }
@@ -34,7 +34,7 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferMess
     }
 
     @Override
-    public void releaseCommunicator(CoorCommunicator<TransferMessage> communicator) {
+    public void releaseCommunicator(Communicator<TransferBill> communicator) {
         communicator.close();
     }
 

@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import net.eric.tpc.biz.TransferMessage;
+import net.eric.tpc.entity.TransferBill;
 
 public class TransServiceStub {
     private Socket socket ;
@@ -17,7 +17,7 @@ public class TransServiceStub {
          return true;
     }
 
-    public String request(TransferMessage msg) throws Exception {
+    public String request(TransferBill msg) throws Exception {
         OutputStream os = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(os);
         

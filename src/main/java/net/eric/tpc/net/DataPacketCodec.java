@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.eric.tpc.biz.TransferMessage;
-import net.eric.tpc.proto.Node;
+import net.eric.tpc.common.Node;
+import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.TransStartRec;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -32,13 +32,13 @@ public class DataPacketCodec {
         return transNodes;
     }
 
-    public static String encodeTransferMessage(TransferMessage msg){
+    public static String encodeTransferMessage(TransferBill msg){
         return JSONObject.fromObject(msg).toString();
     }
     
-    public static TransferMessage decodeTransferMessage(String s){
+    public static TransferBill decodeTransferMessage(String s){
         JSONObject obj = JSONObject.fromObject(s);
-        return (TransferMessage) JSONObject.toBean(obj, TransferMessage.class);
+        return (TransferBill) JSONObject.toBean(obj, TransferBill.class);
     }
     
     public static String encodeDataPacket(DataPacket packet) {

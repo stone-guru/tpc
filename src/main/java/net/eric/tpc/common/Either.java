@@ -1,12 +1,19 @@
 package net.eric.tpc.common;
 
-public abstract class Either<A, B> {
+public interface Either<A, B> {
 
     public static <L, R> Either<L, R> right(R value) {
+        if(value == null){
+            throw new NullPointerException("Either.right should not be null");
+        }
         return new Right<L, R>(value);
     }
 
     public static <L, R> Either<L, R> left(L value) {
+        if(value == null){
+            throw new NullPointerException("Either.left should not be null");
+        }
+
         return new Left<L, R>(value);
     }
 
@@ -18,19 +25,17 @@ public abstract class Either<A, B> {
         }
     }
 
-    private Either() {
-    }
 
-    public abstract boolean isRight();
+    boolean isRight();
 
-    public abstract A getLeft();
+    A getLeft();
 
-    public abstract B getRight();
+    B getRight();
 
-    public final static class Left<L, R> extends Either<L, R> {
+    static class Left<L, R> implements Either<L, R> {
         private L value;
 
-        private Left(L v) {
+        public Left(L v) {
             this.value = v;
         }
 
@@ -50,10 +55,10 @@ public abstract class Either<A, B> {
         }
     }
 
-    public final static class Right<L, R> extends Either<L, R> {
+    static class Right<L, R> implements Either<L, R> {
         private R value;
 
-        private Right(R v) {
+        public Right(R v) {
             this.value = v;
         }
 

@@ -2,19 +2,19 @@ package net.eric.tpc.common;
 
 public class BankException extends Exception {
     private static final long serialVersionUID = 1L;
-    private ActionResult errorMessage;
+    private ActionStatus errorMessage;
 
-    public BankException(ActionResult errorMessage) {
+    public BankException(ActionStatus errorMessage) {
         super(errorMessage.toString());
         this.errorMessage = errorMessage;
     }
 
     public BankException(Throwable cause) {
         super(cause);
-        this.errorMessage = new ActionResult("INNER_EXCEPTION", cause.getMessage());
+        this.errorMessage = new ActionStatus("INNER_EXCEPTION", cause.getMessage());
     }
 
-    public ActionResult errorMessage() {
+    public ActionStatus errorMessage() {
         return this.errorMessage;
     }
 }

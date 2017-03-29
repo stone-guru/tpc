@@ -4,17 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.eric.tpc.common.ActionResult;
-import net.eric.tpc.common.Either;
+import net.eric.tpc.common.ActionStatus;
+import net.eric.tpc.common.Maybe;
+import net.eric.tpc.common.Node;
 import net.eric.tpc.common.Pair;
 
 public interface CoorBizStrategy<B> {
 
-    Future<ActionResult> canCommit(B b);
+    Future<ActionStatus> prepareCommit(String xid, B b);
     
-    Either<ActionResult, TaskPartition<B>> splitTask(B b);
+    Maybe<TaskPartition<B>> splitTask(String xid, B b);
 
-    Future<ActionResult> commit(B b);
+    Future<ActionStatus> commit(B b);
 
     public static class TaskPartition<B> {
         private B coorTask;

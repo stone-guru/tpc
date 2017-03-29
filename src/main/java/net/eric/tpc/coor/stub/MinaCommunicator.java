@@ -19,24 +19,24 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
-import net.eric.tpc.biz.BizErrorCode;
-import net.eric.tpc.biz.TransferMessage;
-import net.eric.tpc.common.ActionResult;
+import net.eric.tpc.biz.BizCode;
+import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.Either;
+import net.eric.tpc.common.Node;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.common.ShouldNotHappenException;
 import net.eric.tpc.common.UnImplementedException;
+import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.DataPacket;
-import net.eric.tpc.net.PeerResult2;
-import net.eric.tpc.proto.CoorCommuResult;
-import net.eric.tpc.proto.CoorCommunicator;
+import net.eric.tpc.net.PeerResult;
+import net.eric.tpc.proto.RoundResult;
+import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.Decision;
-import net.eric.tpc.proto.Node;
 import net.eric.tpc.proto.TransStartRec;
 
-public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
+public class MinaCommunicator implements Communicator<TransferBill> {
 
     private static final Logger logger = LoggerFactory.getLogger(MinaCommunicator.class);
 
@@ -67,41 +67,41 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
     }
 
     @Override
-    public ActionResult connectPanticipants(List<Node> nodes) {
-        Either<ActionResult, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes);
+    public ActionStatus connectPanticipants(List<Node> nodes) {
+        Either<ActionStatus, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes);
         if (either.isRight()) {
             this.channelMap = either.getRight();
-            return ActionResult.OK;
+            return ActionStatus.OK;
         }
         return either.getLeft();
     }
 
     @Override
-    public Future<CoorCommuResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, TransferMessage>> tasks) {
+    public Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, TransferBill>> tasks) {
         List<Pair<Node, Object>> requests = Lists.newArrayList();
-        for (Pair<Node, TransferMessage> p : tasks) {
+        for (Pair<Node, TransferBill> p : tasks) {
             final DataPacket packet = new DataPacket(DataPacket.BEGIN_TRANS, transStartRec, p.snd());
             requests.add(asPair(p.fst(), (Object) packet));
         }
         return this.sendRequest(requests, MinaCommunicator.BEGIN_TRANS_ASSEMBLER);
     }
 
-    private static final PeerResult2.Assembler BEGIN_TRANS_ASSEMBLER = new PeerResult2.OneItemAssembler() {
+    private static final PeerResult.Assembler BEGIN_TRANS_ASSEMBLER = new PeerResult.OneItemAssembler() {
         @Override
-        public PeerResult2 start(Node node, Object message) {
+        public PeerResult start(Node node, Object message) {
             final DataPacket packet = (DataPacket) message;
             if (DataPacket.BEGIN_TRANS_ANSWER.equals(packet.getCode())) {
                 if (DataPacket.YES.equals(packet.getParam1())) {
-                    return PeerResult2.approve(node, true);
+                    return PeerResult.approve(node, true);
                 } else if (DataPacket.NO.equals(packet.getParam1())) {
-                    return PeerResult2.refuse(node, BizErrorCode.REFUSE_TRANS, packet.getParam2().toString());
+                    return PeerResult.refuse(node, BizCode.REFUSE_TRANS, packet.getParam2().toString());
                 }
             }
-            return PeerResult2.fail(node, BizErrorCode.PEER_PRTC_ERROR, packet.toString());
+            return PeerResult.fail(node, BizCode.PEER_PRTC_ERROR, packet.toString());
         }
     };
 
-    public Future<CoorCommuResult> gatherVote(String xid, List<Node> nodes) {
+    public Future<RoundResult> gatherVote(String xid, List<Node> nodes) {
         List<Pair<Node, Object>> requests = Lists.newArrayList();
         for (Node node : nodes) {
             final DataPacket packet = new DataPacket(DataPacket.VOTE_REQ, xid, "");
@@ -110,18 +110,18 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         return this.sendRequest(requests, MinaCommunicator.VOTE_REQ_ASSEMBLER);
     }
 
-    private static final PeerResult2.Assembler VOTE_REQ_ASSEMBLER = new PeerResult2.OneItemAssembler() {
+    private static final PeerResult.Assembler VOTE_REQ_ASSEMBLER = new PeerResult.OneItemAssembler() {
         @Override
-        public PeerResult2 start(Node node, Object message) {
+        public PeerResult start(Node node, Object message) {
             final DataPacket packet = (DataPacket) message;
             if (DataPacket.VOTE_ANSWER.equals(packet.getCode())) {
                 if (DataPacket.YES.equals(packet.getParam1())) {
-                    return PeerResult2.approve(node, true);
+                    return PeerResult.approve(node, true);
                 } else if (DataPacket.NO.equals(packet.getParam1())) {
-                    return PeerResult2.refuse(node, BizErrorCode.REFUSE_COMMIT, packet.getParam2().toString());
+                    return PeerResult.refuse(node, BizCode.REFUSE_COMMIT, packet.getParam2().toString());
                 }
             }
-            return PeerResult2.fail(node, BizErrorCode.PEER_PRTC_ERROR, packet.toString());
+            return PeerResult.fail(node, BizCode.PEER_PRTC_ERROR, packet.toString());
         }
     };
 
@@ -143,7 +143,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         }
 
         @SuppressWarnings("unused")
-        Future<CoorCommuResult> dontCare = this.sendMessage(requests);
+        Future<RoundResult> dontCare = this.sendMessage(requests);
     }
 
     public void close() {
@@ -182,20 +182,20 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         return this.sequenceTaskPool.submit(closeAction);
     }
 
-    public Future<CoorCommuResult> sendRequest(List<Pair<Node, Object>> requests) {
-        return this.sendRequest(requests, PeerResult2.ONE_ITEM_ASSEMBLER);
+    public Future<RoundResult> sendRequest(List<Pair<Node, Object>> requests) {
+        return this.sendRequest(requests, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
-    public Future<CoorCommuResult> sendRequest(List<Pair<Node, Object>> requests, PeerResult2.Assembler assembler) {
+    public Future<RoundResult> sendRequest(List<Pair<Node, Object>> requests, PeerResult.Assembler assembler) {
         return this.communicate(requests, RoundType.DOUBLE_SIDE, assembler);
     }
 
-    private Future<CoorCommuResult> sendMessage(List<Pair<Node, Object>> messages) {
-        return this.communicate(messages, RoundType.SINGLE_SIDE, PeerResult2.ONE_ITEM_ASSEMBLER);
+    private Future<RoundResult> sendMessage(List<Pair<Node, Object>> messages) {
+        return this.communicate(messages, RoundType.SINGLE_SIDE, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
-    private Future<CoorCommuResult> communicate(final List<Pair<Node, Object>> messages, final RoundType roundType,
-            PeerResult2.Assembler assembler) {
+    private Future<RoundResult> communicate(final List<Pair<Node, Object>> messages, final RoundType roundType,
+            PeerResult.Assembler assembler) {
         for (final Pair<Node, Object> p : messages) {
             if (!this.channelMap.containsKey(p.fst())) {
                 throw new IllegalStateException("Given node not connected first " + p.fst());
@@ -225,9 +225,9 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         return round.getResult();
     }
 
-    private Future<CoorCommuResult> connectAll(final List<Node> nodes) {
+    private Future<RoundResult> connectAll(final List<Node> nodes) {
         final CommunicationRound round = this.newRound(nodes.size(), RoundType.SINGLE_SIDE,
-                PeerResult2.ONE_ITEM_ASSEMBLER);
+                PeerResult.ONE_ITEM_ASSEMBLER);
         Runnable startAction = new Runnable() {
             @Override
             public void run() {
@@ -256,7 +256,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         return round.getResult();
     }
 
-    private CommunicationRound newRound(int peerCount, RoundType roundType, PeerResult2.Assembler assembler) {
+    private CommunicationRound newRound(int peerCount, RoundType roundType, PeerResult.Assembler assembler) {
         CommunicationRound round = new CommunicationRound(this.commuTaskPool, this.sequenceTaskPool, peerCount,
                 roundType, assembler);
         return round;
@@ -266,15 +266,15 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         closeChannels(this.channelMap.values());
     }
 
-    private Either<ActionResult, Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes) {
-        Future<CoorCommuResult> future = connectAll(nodes);
-        ActionResult ar = CoorCommuResult.force(future);
+    private Either<ActionStatus, Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes) {
+        Future<RoundResult> future = connectAll(nodes);
+        ActionStatus ar = RoundResult.force(future);
         if (!future.isDone()) {
             // Can do nothing
             return Either.left(ar);
         }
 
-        CoorCommuResult result = null;
+        RoundResult result = null;
         try {
             result = future.get();
         } catch (Exception e) {
@@ -287,7 +287,7 @@ public class MinaCommunicator implements CoorCommunicator<TransferMessage> {
         }
 
         Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();
-        for (PeerResult2 r : result.getResults()) {
+        for (PeerResult r : result.getResults()) {
             map.put(r.peer(), (MinaChannel) r.result());
         }
         return Either.right(map);

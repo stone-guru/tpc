@@ -5,8 +5,6 @@ import java.util.Map;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.proto.Node;
-
 public class Configuration {
     public static String BANK_NODE_PREFIX = "";
     

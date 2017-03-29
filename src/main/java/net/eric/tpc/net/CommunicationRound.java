@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
-import net.eric.tpc.proto.CoorCommuResult;
-import net.eric.tpc.proto.Node;
+import net.eric.tpc.common.Node;
+import net.eric.tpc.proto.RoundResult;
 
 public class CommunicationRound {
     private static final Logger logger = LoggerFactory.getLogger(CommunicationRound.class);
@@ -31,14 +31,14 @@ public class CommunicationRound {
 
     private RoundType roundType = RoundType.DOUBLE_SIDE;
 
-    private PeerResult2.Assembler assembler;
-    private ConcurrentMap<Node, PeerResult2> resultMap = new ConcurrentHashMap<Node, PeerResult2>();
+    private PeerResult.Assembler assembler;
+    private ConcurrentMap<Node, PeerResult> resultMap = new ConcurrentHashMap<Node, PeerResult>();
 
     private CountDownHolder latch;
     private ExecutorService commuTaskPool;
 
     public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType,
-            PeerResult2.Assembler assembler) {
+            PeerResult.Assembler assembler) {
         this.commuTaskPool = pool;
         this.wantedCount = n;
         this.roundType = roundType;
@@ -47,7 +47,7 @@ public class CommunicationRound {
     }
 
     public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType) {
-        this(pool, sequenceTaskPool, n, roundType, PeerResult2.ONE_ITEM_ASSEMBLER);
+        this(pool, sequenceTaskPool, n, roundType, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
     public RoundType roundType() {
@@ -58,12 +58,12 @@ public class CommunicationRound {
         return this.wantedCount;
     }
 
-    synchronized public Future<CoorCommuResult> getResult() {
+    synchronized public Future<RoundResult> getResult() {
         if (!this.isWithinRound()) {
             return Futures.immediateFuture(this.generateResult());
         }
-        Callable<CoorCommuResult> task = new Callable<CoorCommuResult>() {
-            public CoorCommuResult call() throws Exception {
+        Callable<RoundResult> task = new Callable<RoundResult>() {
+            public RoundResult call() throws Exception {
                 CommunicationRound.this.latch.await();
                 return CommunicationRound.this.generateResult();
             }
@@ -75,12 +75,12 @@ public class CommunicationRound {
         this.latch.clear();
     }
 
-    private CoorCommuResult generateResult() {
-        final CoorCommuResult result = new CoorCommuResult(this.wantedCount, this.resultMap.values());
+    private RoundResult generateResult() {
+        final RoundResult result = new RoundResult(this.wantedCount, this.resultMap.values());
         if (logger.isDebugEnabled()) {
-            List<PeerResult2> okResults = result.okResults();
+            List<PeerResult> okResults = result.okResults();
             logger.debug(" CommuResult want " + result.wantedCount() + ", got ok result " + okResults.size());
-            for (PeerResult2 pr : result.getResults()) {
+            for (PeerResult pr : result.getResults()) {
                 logger.debug(pr.toString());
             }
         }
@@ -96,7 +96,7 @@ public class CommunicationRound {
             return;
         }
         try {
-            this.resultMap.put(node, PeerResult2.fail(node, errorCode, errorReason));
+            this.resultMap.put(node, PeerResult.fail(node, errorCode, errorReason));
         } finally {
             this.latch.countDown(node);
         }
@@ -110,14 +110,14 @@ public class CommunicationRound {
         regMessage(node, Optional.absent());
     }
 
-    private Optional<PeerResult2> tryAddMeesageforNewNode(Node node, Optional<Object> r) {
-        PeerResult2 result = null;
+    private Optional<PeerResult> tryAddMeesageforNewNode(Node node, Optional<Object> r) {
+        PeerResult result = null;
         synchronized (this.resultMap) {
             if (!this.resultMap.containsKey(node)) {
                 if (r.isPresent()) {
                     result = this.assembler.start(node, r.get());
                 } else {
-                    final Optional<PeerResult2> none = Optional.absent();
+                    final Optional<PeerResult> none = Optional.absent();
                     result = this.assembler.finish(node, none);
                 }
                 this.resultMap.put(node, result);
@@ -131,7 +131,7 @@ public class CommunicationRound {
         if (!this.isWithinRound() || this.isPeerResult2Done(node)) {
             return;
         }
-        Optional<PeerResult2> opt = Optional.absent();
+        Optional<PeerResult> opt = Optional.absent();
         try {
             // 是否是节点的第一次消息
             if (!this.resultMap.containsKey(node)) {
@@ -139,12 +139,12 @@ public class CommunicationRound {
             }
             // 为已有结果的节点增加消息
             if (!opt.isPresent()) {
-                PeerResult2 result;
+                PeerResult result;
                 if (r.isPresent()) { // 是有消息需要登记
-                    final PeerResult2 tmp = PeerResult2.pending(node, r.get());
+                    final PeerResult tmp = PeerResult.pending(node, r.get());
                     result = this.resultMap.merge(node, tmp, CommunicationRound.this.FOLD_FUNCTION);
                 } else { // r is empty 表示本轮通讯结束的意思
-                    final PeerResult2 tmp = PeerResult2.approve(node, new Object());
+                    final PeerResult tmp = PeerResult.approve(node, new Object());
                     result = this.resultMap.merge(node, tmp, CommunicationRound.this.END_FUNCTION);
                 }
                 opt = Optional.of(result);
@@ -161,7 +161,7 @@ public class CommunicationRound {
 
     private boolean isPeerResult2Done(Node node) {
         if (this.resultMap.containsKey(node)) {
-            PeerResult2 r = this.resultMap.get(node);
+            PeerResult r = this.resultMap.get(node);
             return r.isDone();
         }
         return false;
@@ -198,14 +198,14 @@ public class CommunicationRound {
         }
     }
 
-    public final BiFunction<PeerResult2, PeerResult2, PeerResult2> FOLD_FUNCTION = new BiFunction<PeerResult2, PeerResult2, PeerResult2>() {
-        public PeerResult2 apply(PeerResult2 t, PeerResult2 u) {
+    public final BiFunction<PeerResult, PeerResult, PeerResult> FOLD_FUNCTION = new BiFunction<PeerResult, PeerResult, PeerResult>() {
+        public PeerResult apply(PeerResult t, PeerResult u) {
             return CommunicationRound.this.assembler.fold(t.peer(), t, u.result());
         }
     };
 
-    public final BiFunction<PeerResult2, PeerResult2, PeerResult2> END_FUNCTION = new BiFunction<PeerResult2, PeerResult2, PeerResult2>() {
-        public PeerResult2 apply(PeerResult2 t, PeerResult2 u) {
+    public final BiFunction<PeerResult, PeerResult, PeerResult> END_FUNCTION = new BiFunction<PeerResult, PeerResult, PeerResult>() {
+        public PeerResult apply(PeerResult t, PeerResult u) {
             return CommunicationRound.this.assembler.finish(u.peer(), Optional.of(t));
         }
     };

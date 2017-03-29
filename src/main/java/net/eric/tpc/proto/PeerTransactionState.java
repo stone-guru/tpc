@@ -2,7 +2,7 @@ package net.eric.tpc.proto;
 
 import java.util.concurrent.Future;
 
-import net.eric.tpc.common.ActionResult;
+import net.eric.tpc.common.ActionStatus;
 
 public class PeerTransactionState<B> {
     public static enum Stage {
@@ -13,7 +13,7 @@ public class PeerTransactionState<B> {
     private String xid;
     private Vote vote;
     private Decision decision;
-    private Future<ActionResult> voteResult;
+    private Future<ActionStatus> voteResult;
     private B bizEntity;
     
     public Stage getStage() {
@@ -40,11 +40,11 @@ public class PeerTransactionState<B> {
         this.vote = vote;
     }
 
-    public Future<ActionResult> getVoteResult() {
+    public Future<ActionStatus> getVoteResult() {
         return voteResult;
     }
 
-    public void setVoteResult(Future<ActionResult> voteResult) {
+    public void setVoteResult(Future<ActionStatus> voteResult) {
         this.voteResult = voteResult;
     }
 

@@ -8,6 +8,10 @@ public class ShouldNotHappenException extends RuntimeException {
         super();
     }
 
+    public ShouldNotHappenException(String msg){
+        super(msg);
+    }
+    
     public ShouldNotHappenException(Exception e) {
         super(e);
     }

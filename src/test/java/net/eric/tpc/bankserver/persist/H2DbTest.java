@@ -12,12 +12,14 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
-import net.eric.tpc.bankserver.entity.Account;
-import net.eric.tpc.bankserver.entity.AccountType;
-import net.eric.tpc.biz.AccountIdentity;
-import net.eric.tpc.biz.MessageType;
-import net.eric.tpc.biz.TransType;
-import net.eric.tpc.biz.TransferMessage;
+import net.eric.tpc.entity.Account;
+import net.eric.tpc.entity.AccountIdentity;
+import net.eric.tpc.entity.AccountType;
+import net.eric.tpc.entity.MessageType;
+import net.eric.tpc.entity.TransType;
+import net.eric.tpc.entity.TransferBill;
+import net.eric.tpc.persist.AccountDao;
+import net.eric.tpc.persist.TransferBillDao;
 import net.sf.json.JSONObject;
 
 public class H2DbTest {
@@ -47,8 +49,8 @@ public class H2DbTest {
     }
 
     public static void insertTransferMessage() {
-        TransferMessageDao dmDao = session.getMapper(TransferMessageDao.class);
-        TransferMessage msg = new TransferMessage();
+        TransferBillDao dmDao = session.getMapper(TransferBillDao.class);
+        TransferBill msg = new TransferBill();
 
 //        msg.setVersion("1.1");
 //        msg.setMessageNumber("2193239888");
@@ -58,7 +60,6 @@ public class H2DbTest {
 //        msg.setMessageType(MessageType.NORMAL);
 
         msg.setTransSN("982872393");
-        msg.setTransType(TransType.INCOME);
 
         msg.setAccount(new AccountIdentity("mike", "BOC"));
         msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));
