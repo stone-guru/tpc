@@ -15,14 +15,14 @@ public class ServiceFactory {
         dtLogger.setDtLoggerDao(dao);
         return dtLogger;
     }
-    
-    public static AccountRepository getAccountRepository(){
+
+    public static AccountRepository getAccountRepository() {
         AccountRepositoryImpl acctRepo = new AccountRepositoryImpl();
         AccountDao accountDao = PersisterFactory.getMapper(AccountDao.class);
         TransferBillDao BillDao = PersisterFactory.getMapper(TransferBillDao.class);
         acctRepo.setAccountDao(accountDao);
         acctRepo.setTransferBillDao(BillDao);
         return acctRepo;
-        
+
     }
 }

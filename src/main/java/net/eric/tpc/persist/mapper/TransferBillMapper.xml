@@ -3,7 +3,20 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.eric.tpc.persist.TransferBillDao">
-  
+
+  <resultMap type="TransferBill" id="transferBillMap">
+    <id column="TRANS_SN" property="transSN"/>
+    <result column="RECEIVING_BANK_CODE" property="receivingBankCode"/>
+    <result column="LAUNCH_TIME" property="launchTime"/>
+    <result column="ACCT_NUMBER" property="account.number"/>
+    <result column="ACCT_BANK_CODE" property="account.bankCode"/>
+    <result column="OPP_ACCT_NUMBER" property="oppositeAccount.number"/>
+    <result column="OPP_BANK_CODE" property="oppositeAccount.bankCode"/>
+    <result column="AMOUNT" property="amount"/>
+    <result column="SUMMARY" property="summary"/> 
+    <result column="VOUCHER_NUMBER" property="voucherNumber"/>
+  </resultMap>
+
   <insert id="insert" parameterType="TransferBill">
     INSERT INTO TRANSFER_BILL(
       TRANS_SN,
@@ -36,4 +49,21 @@
     WHERE TRANS_SN = #{fst}
   </update>
 
+    <update id="clearLockByXid" parameterType="String">
+    UPDATE TRANSFER_BILL
+    SET LOCKING_TRANS = null
+    WHERE LOCKING_TRANS = #{xid}
+    </update>
+    
+  <delete id="deleteByXid" parameterType="String">
+    DELETE FROM TRANSFER_BILL
+    WHERE LOCKING_TRANS = #{xid}
+  </delete>
+  
+  <select id="selectByXid" parameterType="String" resultMap="transferBillMap">
+    SELECT *
+    FROM TRANSFER_BILL
+    WHERE LOCKING_TRANS = #{xid}
+  </select>
+  
 </mapper>

@@ -1,5 +1,7 @@
 package net.eric.tpc.service;
 
+import static net.eric.tpc.common.Pair.asPair;
+
 import java.util.Date;
 import java.util.Iterator;
 
@@ -9,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 
 import net.eric.tpc.common.Node;
-import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.DtRecordDao;
@@ -81,5 +82,11 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
 
     public void setDtLoggerDao(DtRecordDao dtLoggerDao) {
         this.dtLoggerDao = dtLoggerDao;
+    }
+
+    @Override
+    public void markTransFinished(String xid) {
+       logger.info("mark transaction finishd " + xid);
+       this.dtLoggerDao.updateFinishTime(asPair(xid, new Date()));
     }
 }

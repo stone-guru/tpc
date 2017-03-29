@@ -15,7 +15,10 @@ public interface CoorBizStrategy<B> {
     
     Maybe<TaskPartition<B>> splitTask(String xid, B b);
 
-    Future<ActionStatus> commit(B b);
+    Future<Void> commit(String x, BizActionListener commitListener);
+    
+    Future<Void> abort(String x, BizActionListener abortListener);
+    
 
     public static class TaskPartition<B> {
         private B coorTask;

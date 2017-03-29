@@ -1,5 +1,7 @@
 package net.eric.tpc.service;
 
+import static net.eric.tpc.common.Pair.asPair;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -7,35 +9,43 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.common.ActionStatus;
+import net.eric.tpc.common.Maybe;
 import net.eric.tpc.common.Pair;
 import net.eric.tpc.common.ShouldNotHappenException;
+import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.AccountDao;
 import net.eric.tpc.persist.TransferBillDao;
+import net.eric.tpc.proto.BizActionListener;
+import net.eric.tpc.proto.Decision;
+import net.eric.tpc.proto.PeerBizStrategy;
 
-public class AccountRepositoryImpl implements AccountRepository {
+public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy<TransferBill> {
+    private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
+
     private AccountLocker accountLocker = new AccountLocker(3, 500);
     private ExecutorService pool = Executors.newCachedThreadPool();
     private AccountDao accountDao;
     private TransferBillDao transferBillDao;
-    
+
     @Override
     public Future<ActionStatus> checkAndPrepare(String xid, TransferBill bill) {
-        if (xid == null) {
-            throw new NullPointerException("xid is null");
-        }
-        if (bill == null) {
-            throw new NullPointerException("bill is null");
-        }
+        Preconditions.checkNotNull(xid, "xid");
+        Preconditions.checkNotNull(bill, "bill");
+
         ActionStatus status = bill.fieldCheck();
         if (status.isOK()) {
-            Callable<ActionStatus> prepareTask = new Callable<ActionStatus>(){
+            Callable<ActionStatus> prepareTask = new Callable<ActionStatus>() {
                 @Override
                 public ActionStatus call() throws Exception {
                     return AccountRepositoryImpl.this.innerPrepareCommint(xid, bill);
@@ -105,17 +115,88 @@ public class AccountRepositoryImpl implements AccountRepository {
             throw new ShouldNotHappenException("Overdraft limit less than zero");
         }
     }
-    
 
     @Override
-    public Future<Void> abort(String xid) {
-        // TODO Auto-generated method stub
-        return null;
+    public Future<Void> commit(String xid, BizActionListener listener) {
+        return doDecision(xid, Decision.COMMIT, listener);
     }
-    
+
     @Override
-    public Future<Void> commit(String xid) {
-        return null;
+    public Future<Void> abort(String xid, BizActionListener listener) {
+        return doDecision(xid, Decision.ABORT, listener);
+    }
+
+    private Future<Void> doDecision(String xid, Decision decision, final BizActionListener listener) {
+        Maybe<Pair<String, String>> maybe = this.accountLocker.getLockedKeyByXid(xid);
+        if (!maybe.isRight()) {
+            logger.error("when commit " + maybe.getLeft().toString());
+            this.callBizActionListener(xid, decision, false, listener);
+            return Futures.immediateFuture(null);
+        }
+
+        Callable<Void> commitTask = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                boolean success = false;
+                try {
+                    if (decision == Decision.COMMIT) {
+                        AccountRepositoryImpl.this.innerCommit(xid);
+                    } else if (decision == Decision.ABORT) {
+                        AccountRepositoryImpl.this.innerAbort(xid);
+                    } else {
+                        throw new UnImplementedException("Decision Enum got more");
+                    }
+                    success = true;
+                } catch (Exception e) {
+                    logger.error("AccountRepositoryImpl.innerCommit", e);
+                }
+                AccountRepositoryImpl.this.callBizActionListener(xid, decision, success, listener);
+                return null;
+            }
+        };
+        return this.pool.submit(commitTask);
+    }
+
+    private void callBizActionListener(String xid, Decision decision, boolean success, BizActionListener listener) {
+        if (listener == null) {
+            return;
+        }
+        try {
+            if (success) {
+                listener.onSuccess(xid);
+            } else {
+                listener.onFailure(xid);
+            }
+        } catch (Exception e) {
+            logger.error("AccountRepositoryImpl.executeListener when " + decision + " and exec result is " + success,
+                    e);
+        }
+    }
+
+    private void innerCommit(String xid) {
+        TransferBill bill = this.transferBillDao.selectByXid(xid);
+        Preconditions.checkNotNull(bill, "bill for xid " + xid + " not exists unexpectedly.");
+
+        final String accountNumber = bill.getAccount().getNumber();
+        final String oppositeAccountNumber = bill.getOppositeAccount().getNumber();
+        BigDecimal amount = bill.getAmount();
+
+        this.accountDao.modifyBalance(asPair(accountNumber, amount.negate()));
+        this.accountDao.modifyBalance(asPair(oppositeAccountNumber, amount));
+        this.transferBillDao.updateLock(asPair(bill.getTransSN(), null));
+
+        // 若上述过程出现异常，解锁操作不会发生，保护账户不再执行其它操作，也利于其它诊断
+        this.accountLocker.releaseByXid(xid);
+    }
+
+    private void innerAbort(String xid) {
+        TransferBill bill = this.transferBillDao.selectByXid(xid);
+        Preconditions.checkNotNull(bill, "bill for xid " + xid + " not exists unexpectedly.");
+
+        this.transferBillDao.deleteByXid(xid);
+
+        // 若上述过程出现异常，解锁操作不会发生，保护账户不再执行其它操作，也利于其它诊断
+        this.accountLocker.releaseByXid(xid);
     }
 
     @Override
@@ -124,15 +205,17 @@ public class AccountRepositoryImpl implements AccountRepository {
     }
 
     @Override
-    public Account getAccount(String acctId) {
-        // TODO Auto-generated method stub
-        return null;
+    public Account getAccount(String acctNumber) {
+        return this.accountDao.selectByAcctNumber(acctNumber);
     }
 
     @Override
     public List<Account> getAllAccount() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.accountDao.selectAll();
+    }
+
+    public void resetLockedKey(List<Pair<String, String>> keys) {
+        this.accountLocker.setLockedKey(keys);
     }
 
     public AccountDao getAccountDao() {
@@ -151,7 +234,5 @@ public class AccountRepositoryImpl implements AccountRepository {
     public void setTransferBillDao(TransferBillDao transferBillDao) {
         this.transferBillDao = transferBillDao;
     }
-
-
 
 }

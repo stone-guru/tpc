@@ -9,5 +9,7 @@ public interface DtLogger<B> {
 
     void recordDecision(String xid, Decision decsion);
 
+    void markTransFinished(String xid);
+    
     Optional<Decision> getDecisionFor(String xid);
 }

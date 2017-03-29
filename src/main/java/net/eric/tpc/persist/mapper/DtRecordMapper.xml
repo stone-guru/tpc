@@ -13,6 +13,7 @@
     <result column="VOTE" property="vote"/>
     <result column="VOTE_TIME" property="voteTime"/>
     <result column="DECISION" property="decision"/>
+    <result column="DECISION_TIME" property="decisionTime"/>
     <result column="FINISH_TIME" property="finishTime"/>
     <result column="BIZ_MESSSGE" property="bizMessage"/>
   </resultMap>
@@ -34,7 +35,13 @@
   <update id="updateDecision" parameterType="DtRecord">
     UPDATE DT_RECORD
     SET DECISION = #{decision},
-        FINISH_TIME = #{finishTime}
+        DECISION_TIME = #{decisionTime}
+    WHERE XID = #{xid}
+  </update>
+
+  <update id="updateFinishTime" parameterType="Pair">
+    UPDATE DT_RECORD
+    SET FINISH_TIME = #{snd}
     WHERE XID = #{xid}
   </update>
   

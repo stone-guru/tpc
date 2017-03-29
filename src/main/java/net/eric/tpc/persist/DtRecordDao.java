@@ -1,5 +1,8 @@
 package net.eric.tpc.persist;
 
+import java.util.Date;
+
+import net.eric.tpc.common.Pair;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.proto.Decision;
 
@@ -10,5 +13,7 @@ public interface DtRecordDao {
 
     void updateDecision(DtRecord dtRecord);
 
+    void updateFinishTime(Pair<String, Date> param);
+    
     Decision selectDecision(String xid);
 }

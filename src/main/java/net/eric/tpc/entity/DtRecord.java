@@ -14,6 +14,7 @@ public class DtRecord {
     private Vote vote;
     private Date voteTime;
     private Decision decision;
+    private Date decisionTime;
     private Date finishTime;
     private byte[] bizMessage;
 
@@ -33,14 +34,7 @@ public class DtRecord {
         this.pariticipants = pariticipants;
     }
 
-    public Date getFinishTime() {
-        return finishTime;
-    }
-
-    public void setFinishTime(Date finishTime) {
-        this.finishTime = finishTime;
-    }
-
+ 
     public Date getStartTime() {
         return startTime;
     }
@@ -96,6 +90,20 @@ public class DtRecord {
     public void setStart2PC(boolean start2pc) {
         start2PC = start2pc;
     }
+
+    public Date getDecisionTime() {
+        return decisionTime;
+    }
+
+    public void setDecisionTime(Date decisionTime) {
+        this.decisionTime = decisionTime;
+    }
     
-    
+    public Date getFinishTime() {
+        return finishTime;
+    }
+
+    public void setFinishTime(Date finishTime) {
+        this.finishTime = finishTime;
+    }
 }

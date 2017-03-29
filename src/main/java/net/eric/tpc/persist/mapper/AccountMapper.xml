@@ -17,9 +17,11 @@
   
   <insert id="insert" parameterType="Account">
     INSERT INTO ACCOUNT
-       (ACCT_NUMBER, ACCT_NAME, BANK_CODE, ACCT_TYPE, OVERDRAFT_LIMIT, BALANCE, OPENING_TIME, LAST_MODI_TIME)
+    (ACCT_NUMBER, ACCT_NAME, BANK_CODE, ACCT_TYPE,
+     OVERDRAFT_LIMIT, BALANCE, OPENING_TIME, LAST_MODI_TIME)
     VALUES
-       (#{acctNumber}, #{acctName}, #{bankCode}, #{type}, #{overdraftLimit}, #{balance}, #{openingTime}, #{lastModiTime});
+    (#{acctNumber}, #{acctName}, #{bankCode}, #{type},
+     #{overdraftLimit}, #{balance}, #{openingTime}, #{lastModiTime});
   </insert>
 
   <update id="modifyBalance" parameterType="Pair">
@@ -36,11 +38,15 @@
   </update>
   
   <select id="selectByAcctNumber" resultMap="accountMap">
-    select * from ACCOUNT where ACCT_NUMBER = #{acctNumber}
+    SELECT *
+    FROM ACCOUNT
+    WHERE ACCT_NUMBER = #{acctNumber}
   </select>
 
   <select id="selectAll" resultMap="accountMap">
-    select * from ACCOUNT order by ACCT_NUMBER desc
+    SELECT *
+    FROM ACCOUNT
+    ORDER BY ACCT_NUMBER ASC
   </select>
   
 </mapper>

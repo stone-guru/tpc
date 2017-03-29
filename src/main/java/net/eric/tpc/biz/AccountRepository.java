@@ -6,7 +6,7 @@ import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.PeerBizStrategy;
 
-public interface AccountRepository extends PeerBizStrategy<TransferBill>{
+public interface AccountRepository {
     void createAccount(Account account);
     
     Account getAccount(String acctId);

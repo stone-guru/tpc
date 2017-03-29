@@ -7,7 +7,7 @@ import net.eric.tpc.common.ActionStatus;
 public interface PeerBizStrategy<B> {
     Future<ActionStatus> checkAndPrepare(String xid, B b);
 
-    Future<Void> commit(String xid);
+    Future<Void> commit(String xid, BizActionListener listener);
 
-    Future<Void> abort(String xid);
+    Future<Void> abort(String xid, BizActionListener listener);
 }

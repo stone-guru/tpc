@@ -1,4 +1,4 @@
-package net.eric.tpc.bankserver.persist;
+package net.eric.tpc.persist;
 
 import java.io.Reader;
 import java.math.BigDecimal;

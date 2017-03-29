@@ -93,6 +93,19 @@ public class TransferBill implements Serializable {
                 + amount + ", voucherNumber=" + voucherNumber + ", summary=" + summary + "]";
     }
 
+    public TransferBill copy(){
+        TransferBill bill = new TransferBill();
+        bill.transSN = this.transSN;
+        bill.launchTime = this.launchTime;
+        bill.receivingBankCode = this.receivingBankCode;
+        bill.summary = this.summary;
+        bill.amount = this.amount;
+        bill.account = this.account.copy();
+        bill.oppositeAccount = this.oppositeAccount.copy();
+        
+        return bill;
+    }
+    
     public ActionStatus fieldCheck() {
         ActionStatus r = checkFieldMissing();
         if (!r.isOK()) {

@@ -54,18 +54,29 @@ public class Coordinator<B> implements TransactionManager<B> {
             return voteResult;
         }
 
-        @SuppressWarnings("unused")
-        Future<ActionStatus> canNotCare = this.getBizStrategy().commit(biz);
-
         getDtLogger().recordDecision(xid, Decision.COMMIT);
-
         communicator.notifyDecision(xid, Decision.COMMIT, peers);
+        
+        @SuppressWarnings("unused")
+        Future<Void> canNotCare = this.getBizStrategy().commit(xid, this.finishTransListener);
 
         getCommunicatorFactory().releaseCommunicator(communicator);
 
         return ActionStatus.OK;
     }
 
+    private BizActionListener finishTransListener = new BizActionListener(){
+        @Override
+        public void onSuccess(String xid) {
+            Coordinator.this.dtLogger.markTransFinished(xid);
+        }
+
+        @Override
+        public void onFailure(String xid) {
+            logger.error("Transaction " + xid + " commit failed");
+        }
+    };
+    
     private ActionStatus processVote(String xid, TaskPartition<B> task, Communicator<B> communicator) {
         final List<Node> peers = task.getParticipants();
         Future<ActionStatus> selfVoteFuture = getBizStrategy().prepareCommit(xid, task.getCoorTask());
@@ -128,6 +139,10 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
         this.getDtLogger().recordDecision(xid, Decision.ABORT);
         communicator.notifyDecision(xid, Decision.ABORT, nodes);
+
+        @SuppressWarnings("unused")
+        Future<Void> canNotCare = this.bizStrategy.abort(xid, this.finishTransListener);
+        
         this.getCommunicatorFactory().releaseCommunicator(communicator);
     }
 

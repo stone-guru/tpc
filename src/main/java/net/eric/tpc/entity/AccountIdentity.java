@@ -70,5 +70,8 @@ public class AccountIdentity implements Serializable {
         return this.number + "@" + this.bankCode;
     }
     
-    
+    public AccountIdentity copy()
+    {
+        return new AccountIdentity(this.number, this.bankCode);
+    }
 }
