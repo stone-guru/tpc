@@ -1,40 +1,60 @@
 package net.eric.tpc.bank;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.session.IdleStatus;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
-import org.apache.mina.filter.logging.LoggingFilter;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.mina.core.service.IoHandler;
 
-import net.eric.tpc.persist.PersisterFactory;
+import net.eric.tpc.common.MinaServer;
+import net.eric.tpc.common.ServerConfig;
 
-public class BankServer {
-    private static final int PORT = 10021;
-   
-    public static void main(String[] args) throws IOException{
-        int port = PORT;
-        if(!(args == null || args.length == 0)){
-            port = Integer.parseInt(args[0]);
+public class BankServer extends MinaServer {
+
+    private static final String DEFAULT_BANK_CODE = "BOC";
+    private static final int DEFAULT_PORT = 10021;
+    private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/bank_boc";
+
+    public static void main(String[] args) throws IOException {
+        ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
+
+        BankServer server = new BankServer(config);
+
+        server.start();
+    }
+
+    public BankServer(ServerConfig config) {
+        super(config);
+    }
+
+    @Override
+    protected IoHandler getIoHandler() {
+        return BankServiceFactory.newIoHandlerAdapter();
+    }
+
+    @Override
+    protected String getSplashText(String bankCode) {
+        if(bankCode.equals("CCB")){
+            return "          /$$$$$$   /$$$$$$  /$$$$$$$ \n"//
+                    +"         /$$__  $$ /$$__  $$| $$__  $$\n"//
+                    +"        | $$  \\__/| $$  \\__/| $$  \\ $$\n"//
+                    +"        | $$      | $$      | $$$$$$$ \n"//
+                    +"        | $$      | $$      | $$__  $$\n"//
+                    +"        | $$    $$| $$    $$| $$  \\ $$\n"//
+                    +"        |  $$$$$$/|  $$$$$$/| $$$$$$$/\n"//
+                    +"        \\______/  \\______/ |_______/  ";
+
         }
-        PersisterFactory.initialize("jdbc:h2:tcp://localhost:9100/bank");
-        BankServer s1 = new BankServer();
-        s1.startServer(port);
-    }
-    
-    private void startServer(int port) throws IOException{
-        IoAcceptor acceptor = new NioSocketAcceptor();
+        if(bankCode.equals("BOC")){
+            return "         /$$$$$$$   /$$$$$$   /$$$$$$ \n"//
+            +"        | $$__  $$ /$$__  $$ /$$__  $$\n"//
+            +"        | $$  \\ $$| $$  \\ $$| $$  \\__/\n"//
+            +"        | $$$$$$$ | $$  | $$| $$      \n"//
+            +"        | $$__  $$| $$  | $$| $$      \n"//
+            +"        | $$  \\ $$| $$  | $$| $$    $$\n"//
+            +"        | $$$$$$$/|  $$$$$$/|  $$$$$$/\n"//
+            +"        |_______/  \\______/  \\______/ ";
+        }
+        return null;
 
-        acceptor.getFilterChain().addLast("logger", new LoggingFilter());
-        acceptor.getFilterChain().addLast("codec",
-                new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
-        
-        acceptor.setHandler(BankServiceFactory.newIoHandlerAdapter());
-        acceptor.getSessionConfig().setReadBufferSize( 2048 );
-        acceptor.getSessionConfig().setIdleTime( IdleStatus.READER_IDLE, 2);//TODO use config
-        acceptor.bind( new InetSocketAddress(port) );
     }
+
 }

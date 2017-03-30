@@ -2,14 +2,18 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.eric.tpc.bankserver.persist.DatabaseInit">
+<mapper namespace="net.eric.tpc.persist.DatabaseInit">
 
-    <update id="createDtTable">
+  <update id="dropDtTable">
+    DROP TABLE IF EXISTS DT_RECORD
+  </update>
+
+  <update id="createDtTable">
       CREATE TABLE DT_RECORD(
       XID          VARCHAR(24) NOT NULL,
       START_TIME   TIMESTAMP NOT NULL,
       COORDINATOR  VARCHAR(24) NOT NULL, 
-      PARTICIPANTS VARCHAR(128) NOT NULL,
+      PARTICIPANTS VARCHAR(256) NOT NULL,
       START_2PC    BOOL NOT NULL,
       VOTE         VARCHAR(8),
       VOTE_TIME    TIMESTAMP,
@@ -18,12 +22,16 @@
       FINISH_TIME  TIMESTAMP,
       BIZ_MESSSGE  BINARY(4096),
       PRIMARY KEY (XID))
-    </update>
-    
+  </update>
+
+  <update id="dropAccountTable">
+    DROP TABLE IF EXISTS ACCOUNT
+  </update>
+
   <update id="createAccountTable">
     CREATE TABLE ACCOUNT(
       ACCT_NUMBER VARCHAR(24) NOT NULL,
-      ACCT_NAME  VARCHAR(24) NOT NULL,
+      ACCT_NAME  VARCHAR(36) NOT NULL,
       ACCT_TYPE  VARCHAR(8) NOT NULL,
       BANK_CODE VARCHAR(12) NOT NULL,
       OVERDRAFT_LIMIT NUMERIC(16,2) NOT NULL,
@@ -34,7 +42,11 @@
       PRIMARY KEY (ACCT_NUMBER))
   </update>
 
-   <update id="createTransferMessageTable">
+  <update id="dropTransferBillTable">
+    DROP TABLE IF EXISTS TRANSFER_BILL
+  </update>
+    
+  <update id="createTransferBillTable">
     CREATE TABLE TRANSFER_BILL(
       TRANS_SN VARCHAR(24) NOT NULL,
       LAUNCH_TIME TIMESTAMP NOT NULL,
@@ -45,7 +57,7 @@
       OPP_ACCT_BANK_CODE VARCHAR(12) NOT NULL,
       AMOUNT NUMERIC(16,2) NOT NULL,
       SUMMARY VARCHAR(48) NOT NULL,
-      VOUCHER_NUMBER VARCHAR(24) NOT NULL,
+      VOUCHER_NUMBER VARCHAR(36) NOT NULL,
       LOCKING_TRANS VARCHAR(24),
       PRIMARY KEY(TRANS_SN))
   </update>

@@ -15,12 +15,7 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.AccountType;
-import net.eric.tpc.entity.MessageType;
-import net.eric.tpc.entity.TransType;
 import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.persist.AccountDao;
-import net.eric.tpc.persist.TransferBillDao;
-import net.sf.json.JSONObject;
 
 public class H2DbTest {
     private static SqlSession session;
@@ -68,11 +63,6 @@ public class H2DbTest {
         msg.setSummary("for cigrate");
         msg.setVoucherNumber("BIK09283-33843");
 
-        
-        //dmDao.insert(msg);
-        
-        JSONObject msgJson = JSONObject.fromObject(msg);
-        System.out.println(msgJson.toString());
     }
 
     public static void initAccounts(AccountDao accountDao, String bankCode) {

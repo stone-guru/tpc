@@ -1,4 +1,4 @@
-package net.eric.tpc.bank;
+package net.eric.tpc.net;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,42 +20,38 @@ import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.net.DataPacket;
-import net.eric.tpc.net.HeartBeatRequestHandler;
-import net.eric.tpc.net.RequestHandler;
-import net.eric.tpc.net.UnknowCommandRequestHandler;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.PeerTransactionManager;
 import net.eric.tpc.proto.PeerTransactionState;
 
-public class BankServerHandler extends IoHandlerAdapter {
-    private static final Logger logger = LoggerFactory.getLogger(BankServerHandler.class);
+public class PeerIoHandler extends IoHandlerAdapter {
+    private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
 
     private static final String TRANS_SESSION_ITEM = "transactionSession";
 
-    private Map<String, RequestHandler> requestHandlerMap = initRequestHandlers();
+    private Map<String, RequestHandler<TransferBill>> requestHandlerMap = initRequestHandlers();
 
-    private RequestHandler unknownCommandHandler = new UnknowCommandRequestHandler();
+    private RequestHandler<TransferBill> unknownCommandHandler = new UnknowCommandRequestHandler<TransferBill>();
 
-    private PeerTransactionManager transManager;
+    private PeerTransactionManager<TransferBill> transManager;
 
-    private Map<String, RequestHandler> initRequestHandlers() {
-        List<RequestHandler> handlers = new ArrayList<RequestHandler>(10);
-        handlers.add(new HeartBeatRequestHandler());
+    private Map<String, RequestHandler<TransferBill>> initRequestHandlers() {
+        List<RequestHandler<TransferBill>> handlers = new ArrayList<RequestHandler<TransferBill>>(10);
+        handlers.add(new HeartBeatRequestHandler<TransferBill>());
         handlers.add(new BeginTransRequestHandler());
         handlers.add(new VoteRequestHandler());
         handlers.add(new TransDecisionHandler());
 
-        Map<String, RequestHandler> handlerMap = new HashMap<String, RequestHandler>();
-        for (RequestHandler h : handlers) {
+        Map<String, RequestHandler<TransferBill>> handlerMap = new HashMap<String, RequestHandler<TransferBill>>();
+        for (RequestHandler<TransferBill> h : handlers) {
             handlerMap.put(h.getCorrespondingCode(), h);
         }
         return handlerMap;
     }
 
-    private RequestHandler getRequestHandler(String code) {
-        RequestHandler handler = requestHandlerMap.get(code);
+    private RequestHandler<TransferBill> getRequestHandler(String code) {
+        RequestHandler<TransferBill> handler = requestHandlerMap.get(code);
         if (handler == null) {
             return this.unknownCommandHandler;
         }
@@ -70,11 +66,12 @@ public class BankServerHandler extends IoHandlerAdapter {
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         super.sessionCreated(session);
-        session.setAttribute(BankServerHandler.TRANS_SESSION_ITEM, new PeerTransactionState());
+        session.setAttribute(PeerIoHandler.TRANS_SESSION_ITEM, new PeerTransactionState<TransferBill>());
     }
 
-    private Optional<PeerTransactionState> getTransStateFromSession(IoSession session) {
-        PeerTransactionState state = (PeerTransactionState) session.getAttribute(BankServerHandler.TRANS_SESSION_ITEM);
+    private Optional<PeerTransactionState<TransferBill>> getTransStateFromSession(IoSession session) {
+        @SuppressWarnings("unchecked")
+        PeerTransactionState<TransferBill> state = (PeerTransactionState<TransferBill>) session.getAttribute(PeerIoHandler.TRANS_SESSION_ITEM);
         return Optional.fromNullable(state);
     }
 
@@ -86,8 +83,8 @@ public class BankServerHandler extends IoHandlerAdapter {
         }
 
         final DataPacket request = (DataPacket) message;
-        RequestHandler handler = this.getRequestHandler(request.getCode());
-        Optional<PeerTransactionState> state = getTransStateFromSession(session);
+        RequestHandler<TransferBill> handler = this.getRequestHandler(request.getCode());
+        Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
 
         if (!state.isPresent()) {
             if (logger.isDebugEnabled()) {
@@ -118,8 +115,7 @@ public class BankServerHandler extends IoHandlerAdapter {
         }
         System.out.println("READER IDLE " + session.getIdleCount(status));
 
-        @SuppressWarnings("rawtypes")
-        Optional<PeerTransactionState> state = getTransStateFromSession(session);
+        Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
 
         if (!state.isPresent()) {
             if (logger.isDebugEnabled()) {
@@ -128,23 +124,23 @@ public class BankServerHandler extends IoHandlerAdapter {
             return;
         }
 
-        BankServerHandler.this.transManager.processTimeout(state.get());
+        PeerIoHandler.this.transManager.processTimeout(state.get());
     }
 
-    public void setTransManager(PeerTransactionManager transManager) {
+    public void setTransManager(PeerTransactionManager<TransferBill> transManager) {
         this.transManager = transManager;
     }
 
-    class BeginTransRequestHandler implements RequestHandler {
+    class BeginTransRequestHandler implements RequestHandler<TransferBill> {
         public String getCorrespondingCode() {
             return DataPacket.BEGIN_TRANS;
         }
 
-        public Optional<DataPacket> process(DataPacket request, PeerTransactionState state) {
+        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
             TransStartRec transNodes = (TransStartRec) request.getParam1();
             TransferBill transMsg = (TransferBill) request.getParam2();
 
-            ActionStatus r = BankServerHandler.this.transManager.beginTrans(transNodes, transMsg, state);
+            ActionStatus r = PeerIoHandler.this.transManager.beginTrans(transNodes, transMsg, state);
 
             if (r.isOK()) {
                 return Optional.of(new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, DataPacket.YES));
@@ -159,15 +155,15 @@ public class BankServerHandler extends IoHandlerAdapter {
         }
     }
 
-    class VoteRequestHandler implements RequestHandler {
+    class VoteRequestHandler implements RequestHandler<TransferBill> {
         public String getCorrespondingCode() {
             return DataPacket.VOTE_REQ;
         }
 
-        public Optional<DataPacket> process(DataPacket request, PeerTransactionState state) {
+        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
             String xid = (String) request.getParam1();
 
-            ActionStatus r = BankServerHandler.this.transManager.processVoteReq(xid, state);
+            ActionStatus r = PeerIoHandler.this.transManager.processVoteReq(xid, state);
             if (r.isOK()) {
                 return Optional.of(new DataPacket(DataPacket.VOTE_ANSWER, DataPacket.YES));
             } else {
@@ -181,19 +177,19 @@ public class BankServerHandler extends IoHandlerAdapter {
         }
     }
 
-    class TransDecisionHandler implements RequestHandler {
+    class TransDecisionHandler implements RequestHandler<TransferBill> {
         public String getCorrespondingCode() {
             return DataPacket.TRANS_DECISION;
         }
 
-        public Optional<DataPacket> process(DataPacket request, PeerTransactionState state) {
+        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
             String xid = (String) request.getParam1();
             String decision = (String) request.getParam2();
 
             if (DataPacket.YES.equals(decision)) {
-                BankServerHandler.this.transManager.processTransDecision(xid, Decision.COMMIT, state);
+                PeerIoHandler.this.transManager.processTransDecision(xid, Decision.COMMIT, state);
             } else if (DataPacket.NO.equals(decision)) {
-                BankServerHandler.this.transManager.processTransDecision(xid, Decision.ABORT, state);
+                PeerIoHandler.this.transManager.processTransDecision(xid, Decision.ABORT, state);
             } else {
                 logger.error(BizCode.PEER_PRTC_ERROR, "Unknown commit decision " + decision);
             }
@@ -206,15 +202,15 @@ public class BankServerHandler extends IoHandlerAdapter {
         }
     }
 
-    class DecisionQueryHandler implements RequestHandler {
+    class DecisionQueryHandler implements RequestHandler<TransferBill> {
         public String getCorrespondingCode() {
             return DataPacket.DECISION_QUERY;
         }
 
-        public Optional<DataPacket> process(DataPacket request, PeerTransactionState state) {
+        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
             String xid = (String) request.getParam1();
 
-            Optional<Decision> decision = BankServerHandler.this.transManager.queryDecision(xid);
+            Optional<Decision> decision = PeerIoHandler.this.transManager.queryDecision(xid);
             String param2 = null;
             if (decision.isPresent()) {
                 switch (decision.get()) {
@@ -236,7 +232,7 @@ public class BankServerHandler extends IoHandlerAdapter {
 
         @Override
         public boolean requireTransState() {
-            return true;
+            return false;
         }
     }
 }

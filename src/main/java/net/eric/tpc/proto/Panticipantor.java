@@ -18,14 +18,14 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     private static final Logger logger = LoggerFactory.getLogger(Panticipantor.class);
 
     private DtLogger<B> dtLogger;
+    private PeerBizStrategy<B> bizStrategy;
     
     @Override
-    public ActionStatus beginTrans(TransStartRec startRec, B b, PeerTransactionState<B> state) {
+    public ActionStatus beginTrans(TransStartRec startRec, B bill, PeerTransactionState<B> state) {
+        assert (startRec != null);
+        assert (state != null);
+        assert (bill != null);
         synchronized (state) {
-            assert (startRec != null);
-            assert (state != null);
-            assert (b != null);
-
             if (state.getStage() != Stage.NONE) {
                 return new ActionStatus(BizCode.PEER_PRTC_ERROR, "Nested transaction not suppored");
             }
@@ -33,14 +33,14 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
             state.setStage(Stage.BEGIN);
             state.setXid(startRec.getXid());
 
-            //FIXME this.dtLogger.recordBeginTrans(startRec, b, false);
+            this.dtLogger.recordBeginTrans(startRec, bill, false);
             
-            System.out.println(b.toString());
+            System.out.println(bill.toString());
             System.out.println(startRec.toString());
             System.out.println(state.toString());
 
-            Future<ActionStatus> vrf = startCalcuVoteResult(b);
-            state.setVoteResult(vrf);
+            Future<ActionStatus> future = bizStrategy.checkAndPrepare(startRec.getXid(), bill);
+            state.setVoteFuture(future);
 
             return ActionStatus.OK;
         }
@@ -48,22 +48,21 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     @Override
     public ActionStatus processVoteReq(String xid, PeerTransactionState<B> state) {
+        if (!xid.equals(state.getXid())) {
+            return new ActionStatus(BizCode.PEER_PRTC_ERROR,
+                    "Got Difference xid, current is " + state.getXid() + " got " + xid);
+        }
+        if (state.getStage() != Stage.BEGIN) {
+            return new ActionStatus(BizCode.PEER_PRTC_ERROR, "Got Vote message more than one time");
+        }
         synchronized (state) {
-            if (!xid.equals(state.getXid())) {
-                return new ActionStatus(BizCode.PEER_PRTC_ERROR,
-                        "Got Difference xid, current is " + state.getXid() + " got " + xid);
-            }
-            if (state.getStage() != Stage.BEGIN) {
-                return new ActionStatus(BizCode.PEER_PRTC_ERROR, "Got Vote message more than one time");
-            }
-
             ActionStatus voteResult = ActionStatus.force(state.getVoteResult());
             Vote vote = (voteResult.isOK()) ? Vote.YES : Vote.NO;
 
             state.setStage(Stage.VOTED);
             state.setVote(vote);
 
-            if (Vote.NO.equals(vote)) {
+            if (!Vote.YES.equals(vote)) {
                 this.performAbort(state);
             }
             return voteResult;
@@ -133,20 +132,24 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     public Optional<Decision> queryDecision(String xid){
         return dtLogger.getDecisionFor(xid);
     }
-    
-    private Future<ActionStatus> startCalcuVoteResult(B b) {
-        long x = Math.round(Math.random() * 10);
-        if (x % 3 == 1) {
-            return Futures.immediateFuture(ActionStatus.create("SORRY", "You are not lucky enough!"));
-        } else {
-            return Futures.immediateFuture(ActionStatus.OK);
-        }
-    }
 
+    private BizActionListener finishTransListener = new BizActionListener(){
+        @Override
+        public void onSuccess(String xid) {
+            Panticipantor.this.dtLogger.markTransFinished(xid);
+        }
+
+        @Override
+        public void onFailure(String xid) {
+            logger.error("Transaction " + xid + " commit failed");
+        }
+    };
+    
     private void performCommit(PeerTransactionState<B> state) {
         if (logger.isDebugEnabled()) {
             logger.debug("do COMMIT actions");
         }
+        this.bizStrategy.commit(state.getXid(), finishTransListener);
         state.setStage(Stage.ENDED);
     }
 
@@ -154,6 +157,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         if (logger.isDebugEnabled()) {
             logger.debug("do Abort actions");
         }
+        this.bizStrategy.abort(state.getXid(), finishTransListener);
         state.setStage(Stage.ENDED);
     }
 
@@ -181,5 +185,13 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     public void setDtLogger(DtLogger<B> dtLogger) {
         this.dtLogger = dtLogger;
+    }
+
+    public PeerBizStrategy<B> getBizStrategy() {
+        return bizStrategy;
+    }
+
+    public void setBizStrategy(PeerBizStrategy<B> bizStrategy) {
+        this.bizStrategy = bizStrategy;
     }
 }

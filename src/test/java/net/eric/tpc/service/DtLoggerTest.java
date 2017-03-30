@@ -5,17 +5,16 @@ import java.util.Date;
 
 import com.google.common.collect.ImmutableList;
 
+import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.Node;
 import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransType;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Vote;
-import net.eric.tpc.service.ServiceFactory;
 
 public class DtLoggerTest {
     static Node boc = new Node("server.boc.org", 10021);
@@ -47,7 +46,7 @@ public class DtLoggerTest {
         PersisterFactory.initialize(url);
         
         TestUtil.clearTable("DT_RECORD", "org.h2.Driver", url, "sa", "");
-        DtLogger<TransferBill> dtLogger = ServiceFactory.getDtLogger();
+        DtLogger<TransferBill> dtLogger = BankServiceFactory.getDtLogger();
         
         for(int i = 0; i < 30; i++){
             TransStartRec rec = genTransRec("A");

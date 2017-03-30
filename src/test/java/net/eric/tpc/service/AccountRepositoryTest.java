@@ -9,6 +9,8 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
+import net.eric.tpc.bank.AccountRepositoryImpl;
+import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.KeyGenerator;
@@ -94,7 +96,7 @@ public class AccountRepositoryTest {
         final String url = "jdbc:h2:tcp://localhost:9100/bank";
         KeyGenerator.init();
         PersisterFactory.initialize(url);
-        AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) ServiceFactory.getAccountRepository();
+        AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) BankServiceFactory.getAccountRepository();
 
         // TestUtil.clearTable("ACCOUNT", "org.h2.Driver", url, "sa", "");
         // TestUtil.clearTable("TRANSFER_BILL", "org.h2.Driver", url, "sa", "");

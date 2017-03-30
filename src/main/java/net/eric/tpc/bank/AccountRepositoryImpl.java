@@ -1,4 +1,4 @@
-package net.eric.tpc.service;
+package net.eric.tpc.bank;
 
 import static net.eric.tpc.common.Pair.asPair;
 

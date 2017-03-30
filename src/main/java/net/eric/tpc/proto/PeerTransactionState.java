@@ -44,7 +44,7 @@ public class PeerTransactionState<B> {
         return voteResult;
     }
 
-    public void setVoteResult(Future<ActionStatus> voteResult) {
+    public void setVoteFuture(Future<ActionStatus> voteResult) {
         this.voteResult = voteResult;
     }
 
