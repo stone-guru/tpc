@@ -30,6 +30,13 @@ public interface Maybe<T> extends Either<ActionStatus, T> {
         }
     }
     
+    public static <T> Maybe<T> might(ActionStatus status, T v){
+        if(status.isOK()){
+            return Maybe.success(v);
+        }
+        return Maybe.fail(status);
+    }
+    
     final static class Success<T> extends Either.Right<ActionStatus, T> implements Maybe<T> {
         Success(T v) {
             super(v);

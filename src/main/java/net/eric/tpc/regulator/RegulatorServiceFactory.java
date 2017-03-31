@@ -15,6 +15,7 @@ public class RegulatorServiceFactory extends UniFactory {
     
     private static final String MY_CLASSIFER = "REGULATOR";
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <T> T createObject(Class<T> clz, String classifier) {
        if(PeerIoHandler.class.equals(clz) && this.isRegulator(classifier)){

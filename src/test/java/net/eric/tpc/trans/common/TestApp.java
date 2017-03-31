@@ -19,7 +19,6 @@ import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.coor.stub.MinaCommunicator;
 import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransType;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.RoundResult;

@@ -1,6 +1,5 @@
 package net.eric.tpc.bank;
 
-import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerIoHandler;
@@ -8,7 +7,6 @@ import net.eric.tpc.persist.AccountDao;
 import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Panticipantor;
-import net.eric.tpc.proto.PeerTransactionManager;
 
 public class BankServiceFactory extends UniFactory {
 

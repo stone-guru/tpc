@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
-import net.eric.tpc.entity.AccountType;
 import net.eric.tpc.proto.Vote;
 
 public class VoteTypeHandler extends BaseTypeHandler<Vote> {

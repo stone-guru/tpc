@@ -85,13 +85,16 @@ abstract public class UniFactory {
         }
     }
 
+
     public static <T> Optional<T> getObjectMaybe(Class<T> clz, String classifier) {
         final Pair<Class<?>, String> key = asPair(clz, classifier);
         synchronized (objectMap) {
             if (!objectMap.containsKey(key)) {
                 return Optional.absent();
             }
-            return Optional.of((T) objectMap.get(key));
+            @SuppressWarnings("unchecked")
+            final T obj = (T) objectMap.get(key);
+            return Optional.of(obj);
         }
     }
 

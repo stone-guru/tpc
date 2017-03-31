@@ -5,7 +5,6 @@ import java.util.Date;
 
 import com.google.common.collect.ImmutableList;
 
-import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.UniFactory;
@@ -16,7 +15,6 @@ import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Vote;
-import net.eric.tpc.service.TestUtil;
 
 public class JavaSerialize {
     static Node boc = new Node("server.boc.org", 10021);

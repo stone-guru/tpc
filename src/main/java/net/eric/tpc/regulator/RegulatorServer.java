@@ -4,12 +4,11 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
-import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.common.KeyGenerator;
+import net.eric.tpc.common.KeyGenerator.KeyPersister;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
 import net.eric.tpc.common.UniFactory;
-import net.eric.tpc.common.KeyGenerator.KeyPersister;
 import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.service.CommonServiceFactory;

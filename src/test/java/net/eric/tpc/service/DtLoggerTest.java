@@ -5,7 +5,6 @@ import java.util.Date;
 
 import com.google.common.collect.ImmutableList;
 
-import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.UniFactory;

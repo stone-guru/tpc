@@ -50,11 +50,7 @@ public class CoorIoHandler extends IoHandlerAdapter {
 
     private DataPacket processBill(TransferBill bill) {
         ActionStatus actionStatus = this.transactionManager.transaction(bill);
-        if (actionStatus.isOK()) {
-            return new DataPacket(DataPacket.TRANS_BILL_ANSWER, DataPacket.YES);
-        } else {
-            return new DataPacket(DataPacket.TRANS_BILL_ANSWER, DataPacket.NO, actionStatus);
-        }
+        return DataPacket.fromActionStatus(DataPacket.TRANS_BILL_ANSWER, actionStatus);
     }
 
     public TransactionManager<TransferBill> getTransactionManager() {

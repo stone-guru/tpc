@@ -10,11 +10,9 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.bank.AccountRepositoryImpl;
-import net.eric.tpc.bank.BankServiceFactory;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.biz.AccountRepository;
-import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountIdentity;
@@ -23,7 +21,6 @@ import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
-import net.eric.tpc.proto.TransStartRec;
 
 public class AccountRepositoryTest {
     static Node boc = new Node("server.boc.org", 10021);
@@ -75,11 +72,11 @@ public class AccountRepositoryTest {
         }
     }
 
-    private static TransStartRec genTransRec(String prefix) {
-        String xid = KeyGenerator.nextKey(prefix);
-        TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
-        return st;
-    }
+//    private static TransStartRec genTransRec(String prefix) {
+//        String xid = KeyGenerator.nextKey(prefix);
+//        TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
+//        return st;
+//    }
 
     private static BizActionListener bizActionListener = new BizActionListener() {
         @Override
@@ -94,7 +91,7 @@ public class AccountRepositoryTest {
     };
 
     public static void main(String[] args) {
-        final String url = "jdbc:h2:tcp://localhost:9100/bank";
+        //final String url = "jdbc:h2:tcp://localhost:9100/bank";
 
         UniFactory.setParam(PersisterFactory.class, "jdbc:h2:tcp://localhost:9100/data_abc");
        

@@ -286,7 +286,7 @@ public class MinaCommunicator implements Communicator<TransferBill> {
 
         if (!result.isAllOK()) {
             closeChannels(result.okResultAs(MinaCommunicator.OBJECT_AS_CHANNEL));
-            return Either.left(ar);
+            return Either.left(result.getAnError());
         }
 
         Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();

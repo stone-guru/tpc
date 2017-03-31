@@ -2,10 +2,19 @@ package net.eric.tpc.net;
 
 import java.io.Serializable;
 
+import net.eric.tpc.base.ActionStatus;
+
 public class DataPacket implements Serializable {
 
     private static final long serialVersionUID = 6971835564417011087L;
 
+    public static DataPacket fromActionStatus(String code, ActionStatus status){
+        if(status.isOK()){
+            return new DataPacket(code, DataPacket.YES);
+        }
+        return new DataPacket(code, DataPacket.NO, status);
+    }
+    
     public static DataPacket readOnlyPacket(String code, Object param1, Object param2) {
         return new DataPacket(code, param1, param2) {
 
@@ -57,22 +66,36 @@ public class DataPacket implements Serializable {
     public static final String BAD_DATA_PACKET = "BAD_DATA_PACKET";
     
     private String code;
+    private int round;
     private Object param1;
     private Object param2;
 
-    public DataPacket(String code, Object param1) {
-        this(code, param1, "");
+    public DataPacket(String code) {
+        this(code, 0, "", "");
     }
 
+    public DataPacket(String code, int round){
+        this(code, round, "", "");
+    }
+    
+    public DataPacket(String code, Object param1) {
+        this(code, 0, param1, "");
+    }
+
+    public DataPacket(String code, int round, Object param1) {
+        this(code, round, param1, "");
+    }
+
+    
     public DataPacket(String code, Object param1, Object param2) {
+        this(code, 0, param1, param2);
+    }
+    
+    public DataPacket(String code, int round, Object param1, Object param2) {
         this.code = code;
+        this.round = round;
         this.param1 = param1;
         this.param2 = param2;
-    }
-
-    public DataPacket(String code) {
-        this(code, "", "");
-
     }
 
     public DataPacket() {
@@ -101,6 +124,15 @@ public class DataPacket implements Serializable {
 
     public void setParam2(Object param2) {
         this.param2 = param2;
+    }
+    
+
+    public int getRound() {
+        return round;
+    }
+
+    public void setRound(int round) {
+        this.round = round;
     }
 
     @Override

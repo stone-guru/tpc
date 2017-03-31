@@ -36,7 +36,7 @@ public class H2DbTest {
         //databaseInit.createAccountTable();
         // databaseInit.createTransferMessageTable();
 
-        AccountDao accountDao = session.getMapper(AccountDao.class);
+        //AccountDao accountDao = session.getMapper(AccountDao.class);
         //initAccounts(accountDao, "BOC");
         insertTransferMessage();
         session.commit();
@@ -44,7 +44,7 @@ public class H2DbTest {
     }
 
     public static void insertTransferMessage() {
-        TransferBillDao dmDao = session.getMapper(TransferBillDao.class);
+        //TransferBillDao dmDao = session.getMapper(TransferBillDao.class);
         TransferBill msg = new TransferBill();
 
 //        msg.setVersion("1.1");

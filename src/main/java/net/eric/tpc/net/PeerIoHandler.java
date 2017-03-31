@@ -75,7 +75,6 @@ public class PeerIoHandler extends IoHandlerAdapter {
         return Optional.fromNullable(state);
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         if (logger.isDebugEnabled()) {
@@ -93,15 +92,17 @@ public class PeerIoHandler extends IoHandlerAdapter {
             return;
         }
 
-        final Optional<DataPacket> response = handler.process(request, state.get());
+        final Optional<DataPacket> opt = handler.process(request, state.get());
 
-        if (response.isPresent()) {
-            WriteFuture wf = session.write(response.get());
+        if (opt.isPresent()) {
+            DataPacket response = opt.get(); 
+            response.setRound(request.getRound());
+            WriteFuture wf = session.write(response);
 
             if (logger.isDebugEnabled()) {
-                wf.addListener(new IoFutureListener() {
+                wf.addListener(new IoFutureListener<IoFuture>() {
                     public void operationComplete(IoFuture future) {
-                        logger.debug("response written : " + response.get());
+                        logger.debug("response written : " + response);
                     }
                 });
             }
