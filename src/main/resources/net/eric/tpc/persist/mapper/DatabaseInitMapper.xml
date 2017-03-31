@@ -62,4 +62,16 @@
       PRIMARY KEY(TRANS_SN))
   </update>
 
+  <update id="dropKeyTable">
+    DROP TABLE IF EXISTS KEY_STORE
+  </update>
+    
+  <update id="createKeyTable">
+    CREATE TABLE KEY_STORE(
+      PREFIX VARCHAR(48) NOT NULL,
+      DATE_DIGIT INT NOT NULL,
+      SERIAL_NUMBER INT NOT NULL,
+      PRIMARY KEY(PREFIX))
+  </update>
+
 </mapper>

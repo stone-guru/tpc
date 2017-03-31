@@ -1,6 +1,6 @@
 package net.eric.tpc.trans.common;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -15,8 +15,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.coor.stub.MinaCommunicator;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransType;

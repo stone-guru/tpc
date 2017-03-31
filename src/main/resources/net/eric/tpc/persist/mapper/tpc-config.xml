@@ -8,15 +8,16 @@
   </settings>
   
   <typeAliases>
-    <typeAlias alias="Pair" type="net.eric.tpc.common.Pair"/>  
+    <typeAlias alias="Pair" type="net.eric.tpc.base.Pair"/>  
     <typeAlias alias="Decision" type="net.eric.tpc.proto.Decision"/>  
     <typeAlias alias="Vote" type="net.eric.tpc.proto.Vote"/>  
-    <typeAlias alias="Pair" type="net.eric.tpc.common.Pair"/>  
+    <typeAlias alias="Pair" type="net.eric.tpc.base.Pair"/>  
     <typeAlias alias="DtRecord" type="net.eric.tpc.entity.DtRecord"/>
     <typeAlias alias="Account" type="net.eric.tpc.entity.Account"/>
     <typeAlias alias="TransferBill" type="net.eric.tpc.entity.TransferBill"/>
+    <typeAlias alias="KeyRecord" type="net.eric.tpc.persist.KeyRecord"/>
   </typeAliases>
-  
+
   <typeHandlers>
     <typeHandler handler="net.eric.tpc.persist.VoteTypeHandler" 
                 javaType="net.eric.tpc.proto.Vote"
@@ -48,6 +49,7 @@
     <mapper resource="net/eric/tpc/persist/mapper/AccountMapper.xml"/>
     <mapper resource="net/eric/tpc/persist/mapper/TransferBillMapper.xml"/>
     <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/KeyStoreMapper.xml"/>
   </mappers>
   
 </configuration>

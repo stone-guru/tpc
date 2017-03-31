@@ -1,6 +1,6 @@
 package net.eric.tpc.coor.stub;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -12,12 +12,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.Configuration;
-import net.eric.tpc.common.Maybe;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.TransferBillDao;
@@ -32,11 +32,11 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     private TransferBillDao transferBillDao;
     private ExecutorService pool = Executors.newFixedThreadPool(2);
     private BillSaveStrategy billSaver = new BillSaveStrategy(this.pool);
-    
+
     @Override
     public Maybe<TaskPartition<TransferBill>> splitTask(String xid, TransferBill bill) {
         logger.info("splitTask for " + xid);
-        
+
         ActionStatus checkResult = basicCheck(bill);
         if (!checkResult.isOK()) {
             return Maybe.fail(checkResult);
@@ -45,9 +45,12 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
         List<Pair<Node, TransferBill>> tasks;
         if (this.isSameBankTrans(bill)) {
             tasks = ImmutableList.of(this.assignToSameBank(bill), this.assignToRegulator(bill));
+            // tasks = ImmutableList.of(this.assignToSameBank(bill));
         } else {
             tasks = ImmutableList.of(this.asignToBankAtPayment(bill), this.asignToBankAtReceive(bill),
                     this.assignToRegulator(bill));
+            // tasks = ImmutableList.of(this.asignToBankAtPayment(bill),
+            // this.asignToBankAtReceive(bill));
         }
         final TransferBill myBill = this.assignToMySelf(bill);
         return Maybe.success(new TaskPartition<TransferBill>(myBill, tasks));
@@ -58,6 +61,7 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
         if (!checkResult.isOK()) {
             return checkResult;
         }
+
         if (!config.isBankNodeExists(bill.getAccount().getBankCode())) {
             return ActionStatus.create(BizCode.NO_BANK_NODE, bill.getAccount().getBankCode());
         }

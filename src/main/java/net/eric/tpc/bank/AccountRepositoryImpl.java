@@ -1,6 +1,6 @@
 package net.eric.tpc.bank;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,13 +15,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.Pair;
+import net.eric.tpc.base.ShouldNotHappenException;
+import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Maybe;
-import net.eric.tpc.common.Pair;
-import net.eric.tpc.common.ShouldNotHappenException;
-import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.AccountDao;
@@ -62,7 +62,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         boolean locked = false;
         boolean success = false;
         try {
-            // 加锁机制的实现目前不care账户是否正真存在
+            // 加锁机制的实现目前不care账户是否正真存在，先锁再操作
             locked = accountLocker.repeatTryLock(accountNumber, oppAccountNumber, xid);
             if (!locked) {
                 return ActionStatus.create(BizCode.ACCOUNT_LOCKED, accountNumber);
@@ -83,7 +83,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         } catch (Exception e) {
             return ActionStatus.innerError(e.getMessage());
         } finally {
-            if (!success && locked) {
+            if (locked && !success) {
                 this.accountLocker.releaseLock(accountNumber, oppAccountNumber, xid);
             }
         }
@@ -129,7 +129,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     private Future<Void> doDecision(String xid, Decision decision, final BizActionListener listener) {
         Maybe<Pair<String, String>> maybe = this.accountLocker.getLockedKeyByXid(xid);
         if (!maybe.isRight()) {
-            logger.error("when commit " + maybe.getLeft().toString());
+            logger.error("when " + decision + ", " + maybe.getLeft().toString());
             this.callBizActionListener(xid, decision, false, listener);
             return Futures.immediateFuture(null);
         }
@@ -151,6 +151,13 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
                     logger.error("AccountRepositoryImpl.innerCommit", e);
                 }
                 AccountRepositoryImpl.this.callBizActionListener(xid, decision, success, listener);
+                
+                //显示本次事务处理后的账户情况
+                if (logger.isInfoEnabled()) {
+                    logger.info("After process transaction " + xid);
+                    AccountRepositoryImpl.this.displayAllAccount();
+                }
+                
                 return null;
             }
         };
@@ -191,12 +198,22 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
 
     private void innerAbort(String xid) {
         TransferBill bill = this.transferBillDao.selectByXid(xid);
+        if (bill == null) {// 在检查阶段就没有保存，此处即可为空
+            return;
+        }
         Preconditions.checkNotNull(bill, "bill for xid " + xid + " not exists unexpectedly.");
 
         this.transferBillDao.deleteByXid(xid);
 
         // 若上述过程出现异常，解锁操作不会发生，保护账户不再执行其它操作，也利于其它诊断
         this.accountLocker.releaseByXid(xid);
+    }
+
+    private void displayAllAccount() {
+        List<Account> accounts = this.accountDao.selectAll();
+        for(Account acct : accounts){
+            logger.info(acct.toString());
+        }
     }
 
     @Override

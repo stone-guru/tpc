@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Decision;
@@ -113,7 +113,7 @@ public class PeerIoHandler extends IoHandlerAdapter {
         if (!IdleStatus.READER_IDLE.equals(status)) {
             return;
         }
-        System.out.println("READER IDLE " + session.getIdleCount(status));
+        //System.out.println("READER IDLE " + session.getIdleCount(status));
 
         Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
 

@@ -6,9 +6,9 @@ import java.util.concurrent.Executors;
 
 import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Either;
-import net.eric.tpc.common.Node;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Either;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.CommunicatorFactory;
 import net.eric.tpc.proto.Communicator;

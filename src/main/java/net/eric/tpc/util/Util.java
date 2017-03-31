@@ -3,7 +3,7 @@ package net.eric.tpc.util;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
-import net.eric.tpc.common.ShouldNotHappenException;
+import net.eric.tpc.base.ShouldNotHappenException;
 
 public class Util {
     public static byte[] ObjectToBytes(Object obj) {

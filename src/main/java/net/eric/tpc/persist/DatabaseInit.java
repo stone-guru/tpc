@@ -12,4 +12,8 @@ public interface DatabaseInit {
     void dropDtTable();
     
     void createDtTable();
+    
+    void dropKeyTable();
+    
+    void createKeyTable();
 }

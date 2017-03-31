@@ -4,13 +4,18 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
+import net.eric.tpc.common.UniFactory;
+import net.eric.tpc.common.KeyGenerator.KeyPersister;
+import net.eric.tpc.persist.PersisterFactory;
+import net.eric.tpc.service.CommonServiceFactory;
 
 public class CoorServer extends MinaServer {
     private static final String DEFAULT_BANK_CODE = "ABC";
     private static final int DEFAULT_PORT = 10024;
-    private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/bank_abc";
+    private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/data_abc";
 
     public CoorServer(ServerConfig config) {
         super(config);
@@ -19,6 +24,17 @@ public class CoorServer extends MinaServer {
     public static void main(String[] args) throws IOException {
         ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
 
+        PersisterFactory.register();
+        CommonServiceFactory.register();
+        CoordinatorFactory.register();
+        
+        System.out.println(config.getDbUrl());
+        UniFactory.setParam(PersisterFactory.class, config.getDbUrl());
+        UniFactory.setParam(CoordinatorFactory.class, config);
+        
+        KeyGenerator.init(UniFactory.getObject(KeyPersister.class));
+
+        
         CoorServer server = new CoorServer(config);
 
         server.start();
@@ -49,7 +65,7 @@ public class CoorServer extends MinaServer {
 
     @Override
     protected IoHandler getIoHandler() {
-        return CoordinatorFactory.getIoHandler();
+        return UniFactory.getObject(CoorIoHandler.class);
     }
 
     @Override

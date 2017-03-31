@@ -42,7 +42,7 @@
   <update id="updateFinishTime" parameterType="Pair">
     UPDATE DT_RECORD
     SET FINISH_TIME = #{snd}
-    WHERE XID = #{xid}
+    WHERE XID = #{fst}
   </update>
   
   <select id="selectDecision" resultType="Decision" parameterType="String">

@@ -6,8 +6,8 @@ import java.util.Date;
 
 import com.google.common.base.Strings;
 
+import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
 
 public class TransferBill implements Serializable {
 
@@ -93,7 +93,7 @@ public class TransferBill implements Serializable {
                 + amount + ", voucherNumber=" + voucherNumber + ", summary=" + summary + "]";
     }
 
-    public TransferBill copy(){
+    public TransferBill copy() {
         TransferBill bill = new TransferBill();
         bill.transSN = this.transSN;
         bill.launchTime = this.launchTime;
@@ -102,10 +102,10 @@ public class TransferBill implements Serializable {
         bill.amount = this.amount;
         bill.account = this.account.copy();
         bill.oppositeAccount = this.oppositeAccount.copy();
-        
+        bill.voucherNumber = this.voucherNumber;
         return bill;
     }
-    
+
     public ActionStatus fieldCheck() {
         ActionStatus r = checkFieldMissing();
         if (!r.isOK()) {
@@ -124,6 +124,40 @@ public class TransferBill implements Serializable {
             return ActionStatus.create(BizCode.SAME_ACCOUNT, this.getAccount().toString());
         }
 
+        if (this.getSummary() != null) {
+            if (this.getSummary().length() > 48) {
+                return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Summary");
+            }
+        }
+        
+        if(this.getTransSN().length() > 24){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "TransSn");
+        }
+        
+        if(this.getReceivingBankCode().length() > 24){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "ReceivingBankCode");
+        }
+        
+        if(this.getVoucherNumber().length() > 36){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "VoucherNumber");
+        }
+        
+        if(this.getAccount().getNumber().length() > 24){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.Number");
+        }
+        
+        if(this.getAccount().getBankCode().length() > 12){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.BankCode");
+        }
+
+        if(this.getOppositeAccount().getNumber().length() > 24){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.Number");
+        }
+        
+        if(this.getOppositeAccount().getBankCode().length() > 12){
+            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.BankCode");
+        }
+        
         return ActionStatus.OK;
     }
 
@@ -170,10 +204,6 @@ public class TransferBill implements Serializable {
 
         if (this.getAmount() == null) {
             return ActionStatus.create(BizCode.MISS_FIELD, "Amount");
-        }
-
-        if (Strings.isNullOrEmpty(this.getSummary())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "Summary");
         }
 
         return ActionStatus.OK;

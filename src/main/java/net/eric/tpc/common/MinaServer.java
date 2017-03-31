@@ -12,7 +12,9 @@ import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactor
 import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
+import net.eric.tpc.common.KeyGenerator.KeyPersister;
 import net.eric.tpc.persist.PersisterFactory;
+import net.eric.tpc.service.CommonServiceFactory;
 
 abstract public class MinaServer {
     private ServerConfig config;
@@ -20,6 +22,7 @@ abstract public class MinaServer {
 
     public MinaServer(ServerConfig config) {
         this.config = config;
+
     }
 
     public void start() {
@@ -38,7 +41,6 @@ abstract public class MinaServer {
     }
 
     private boolean startListen() {
-        PersisterFactory.initialize(config.getDbUrl());
         acceptor = new NioSocketAcceptor();
 
         acceptor.getFilterChain().addLast("logger", new LoggingFilter());

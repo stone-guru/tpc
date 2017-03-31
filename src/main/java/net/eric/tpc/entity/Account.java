@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class Account {
+
     private String acctNumber;
     private String acctName;
     private BigDecimal balance;
@@ -76,4 +77,11 @@ public class Account {
     public void setOverdraftLimit(BigDecimal overdraftLimit) {
         this.overdraftLimit = overdraftLimit;
     }
+
+    @Override
+    public String toString() {
+        return "Account [acctNumber=" + acctNumber + ", acctName=" + acctName + ", balance=" + balance + ", bankCode="
+                + bankCode + ", type=" + type + ", overdraftLimit=" + overdraftLimit + "]";
+    }
+
 }

@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 
@@ -38,7 +38,6 @@ public class MinaChannel {
         connector.setConnectTimeoutMillis(3000);
         DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();
         filterChain.addLast("codec", new ProtocolCodecFilter(codecFactory));
-        // connector.getSessionConfig().setUseReadOperation(true);
         connector.setHandler(new SocketHandler());
         MinaChannel.sharedConnector = connector;
     }
@@ -71,6 +70,9 @@ public class MinaChannel {
         SocketConnector connector = MinaChannel.getSharedConnector();
         ConnectFuture future = connector.connect(new InetSocketAddress(node.getAddress(), node.getPort()));
         future.awaitUninterruptibly();
+        if (!future.isConnected()) {
+            return false;
+        }
         this.session = future.getSession();
         session.setAttribute("ROUND_REF", this.roundRef);
         session.setAttribute("PEER", this.node);

@@ -13,9 +13,15 @@ public class BizCode {
     public static final String INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE";
     public static final String BEYOND_OVERDRAFT_LIMIT = "BEYOND_OVERDRAFT_LIMIT";
     public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
+    public static final String FIELD_TOO_LONG = "FIELD_TOO_LONG";
+    public static final String BEYOND_TRANS_AMOUNT_LIMIT = "BEYOND_TRANS_AMOUNT_LIMIT";
     
     public static final String REFUSE_TRANS = "REFUSE_TRANS";
     public static final String REFUSE_COMMIT = "REFUSE_COMMIT";
+
+    public static final String COMMAND_SYNTAX_ERROR = "COMMAND_SYNTAX_ERROR";
+    public static final String ACCOUNT_SYNTAX_ERROR = "ACCOUNT_SYNTAX_ERROR";
+    public static final String AMOUNT_NOT_INT = "AMOUNT_NOT_INT";
     
     private BizCode(){}
 }

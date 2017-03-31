@@ -3,9 +3,9 @@ package net.eric.tpc.proto;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
 
 public interface Communicator<B> {
     ActionStatus connectPanticipants(List<Node> nodes);

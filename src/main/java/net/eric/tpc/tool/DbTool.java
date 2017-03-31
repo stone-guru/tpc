@@ -1,6 +1,6 @@
 package net.eric.tpc.tool;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -9,7 +9,8 @@ import java.util.Set;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.Pair;
+import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountType;
 import net.eric.tpc.persist.AccountDao;
@@ -24,6 +25,8 @@ public class DbTool {
     private static Set<String> codeSet = ImmutableSet.of("BOC", "CCB", "CBRC", "ABC");
     
     public static void main(String[] args) {
+        PersisterFactory.register();
+        
         DbTool tool = new DbTool();
         Optional<Pair<String, String>> opt = tool.parseArgument(args);
         if(!opt.isPresent()){
@@ -50,13 +53,16 @@ public class DbTool {
     }
     
     private void initDatabase(String bankCode, String dirname){
-        PersisterFactory.initialize("jdbc:h2:" + dirname + "/data_" + bankCode.toLowerCase());
-        DatabaseInit dbInit = PersisterFactory.getMapper(DatabaseInit.class);
  
+        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:" + dirname + "/data_" + bankCode.toLowerCase());
+        
+        DatabaseInit dbInit = UniFactory.getObject(DatabaseInit.class);
+        AccountDao accountDao = UniFactory.getObject(AccountDao.class);
+        
         if(bankCode.equals("BOC") || bankCode.equals("CCB")){
             dbInit.dropAccountTable();
             dbInit.createAccountTable();
-            this.insertAccounts(bankCode, PersisterFactory.getMapper(AccountDao.class));    
+            this.insertAccounts(bankCode, accountDao);    
         }
         
         dbInit.dropTransferBillTable();
@@ -64,6 +70,9 @@ public class DbTool {
         
         dbInit.dropDtTable();
         dbInit.createDtTable();
+        
+        dbInit.dropKeyTable();
+        dbInit.createKeyTable();
      }
     
     private void insertAccounts(String bankCode, AccountDao accountDao){

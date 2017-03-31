@@ -6,12 +6,12 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Either;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Either;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.common.KeyGenerator;
-import net.eric.tpc.common.Maybe;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 
 public class Coordinator<B> implements TransactionManager<B> {

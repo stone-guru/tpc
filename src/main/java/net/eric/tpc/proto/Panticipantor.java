@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.proto.PeerTransactionState.Stage;
 
 public class Panticipantor<B> implements PeerTransactionManager<B> {
@@ -78,7 +78,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
                 messageWrong = true;
             }
             if (state.getStage() != Stage.VOTED) {
-                logger.debug("Decision Stage: got DECISION before vote");
+                logger.debug("Decision Stage: got DECISION before vote " + xid);
                 messageWrong = true;
             }
 
@@ -141,7 +141,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
         @Override
         public void onFailure(String xid) {
-            logger.error("Transaction " + xid + " commit failed");
+            logger.error("Transaction " + xid + " failed");
         }
     };
     

@@ -2,7 +2,7 @@ package net.eric.tpc.persist;
 
 import java.util.Date;
 
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.proto.Decision;
 

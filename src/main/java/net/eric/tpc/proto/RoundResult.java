@@ -10,8 +10,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Node;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.net.PeerResult;
 
 public class RoundResult {

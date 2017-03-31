@@ -51,6 +51,11 @@ public class DataPacket implements Serializable {
     public static final String NO = "NO";
     public static final String UNKNOWN = "UNKNOWN";
 
+    public static final String TRANS_BILL = "TRANS_BILL";
+    public static final String TRANS_BILL_ANSWER = "TRANS_BILL_ANSWER";
+    
+    public static final String BAD_DATA_PACKET = "BAD_DATA_PACKET";
+    
     private String code;
     private Object param1;
     private Object param2;

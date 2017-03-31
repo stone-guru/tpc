@@ -9,16 +9,29 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
-public class PersisterFactory {
+import com.google.common.base.Preconditions;
+
+import net.eric.tpc.common.UniFactory;
+
+public class PersisterFactory extends UniFactory {
+
+    public static void register()  {
+        UniFactory.register(PersisterFactory.class, 0);
+    }
+    
     public static String DEFAULT_JDBC_URL = "jdbc:h2:tcp://localhost:9100/bank";
     public static String MY_BATIS_CONFIG_FILE = "net/eric/tpc/persist/mapper/tpc-config.xml";
 
-    static private SqlSessionFactory sqlSessionFactory;
-    static private SqlSession sqlSession;
+    private SqlSessionFactory sqlSessionFactory;
+    private SqlSession sqlSession;
 
-    public static void initialize(String jdbcUrl) {
+    
+    @Override
+    protected void init(Object param){
+        Preconditions.checkNotNull(param);
+        String jdbcUrl = param.toString();
+        
         Reader reader = null;
-      
         try {
             reader = Resources.getResourceAsReader(MY_BATIS_CONFIG_FILE);
         } catch (IOException e) {
@@ -28,25 +41,15 @@ public class PersisterFactory {
         Properties properties = new Properties();
         properties.put("url", jdbcUrl);
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader, properties);
-        //sqlSessionFactory.getConfiguration().getEnvironment().getDataSource().
-    }
-
-    public static SqlSession getSession() {
-        if (sqlSession != null) {
-            return sqlSession;
-        }
-        synchronized (PersisterFactory.class) {
-            if (sqlSession == null) {
-                if(sqlSessionFactory == null){
-                    throw new IllegalStateException("not initialized, call MyBatisSessionFactory.init first");
-                }
-                sqlSession = sqlSessionFactory.openSession(true);
-            }
-            return sqlSession;
-        }
+        sqlSession = sqlSessionFactory.openSession(true);
     }
     
-    public static <T> T getMapper(Class<T> clz){
-        return getSession().getMapper(clz);
+    @Override
+    protected <T> T createObject(Class<T> clz, String classifer) {
+        if(!sqlSessionFactory.getConfiguration().hasMapper(clz)){
+            return null;
+        }
+            
+        return sqlSession.getMapper(clz);
     }
 }

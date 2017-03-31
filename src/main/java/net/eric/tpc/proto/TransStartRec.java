@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-import net.eric.tpc.common.Node;
+import net.eric.tpc.base.Node;
 
 public class TransStartRec implements Serializable {
     

@@ -6,8 +6,9 @@ import java.util.Date;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.bank.BankServiceFactory;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.common.KeyGenerator;
-import net.eric.tpc.common.Node;
+import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
@@ -42,11 +43,12 @@ public class DtLoggerTest {
 
     public static void main(String[] args) {
         final String url = "jdbc:h2:tcp://localhost:9100/bank";
-        KeyGenerator.init();
-        PersisterFactory.initialize(url);
         
+        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:tcp://localhost:9100/data_abc");
+                
         TestUtil.clearTable("DT_RECORD", "org.h2.Driver", url, "sa", "");
-        DtLogger<TransferBill> dtLogger = BankServiceFactory.getDtLogger();
+        @SuppressWarnings("unchecked")
+        DtLogger<TransferBill> dtLogger = UniFactory.getObject(DtLogger.class);
         
         for(int i = 0; i < 30; i++){
             TransStartRec rec = genTransRec("A");

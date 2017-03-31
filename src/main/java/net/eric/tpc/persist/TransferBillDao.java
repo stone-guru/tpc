@@ -1,6 +1,6 @@
 package net.eric.tpc.persist;
 
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.TransferBill;
 
 public interface TransferBillDao {

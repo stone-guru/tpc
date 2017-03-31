@@ -2,7 +2,7 @@ package net.eric.tpc.proto;
 
 import java.util.concurrent.Future;
 
-import net.eric.tpc.common.ActionStatus;
+import net.eric.tpc.base.ActionStatus;
 
 public interface PeerBizStrategy<B> {
     Future<ActionStatus> checkAndPrepare(String xid, B b);

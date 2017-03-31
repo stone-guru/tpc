@@ -2,9 +2,9 @@ package net.eric.tpc.net;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.SysErrorCode;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.SysErrorCode;
 
 public class PeerResult {
     public static enum State {
@@ -133,7 +133,7 @@ public class PeerResult {
 
     @Override
     public String toString() {
-        return "PeerResult2 [peer=" + peer + ", state=" + state + ", error=" + error + ", result=" + result + "]";
+        return "PeerResult[peer=" + peer + ", state=" + state + ", error=" + error + ", result=" + result + "]";
     }
 
     

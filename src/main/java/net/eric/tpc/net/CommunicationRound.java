@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
-import net.eric.tpc.common.Node;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.proto.RoundResult;
 
 public class CommunicationRound {
@@ -77,11 +77,11 @@ public class CommunicationRound {
 
     private RoundResult generateResult() {
         final RoundResult result = new RoundResult(this.wantedCount, this.resultMap.values());
-        if (logger.isDebugEnabled()) {
+        if (logger.isInfoEnabled()){
             List<PeerResult> okResults = result.okResults();
-            logger.debug(" CommuResult want " + result.wantedCount() + ", got ok result " + okResults.size());
+            logger.info(" CommuResult want " + result.wantedCount() + ", got ok result " + okResults.size());
             for (PeerResult pr : result.getResults()) {
-                logger.debug(pr.toString());
+                logger.info(pr.toString());
             }
         }
         return result;

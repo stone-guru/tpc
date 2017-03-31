@@ -1,6 +1,6 @@
 package net.eric.tpc.service;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -11,10 +11,11 @@ import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.bank.AccountRepositoryImpl;
 import net.eric.tpc.bank.BankServiceFactory;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.biz.AccountRepository;
-import net.eric.tpc.common.ActionStatus;
 import net.eric.tpc.common.KeyGenerator;
-import net.eric.tpc.common.Node;
+import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.AccountType;
@@ -94,9 +95,10 @@ public class AccountRepositoryTest {
 
     public static void main(String[] args) {
         final String url = "jdbc:h2:tcp://localhost:9100/bank";
-        KeyGenerator.init();
-        PersisterFactory.initialize(url);
-        AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) BankServiceFactory.getAccountRepository();
+
+        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:tcp://localhost:9100/data_abc");
+       
+        AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) UniFactory.getObject(AccountRepositoryImpl.class);
 
         // TestUtil.clearTable("ACCOUNT", "org.h2.Driver", url, "sa", "");
         // TestUtil.clearTable("TRANSFER_BILL", "org.h2.Driver", url, "sa", "");

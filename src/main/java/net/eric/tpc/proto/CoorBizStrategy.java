@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Maybe;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
 
 public interface CoorBizStrategy<B> {
 

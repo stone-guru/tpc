@@ -1,6 +1,6 @@
 package net.eric.tpc.coor.stub;
 
-import static net.eric.tpc.common.Pair.asPair;
+import static net.eric.tpc.base.Pair.asPair;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,13 +19,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Either;
+import net.eric.tpc.base.Node;
+import net.eric.tpc.base.Pair;
+import net.eric.tpc.base.ShouldNotHappenException;
+import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.common.ActionStatus;
-import net.eric.tpc.common.Either;
-import net.eric.tpc.common.Node;
-import net.eric.tpc.common.Pair;
-import net.eric.tpc.common.ShouldNotHappenException;
-import net.eric.tpc.common.UnImplementedException;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
@@ -211,10 +211,8 @@ public class MinaCommunicator implements Communicator<TransferBill> {
                     final MinaChannel channel = channelMap.get(p.fst());
                     Runnable task = new Runnable() {
                         public void run() {
-                            System.out.println("before call channel send");
                             final boolean sendOnly = roundType == RoundType.SINGLE_SIDE;
                             channel.sendMessage(p.snd(), sendOnly);
-                            System.out.println("after call channel send");
                         }
                     };
                     commuTaskPool.submit(task);
@@ -236,14 +234,19 @@ public class MinaCommunicator implements Communicator<TransferBill> {
                     Runnable task = new Runnable() {
                         public void run() {
                             MinaChannel channel = new MinaChannel(node, MinaCommunicator.this.roundRef);
+                            boolean connected = false;
                             try {
-                                channel.connect();
+                                connected = channel.connect();
+                            } catch (Exception e) {
+                                logger.error("connect " + node.toString(), e);
+                            }
+                            if (connected) {
                                 round.regMessage(node, channel);
                                 if (logger.isDebugEnabled()) {
                                     logger.debug("connec " + node + " finish reg");
                                 }
-                            } catch (Exception e) {
-                                round.regFailure(node, "EXCEPTION", e.getMessage());
+                            } else {
+                                round.regFailure(node, "NOT_CONNECTED", node.toString());
                             }
                         }
                     };
