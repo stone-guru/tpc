@@ -6,7 +6,8 @@ DB_URL="jdbc:h2:$DB_FILE"
 
 LIB_DIR="$bin"/../lib
 
-CLASS_PATH=$LIB_DIR/eric-tpc-0.1.jar
+#CLASS_PATH=$LIB_DIR/eric-tpc-0.1.jar
+CLASS_PATH=/home/bison/workspace/tpc/target/classes
 CLASS_PATH=$CLASS_PATH:$LIB_DIR/guava-20.0.jar
 CLASS_PATH=$CLASS_PATH:$LIB_DIR/h2-1.4.194.jar
 CLASS_PATH=$CLASS_PATH:$LIB_DIR/log4j-1.2.17.jar

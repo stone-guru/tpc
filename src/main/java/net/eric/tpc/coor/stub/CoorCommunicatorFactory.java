@@ -24,7 +24,7 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill
 
     @Override
     public Maybe<Communicator<TransferBill>> getCommunicator(List<Node> peers) {
-        Communicator<TransferBill> communicator = new MinaCommunicator(this.commuTaskPool,
+        Communicator<TransferBill> communicator = new TpcCommunicator(this.commuTaskPool,
                 this.sequenceTaskPool);
         ActionStatus result = communicator.connectPanticipants(peers);
         return Maybe.might(result, communicator);

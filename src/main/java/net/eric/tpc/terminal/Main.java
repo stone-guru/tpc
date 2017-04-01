@@ -58,15 +58,24 @@ public class Main {
     private static void displayResult(ActionStatus status) {
         if (status.isOK()) {
             System.out.println("Your transfer command has been processed by ABC server succesfully!");
-        } else {
-            String errMsg;
-            if (status.getCode().equals(ActionStatus.PEER_NO_REPLY)) {
-                errMsg = "ABC server no reponse";
-            } else {
-                errMsg = "ABC server reply " + status.toString();
-            }
-            System.out.println("Your transfer command is not processed. The reason is " + errMsg);
+            return;
         }
+        String errMsg;
+        if (status.getCode().equals(ActionStatus.PEER_NO_REPLY)) {
+            errMsg = "ABC server no reponse";
+        } else if (status.getCode().equals(BizCode.REFUSE_COMMIT)) {
+            String[] segs = status.getDescription().split(", *");
+            if (segs.length != 3) {
+                errMsg = status.getDescription();
+            } else {
+                errMsg = String.format("%s reply %s %s", segs[0], segs[1], segs[2]);
+            }
+        } else if (status.getCode().equals("NOT_CONNECTED")) {
+            errMsg = " ABC server can not connect to " + status.getDescription();
+        } else {
+            errMsg = status.toString();
+        }
+        System.out.println("Sorry! Your transfer requirement was reject because of \"" + errMsg + "\".");
     }
 
     private static void displayUsage() {
@@ -156,7 +165,7 @@ public class Main {
             }
             DataPacket dataPacket = (DataPacket) readFuture.getMessage();
             if (!DataPacket.TRANS_BILL_ANSWER.equals(dataPacket.getCode())) {
-                return ActionStatus.create(BizCode.PEER_PRTC_ERROR, "server reply error");
+                return ActionStatus.create(DataPacket.PEER_PRTC_ERROR, "server reply error");
             }
             if (DataPacket.YES.equals(dataPacket.getParam1())) {
                 return ActionStatus.OK;

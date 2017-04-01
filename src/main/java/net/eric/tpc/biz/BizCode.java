@@ -12,7 +12,6 @@ public class BizCode {
     public static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
     public static final String INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE";
     public static final String BEYOND_OVERDRAFT_LIMIT = "BEYOND_OVERDRAFT_LIMIT";
-    public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
     public static final String FIELD_TOO_LONG = "FIELD_TOO_LONG";
     public static final String BEYOND_TRANS_AMOUNT_LIMIT = "BEYOND_TRANS_AMOUNT_LIMIT";
     

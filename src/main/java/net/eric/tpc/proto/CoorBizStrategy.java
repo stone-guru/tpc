@@ -104,7 +104,7 @@ public interface CoorBizStrategy<B> {
          * @param coorTask 需要协调方处理的业务对象 may null
          * @param peerTasks 其它节点及其对应的需要发送的业务对象 not null,
          */
-        public TaskPartition(@Nullable B coorTask, List<Pair<Node, B>> peerTasks) {
+        public TaskPartition(B coorTask, List<Pair<Node, B>> peerTasks) {
             Preconditions.checkNotNull(peerTasks, "peerTasks");
             Preconditions.checkArgument(coorTask != null || !peerTasks.isEmpty(), "empty tasks is not allowed");
 
@@ -128,7 +128,7 @@ public interface CoorBizStrategy<B> {
         /**
          * 其它参与方的任务划分
          * 
-         * @return 任务划分
+         * @return 任务划分 not null
          */
         public List<Pair<Node, B>> getPeerTasks() {
             return peerTasks;

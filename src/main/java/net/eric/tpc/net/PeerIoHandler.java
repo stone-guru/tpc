@@ -17,13 +17,16 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 
 import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.PeerTransactionManager;
 import net.eric.tpc.proto.PeerTransactionState;
+import net.eric.tpc.proto.TransStartRec;
+
+import static net.eric.tpc.base.Pair.asPair;
 
 public class PeerIoHandler extends IoHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
@@ -31,9 +34,7 @@ public class PeerIoHandler extends IoHandlerAdapter {
     private static final String TRANS_SESSION_ITEM = "transactionSession";
 
     private Map<String, RequestHandler<TransferBill>> requestHandlerMap = initRequestHandlers();
-
     private RequestHandler<TransferBill> unknownCommandHandler = new UnknowCommandRequestHandler<TransferBill>();
-
     private PeerTransactionManager<TransferBill> transManager;
 
     private Map<String, RequestHandler<TransferBill>> initRequestHandlers() {
@@ -69,34 +70,27 @@ public class PeerIoHandler extends IoHandlerAdapter {
         session.setAttribute(PeerIoHandler.TRANS_SESSION_ITEM, new PeerTransactionState<TransferBill>());
     }
 
-    private Optional<PeerTransactionState<TransferBill>> getTransStateFromSession(IoSession session) {
-        @SuppressWarnings("unchecked")
-        PeerTransactionState<TransferBill> state = (PeerTransactionState<TransferBill>) session.getAttribute(PeerIoHandler.TRANS_SESSION_ITEM);
-        return Optional.fromNullable(state);
-    }
-
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         if (logger.isDebugEnabled()) {
             logger.debug("Received: " + message.toString());
         }
 
-        final DataPacket request = (DataPacket) message;
-        RequestHandler<TransferBill> handler = this.getRequestHandler(request.getCode());
-        Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
+        DataPacket request = (DataPacket) message;
 
-        if (!state.isPresent()) {
+        Optional<PeerTransactionState<TransferBill>> opt = getTransStateFromSession(session);
+        RequestHandler<TransferBill> handler = this.getRequestHandler(request.getCode());
+
+        if (handler.requireTransState() && !opt.isPresent()) {
             if (logger.isDebugEnabled()) {
                 logger.debug("No transaction state, do nothing");
             }
             return;
         }
 
-        final Optional<DataPacket> opt = handler.process(request, state.get());
-
-        if (opt.isPresent()) {
-            DataPacket response = opt.get(); 
-            response.setRound(request.getRound());
+        final Optional<DataPacket> result = handler.process(request, opt.orNull());
+        if (result.isPresent()) {
+            DataPacket response = result.get();
             WriteFuture wf = session.write(response);
 
             if (logger.isDebugEnabled()) {
@@ -114,13 +108,11 @@ public class PeerIoHandler extends IoHandlerAdapter {
         if (!IdleStatus.READER_IDLE.equals(status)) {
             return;
         }
-        //System.out.println("READER IDLE " + session.getIdleCount(status));
 
         Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
-
         if (!state.isPresent()) {
             if (logger.isDebugEnabled()) {
-                logger.debug("No transaction state, do nothing in sessionIdle");
+                logger.debug("No transaction state on this session, do nothing in sessionIdle");
             }
             return;
         }
@@ -132,22 +124,50 @@ public class PeerIoHandler extends IoHandlerAdapter {
         this.transManager = transManager;
     }
 
+    private Optional<PeerTransactionState<TransferBill>> getTransStateFromSession(IoSession session) {
+        @SuppressWarnings("unchecked")
+        PeerTransactionState<TransferBill> state = (PeerTransactionState<TransferBill>) session
+                .getAttribute(PeerIoHandler.TRANS_SESSION_ITEM);
+        return Optional.fromNullable(state);
+    }
+
     class BeginTransRequestHandler implements RequestHandler<TransferBill> {
         public String getCorrespondingCode() {
             return DataPacket.BEGIN_TRANS;
         }
 
-        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
-            TransStartRec transNodes = (TransStartRec) request.getParam1();
-            TransferBill transMsg = (TransferBill) request.getParam2();
-
-            ActionStatus r = PeerIoHandler.this.transManager.beginTrans(transNodes, transMsg, state);
-
-            if (r.isOK()) {
-                return Optional.of(new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, DataPacket.YES));
-            } else {
-                return Optional.of(new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, DataPacket.NO, r.toString()));
+        private Maybe<Pair<TransStartRec, TransferBill>> peekBizEntities(DataPacket request) {
+            Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam2(), TransStartRec.class, //
+                    DataPacket.BAD_DATA_PACKET, "param2 should be a TransStartRec");
+            if (!startRec.isRight()) {
+                return Maybe.fail(startRec.getLeft());
             }
+            Maybe<TransferBill> bill = Maybe.safeCast(request.getParam3(), TransferBill.class, //
+                    DataPacket.BAD_DATA_PACKET, "param3 should be a TransStartRec");
+            if (!bill.isRight()) {
+                return Maybe.fail(bill.getLeft());
+            }
+            return Maybe.success(asPair(startRec.getRight(), bill.getRight()));
+        }
+
+        public Optional<DataPacket> process(DataPacket request, PeerTransactionState<TransferBill> state) {
+            DataPacket response = null;
+            ActionStatus r = null;
+
+            Maybe<Pair<TransStartRec, TransferBill>> bizEntities = this.peekBizEntities(request);
+            if (!bizEntities.isRight()) {
+                r = bizEntities.getLeft();
+            } else {
+                TransStartRec startRec = bizEntities.getRight().fst();
+                TransferBill bill = bizEntities.getRight().snd();
+                r = PeerIoHandler.this.transManager.beginTrans(startRec, bill, state);
+            }
+            if (r.isOK()) {
+                response = new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, request.getParam1(), DataPacket.YES);
+            } else {
+                response = new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, request.getParam1(), DataPacket.NO, r);
+            }
+            return Optional.of(response);
         }
 
         @Override
@@ -165,11 +185,13 @@ public class PeerIoHandler extends IoHandlerAdapter {
             String xid = (String) request.getParam1();
 
             ActionStatus r = PeerIoHandler.this.transManager.processVoteReq(xid, state);
+            DataPacket response = null;
             if (r.isOK()) {
-                return Optional.of(new DataPacket(DataPacket.VOTE_ANSWER, DataPacket.YES));
+                response = new DataPacket(DataPacket.VOTE_ANSWER, xid, DataPacket.YES);
             } else {
-                return Optional.of(new DataPacket(DataPacket.VOTE_ANSWER, DataPacket.NO, r.toString()));
+                response = new DataPacket(DataPacket.VOTE_ANSWER, xid, DataPacket.NO, r);
             }
+            return Optional.of(response);
         }
 
         @Override
@@ -192,7 +214,7 @@ public class PeerIoHandler extends IoHandlerAdapter {
             } else if (DataPacket.NO.equals(decision)) {
                 PeerIoHandler.this.transManager.processTransDecision(xid, Decision.ABORT, state);
             } else {
-                logger.error(BizCode.PEER_PRTC_ERROR, "Unknown commit decision " + decision);
+                logger.error(DataPacket.PEER_PRTC_ERROR, "Unknown commit decision " + decision);
             }
             return Optional.absent();
         }

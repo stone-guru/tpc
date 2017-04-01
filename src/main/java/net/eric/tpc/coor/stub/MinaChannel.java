@@ -29,6 +29,11 @@ public class MinaChannel {
 
     private static SocketConnector sharedConnector = null;
 
+    public static MinaChannel newInstance(Node node, AtomicReference<CommunicationRound> roundRef) {
+        checkConnectorInitialized();
+        return new MinaChannel(node, roundRef);
+    }
+
     synchronized public static void initSharedConnector(ProtocolCodecFactory codecFactory) {
         if (MinaChannel.sharedConnector != null) {
             throw new IllegalStateException("sharedConnector has been initialized");
@@ -42,11 +47,8 @@ public class MinaChannel {
         MinaChannel.sharedConnector = connector;
     }
 
-    public static SocketConnector getSharedConnector() {
-        if (MinaChannel.sharedConnector == null) {
-            throw new IllegalStateException("sharedConnector not initialized, call InitSharedConnector first");
-        }
-        return MinaChannel.sharedConnector;
+    public static boolean isSharedConnectorInitialized() {
+        return sharedConnector != null;
     }
 
     public static void disposeConnector() {
@@ -57,11 +59,22 @@ public class MinaChannel {
         }
     }
 
+    private static SocketConnector getSharedConnector() {
+        checkConnectorInitialized();
+        return MinaChannel.sharedConnector;
+    }
+
+    private static void checkConnectorInitialized() {
+        if (MinaChannel.sharedConnector == null) {
+            throw new IllegalStateException("sharedConnector not initialized, call InitSharedConnector first");
+        }
+    }
+
     private IoSession session;
     private Node node;
     private AtomicReference<CommunicationRound> roundRef;
 
-    public MinaChannel(Node node, AtomicReference<CommunicationRound> roundRef) {
+    private MinaChannel(Node node, AtomicReference<CommunicationRound> roundRef) {
         this.node = node;
         this.roundRef = roundRef;
     }
@@ -118,23 +131,24 @@ public class MinaChannel {
 
         @Override
         public void sessionClosed(IoSession session) throws Exception {
-            Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
-            if (opt.isPresent()) {
-                CommunicationRound round = opt.get().fst();
-                Node node = opt.get().snd();
-                round.finishReceiving(node);
-            }
+            finishReceive(session);
             super.sessionClosed(session);
         }
 
         @Override
         public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
             super.sessionIdle(session, status);
+            // 写超时在发送阶段处理了
+            if (status == IdleStatus.READER_IDLE) {
+                finishReceive(session);
+            }
         }
+
 
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-            super.exceptionCaught(session, cause);
+            this.finishReceive(session);
+            logger.error("channel error happen", cause);
         }
 
         @Override
@@ -150,6 +164,16 @@ public class MinaChannel {
             }
         }
 
+
+        private void finishReceive(IoSession session) {
+            Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
+            if (opt.isPresent()) {
+                CommunicationRound round = opt.get().fst();
+                Node node = opt.get().snd();
+                round.finishReceiving(node);
+            }
+        }
+        
         private Optional<Pair<CommunicationRound, Node>> currentRound(IoSession session) {
             @SuppressWarnings("unchecked")
             AtomicReference<CommunicationRound> roundRef = (AtomicReference<CommunicationRound>) session

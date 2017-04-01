@@ -12,7 +12,7 @@ public interface Communicator<B> {
 
     Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, B>> tasks);
 
-    void notifyDecision(String xid, Decision decision, List<Node> nodes);
+    Future<RoundResult> notifyDecision(String xid, Decision decision, List<Node> nodes);
 
     Future<RoundResult> gatherVote(String xid, List<Node> nodes);
 

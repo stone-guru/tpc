@@ -15,7 +15,7 @@ public class ServerConfig {
         this.bankCode = bankCode;
         this.port = port;
         this.dbUrl = dbUrl;
-        this.mySelf = this.getMySelf(port);
+        this.mySelf = this.getMySelf(port, bankCode);
     }
 
     public ServerConfig(String[] args, String defaultBankCode, int defaultPort, String defaultDbUrl) {
@@ -35,7 +35,7 @@ public class ServerConfig {
             }
         }
         
-        this.mySelf = this.getMySelf(this.port);
+        this.mySelf = this.getMySelf(this.port, bankCode);
     }
 
     public String getBankCode() {
@@ -55,13 +55,13 @@ public class ServerConfig {
         return this.mySelf;
     }
     
-    private Node getMySelf(int port){
+    private Node getMySelf(int port, String bankCode){
         InetAddress address;
         try {
             address = InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
-        return new Node(address.getHostAddress(), port);
+        return new Node(address.getHostAddress(), port, bankCode);
     }
 }

@@ -13,12 +13,12 @@ public class Configuration {
 
     private Map<String, Node> nodeMap = new HashMap<String, Node>();
     private Map<String, String> abcAccountNumberMap = new HashMap<String, String>();
-    private Node mySelf = new Node("localhost", 10020);
+    private Node mySelf = new Node("localhost", 10020, "ABC");
     
     public Configuration() {
-        nodeMap.put("BOC", new Node("localhost", 10021));
-        nodeMap.put("CCB", new Node("localhost", 10022));
-        nodeMap.put("CBRC", new Node("localhost", 10023));
+        nodeMap.put("BOC", new Node("localhost", 10021, "BOC"));
+        nodeMap.put("CCB", new Node("localhost", 10022, "CCB"));
+        nodeMap.put("CBRC", new Node("localhost", 10023, "CBRC"));
         
         abcAccountNumberMap.put("BOC", "abc");
         abcAccountNumberMap.put("CCB", "abc");

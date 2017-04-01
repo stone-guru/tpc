@@ -2,12 +2,13 @@ package net.eric.tpc.base;
 
 import java.io.Serializable;
 
-public class Node implements Serializable{
+public class Node implements Serializable {
 
     private static final long serialVersionUID = -196279432426379129L;
-    
+
     private String address;
     private int port;
+    private String alias;
 
     public Node() {
     }
@@ -16,6 +17,11 @@ public class Node implements Serializable{
         super();
         this.address = address;
         this.port = port;
+    }
+
+    public Node(String address, int port, String alias) {
+        this(address, port);
+        this.alias = alias;
     }
 
     public String getAddress() {
@@ -32,6 +38,14 @@ public class Node implements Serializable{
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     @Override
@@ -61,10 +75,12 @@ public class Node implements Serializable{
             return false;
         return true;
     }
-    
-    
+
     @Override
     public String toString() {
-        return  address + ":" + port;
+        if (alias == null) {
+            return address + ":" + port;
+        }
+        return alias;
     }
 }

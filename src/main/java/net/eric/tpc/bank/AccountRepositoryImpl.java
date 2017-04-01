@@ -29,6 +29,7 @@ import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.PeerBizStrategy;
+import net.eric.tpc.util.Util;
 
 public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
@@ -85,6 +86,9 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         } finally {
             if (locked && !success) {
                 this.accountLocker.releaseLock(accountNumber, oppAccountNumber, xid);
+            }
+            if (!success) {
+                this.displayAllAccount();// 本次事务没有以后了，显示下账户信息
             }
         }
     }
@@ -151,13 +155,9 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
                     logger.error("AccountRepositoryImpl.innerCommit", e);
                 }
                 AccountRepositoryImpl.this.callBizActionListener(xid, decision, success, listener);
-                
-                //显示本次事务处理后的账户情况
-                if (logger.isInfoEnabled()) {
-                    logger.info("After process transaction " + xid);
-                    AccountRepositoryImpl.this.displayAllAccount();
-                }
-                
+
+                // 显示本次事务处理后的账户情况
+                AccountRepositoryImpl.this.displayAllAccount();
                 return null;
             }
         };
@@ -211,9 +211,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
 
     private void displayAllAccount() {
         List<Account> accounts = this.accountDao.selectAll();
-        for(Account acct : accounts){
-            logger.info(acct.toString());
-        }
+        Util.displayAccounts(accounts);
     }
 
     @Override
