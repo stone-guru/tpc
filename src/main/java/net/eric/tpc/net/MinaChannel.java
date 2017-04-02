@@ -1,4 +1,4 @@
-package net.eric.tpc.coor.stub;
+package net.eric.tpc.net;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,7 +21,6 @@ import com.google.common.base.Optional;
 
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 
 public class MinaChannel {
@@ -122,8 +121,11 @@ public class MinaChannel {
         if (logger.isDebugEnabled()) {
             logger.debug("MinaChannel.close entry");
         }
-        CloseFuture future = session.getCloseFuture();
-        future.awaitUninterruptibly(2000);
+        //也许服务端已经在关了
+        if (!session.isClosing()) {
+            CloseFuture future = session.getCloseFuture();
+            future.awaitUninterruptibly(2000);
+        }
     }
 
     private static class SocketHandler extends IoHandlerAdapter {
@@ -144,7 +146,6 @@ public class MinaChannel {
             }
         }
 
-
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             this.finishReceive(session);
@@ -164,7 +165,6 @@ public class MinaChannel {
             }
         }
 
-
         private void finishReceive(IoSession session) {
             Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
             if (opt.isPresent()) {
@@ -173,7 +173,7 @@ public class MinaChannel {
                 round.finishReceiving(node);
             }
         }
-        
+
         private Optional<Pair<CommunicationRound, Node>> currentRound(IoSession session) {
             @SuppressWarnings("unchecked")
             AtomicReference<CommunicationRound> roundRef = (AtomicReference<CommunicationRound>) session

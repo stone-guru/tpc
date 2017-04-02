@@ -29,7 +29,6 @@ abstract public class MinaServer {
         }
     }
 
-
     public void shutdown() {
         if (acceptor != null && !acceptor.isDisposed()) {
             acceptor.dispose();

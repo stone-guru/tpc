@@ -1,5 +1,7 @@
 package net.eric.tpc.base;
 
+import java.util.concurrent.Future;
+
 public interface Maybe<T> extends Either<ActionStatus, T> {
     public static <T> Maybe<T> success(T t) {
         if (t == null) {
@@ -45,6 +47,15 @@ public interface Maybe<T> extends Either<ActionStatus, T> {
             return Maybe.success(t);
         }
         return Maybe.fail(new ActionStatus(errorCode, description));
+    }
+    
+    public static <T> Maybe<T> force(Future<T> future) {
+        try {
+            T result = future.get();
+            return Maybe.success(result);
+        } catch (Exception e) {
+            return Maybe.fail(ActionStatus.innerError(e.getMessage()));
+        }
     }
 
     final static class Success<T> extends Either.Right<ActionStatus, T> implements Maybe<T> {

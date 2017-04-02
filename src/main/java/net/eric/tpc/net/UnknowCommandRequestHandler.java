@@ -2,6 +2,7 @@ package net.eric.tpc.net;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.PeerTransactionState;
 
@@ -12,8 +13,8 @@ public class UnknowCommandRequestHandler<B> implements RequestHandler<B> {
     }
 
     @Override
-    public Optional<DataPacket>  process(DataPacket request, PeerTransactionState<B> state) {
-        return Optional.of(new DataPacket(DataPacket.BAD_COMMNAD, request.getCode()));
+    public Pair<Optional<DataPacket>, Boolean>  process(DataPacket request, PeerTransactionState<B> state) {
+        return Pair.asPair(Optional.absent(), true);
     }
 
     @Override

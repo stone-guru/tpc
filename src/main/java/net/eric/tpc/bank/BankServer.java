@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.mina.core.service.IoHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.common.KeyGenerator;
@@ -20,7 +18,6 @@ import net.eric.tpc.service.CommonServiceFactory;
 import net.eric.tpc.util.Util;
 
 public class BankServer extends MinaServer {
-    private static final Logger logger = LoggerFactory.getLogger(BankServer.class);
 
     private static final String DEFAULT_BANK_CODE = "BOC";
     private static final int DEFAULT_PORT = 10021;

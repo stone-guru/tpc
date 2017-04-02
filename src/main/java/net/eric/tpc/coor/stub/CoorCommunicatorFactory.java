@@ -10,6 +10,7 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.entity.TransferBill;
+import net.eric.tpc.net.MinaChannel;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.CommunicatorFactory;
 
@@ -24,7 +25,7 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill
 
     @Override
     public Maybe<Communicator<TransferBill>> getCommunicator(List<Node> peers) {
-        Communicator<TransferBill> communicator = new TpcCommunicator(this.commuTaskPool,
+        Communicator<TransferBill> communicator = new CoorCommunicator(this.commuTaskPool,
                 this.sequenceTaskPool);
         ActionStatus result = communicator.connectPanticipants(peers);
         return Maybe.might(result, communicator);

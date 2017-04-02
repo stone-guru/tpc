@@ -15,6 +15,7 @@ public class PeerTransactionState<B> {
     private Decision decision;
     private Future<ActionStatus> voteResult;
     private B bizEntity;
+    private TransStartRec transStartRec;
     
     public Stage getStage() {
         return stage;
@@ -40,7 +41,7 @@ public class PeerTransactionState<B> {
         this.vote = vote;
     }
 
-    public Future<ActionStatus> getVoteResult() {
+    public Future<ActionStatus> getVoteFuture() {
         return voteResult;
     }
 
@@ -63,4 +64,14 @@ public class PeerTransactionState<B> {
     public void setDecision(Decision decision) {
         this.decision = decision;
     }
+
+    public TransStartRec getTransStartRec() {
+        return transStartRec;
+    }
+
+    public void setTransStartRec(TransStartRec transStartRec) {
+        this.transStartRec = transStartRec;
+    }
+    
+    
 }

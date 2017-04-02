@@ -1,13 +1,17 @@
 package net.eric.tpc.proto;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Node;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.proto.PeerTransactionState.Stage;
@@ -18,6 +22,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     private DtLogger<B> dtLogger;
     private PeerBizStrategy<B> bizStrategy;
+    private DecisionQuerier decisionQuerier;
 
     @Override
     public ActionStatus beginTrans(TransStartRec startRec, B bill, PeerTransactionState<B> state) {
@@ -31,6 +36,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
             state.setStage(Stage.BEGIN);
             state.setXid(startRec.getXid());
+            state.setTransStartRec(startRec);
 
             this.dtLogger.recordBeginTrans(startRec, bill, false);
 
@@ -55,7 +61,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
             return new ActionStatus(DataPacket.PEER_PRTC_ERROR, "Got Vote message more than one time");
         }
         synchronized (state) {
-            ActionStatus voteResult = ActionStatus.force(state.getVoteResult());
+            ActionStatus voteResult = ActionStatus.force(state.getVoteFuture());
             Vote vote = (voteResult.isOK()) ? Vote.YES : Vote.NO;
 
             state.setStage(Stage.VOTED);
@@ -97,7 +103,13 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
             if (state.getStage().equals(Stage.BEGIN)) { // WANT VOTE_REQ
                 this.performAbort(state);// 直接放弃
             } else if (state.getStage() == Stage.VOTED && state.getVote() == Vote.YES) { // 投了YES却没有收到Decision
-                Optional<Decision> opt = this.queryDecisionFromOtherPeers(state);// 查询其它节点确认
+                
+                List<Node> peers = Lists.newArrayList();
+                Collections.copy(peers, state.getTransStartRec().getParticipants());
+                peers.add(state.getTransStartRec().getCoordinator());
+                // TODO 去除自己，但是需要将Node表达标准化为IP才可行，目前在响应侧忽略
+
+                Optional<Decision> opt = this.decisionQuerier.queryDecision(state.getXid(), peers);
                 if (opt.isPresent()) {
                     this.processTransDecision(state.getXid(), opt.get(), state);
                 } else {
@@ -147,8 +159,12 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         }
     }
 
-    private Optional<Decision> queryDecisionFromOtherPeers(PeerTransactionState<B> state) {
-        return Optional.absent();// FIXME implement it
+    public DecisionQuerier getDecisionQuerier() {
+        return decisionQuerier;
+    }
+
+    public void setDecisionQuerier(DecisionQuerier decisionQuerier) {
+        this.decisionQuerier = decisionQuerier;
     }
 
     public DtLogger<B> getDtLogger() {

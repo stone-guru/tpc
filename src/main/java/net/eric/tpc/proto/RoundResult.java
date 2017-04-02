@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -69,6 +70,31 @@ public class RoundResult {
         return ImmutableList.copyOf(Iterables.filter(this.results, PeerResult.class));
     }
 
+    public <T> Optional<T> getAnOkResult(Class<T> c){
+        for(PeerResult r : this.results){
+            if(r.isRight()){
+                if(!c.isInstance(r.result())){
+                    throw new ClassCastException("result can not cast to given type " + c.getName());
+                }
+                
+                @SuppressWarnings("unchecked")
+                final T t = (T)r.result();
+                return Optional.of(t);
+            }
+        }
+        return Optional.absent();
+    }
+    
+    public int okResultCount(){
+        int i = 0;
+        for(PeerResult r : this.results){
+            if(r.isRight()){
+                i++;
+            }
+        }
+        return i;
+    }
+    
     public <T> List<T> okResultAs(Function<Object, T> f) {
         List<T> list = new ArrayList<T>();
         for (PeerResult r : this.results) {

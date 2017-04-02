@@ -176,7 +176,7 @@ public class Main {
         public void close() {
             if (session != null) {
                 CloseFuture cf = session.closeNow();
-                cf.awaitUninterruptibly();
+               // cf.awaitUninterruptibly();
             }
             if (connector != null) {
                 connector.dispose();

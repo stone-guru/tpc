@@ -18,23 +18,25 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.TransferBill;
+import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.net.DataPacket;
+import net.eric.tpc.net.MinaCommunicator;
 import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.TransStartRec;
 
-public class TpcCommunicator extends MinaCommunicator implements Communicator<TransferBill> {
-    private static final Logger logger = LoggerFactory.getLogger(TpcCommunicator.class);
+public class CoorCommunicator extends MinaCommunicator implements Communicator<TransferBill> {
+    private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
 
-    public TpcCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool) {
+    public CoorCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool) {
         super(commuTaskPool, sequenceTaskPool);
     }
 
     @Override
     public ActionStatus connectPanticipants(List<Node> nodes) {
-        return super.connectPeers(nodes);
+        return super.connectPeers(nodes, WaitType.WAIT_ALL);
     }
 
     @Override

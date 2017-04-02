@@ -1,5 +1,8 @@
 package net.eric.tpc.regulator;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerIoHandler;
@@ -15,12 +18,15 @@ public class RegulatorServiceFactory extends UniFactory {
     
     private static final String MY_CLASSIFER = "REGULATOR";
 
+    private ExecutorService pool = Executors.newFixedThreadPool(2);
+    
     @SuppressWarnings("unchecked")
     @Override
     protected <T> T createObject(Class<T> clz, String classifier) {
        if(PeerIoHandler.class.equals(clz) && this.isRegulator(classifier)){
            PeerIoHandler handler = new PeerIoHandler();
            handler.setTransManager(UniFactory.getObject(PeerTransactionManager.class, MY_CLASSIFER));
+           handler.setCommuTaskPool(pool);
            return (T)handler;
        }
        
@@ -41,5 +47,10 @@ public class RegulatorServiceFactory extends UniFactory {
     
     private boolean isRegulator(String classifier){
         return MY_CLASSIFER.equalsIgnoreCase(classifier);
+    }
+    
+    @Override
+    public void close(){
+        this.pool.shutdown();
     }
 }

@@ -26,7 +26,7 @@ abstract public class UniFactory {
     private static List<Pair<Integer, Class<?>>> classes = Lists.newArrayList();
 
     public static <T extends UniFactory> void register(Class<?> factoryClass, int order) {
-        logger.debug("register class " + factoryClass.toString());
+        //logger.debug("register class " + factoryClass.toString());
 
         Preconditions.checkArgument(factories == null, "factories initialized already, do reg earlier");
         Preconditions.checkNotNull(factoryClass);

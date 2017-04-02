@@ -2,6 +2,7 @@ package net.eric.tpc.net;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.base.Pair;
 import net.eric.tpc.proto.PeerTransactionState;
 
 public interface RequestHandler<B> {
@@ -10,5 +11,5 @@ public interface RequestHandler<B> {
 
     String getCorrespondingCode();
 
-    Optional<DataPacket> process(DataPacket request, PeerTransactionState<B> state);
+    Pair<Optional<DataPacket>, Boolean> process(DataPacket request, PeerTransactionState<B> state);
 }

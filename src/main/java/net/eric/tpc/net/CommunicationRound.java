@@ -27,27 +27,34 @@ public class CommunicationRound {
         DOUBLE_SIDE, SINGLE_SIDE
     };
 
+    public static enum WaitType {
+        WAIT_ALL, WAIT_ONE
+    }
+    
     private int wantedCount;
 
     private RoundType roundType = RoundType.DOUBLE_SIDE;
-
+    private WaitType waitType = WaitType.WAIT_ALL;
+    
     private PeerResult.Assembler assembler;
     private ConcurrentMap<Node, PeerResult> resultMap = new ConcurrentHashMap<Node, PeerResult>();
 
     private CountDownHolder latch;
     private ExecutorService commuTaskPool;
 
-    public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType,
+    public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType, WaitType waitType,
             PeerResult.Assembler assembler) {
         this.commuTaskPool = pool;
         this.wantedCount = n;
         this.roundType = roundType;
+        this.waitType = waitType;
         this.assembler = assembler;
+        
         this.latch = new CountDownHolder(n);
     }
 
     public CommunicationRound(ExecutorService pool, ExecutorService sequenceTaskPool, int n, RoundType roundType) {
-        this(pool, sequenceTaskPool, n, roundType, PeerResult.ONE_ITEM_ASSEMBLER);
+        this(pool, sequenceTaskPool, n, roundType, WaitType.WAIT_ALL, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
     public RoundType roundType() {
@@ -150,11 +157,18 @@ public class CommunicationRound {
                 opt = Optional.of(result);
             }
         } finally {
-            if (opt.isPresent() && opt.get().isDone()) {
+            if(!opt.isPresent()){
+                return; //消息未记录
+            }
+            if (opt.get().isDone()) {
                 this.latch.countDown(node);
                 if (logger.isDebugEnabled()) {
                     logger.debug("regMessage countDown 1 by " + node.toString());
                 }
+            }
+            //成功获取了一条请求，本轮只需要一条记录，清除阻塞标记
+            if(this.waitType == WaitType.WAIT_ONE && opt.get().isRight()){
+                this.latch.clear();
             }
         }
     }

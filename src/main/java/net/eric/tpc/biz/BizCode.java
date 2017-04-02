@@ -9,6 +9,7 @@ public class BizCode {
     public static final String NODE_UNREACH = "NODE_UNREACH";
     public static final String INNER_EXCEPTION = "INNER_EXCEPTION";
     public static final String ACCOUNT_NOT_EXISTS = "ACCOUNT_NOT_EXISTS";
+    public static final String NOT_MY_ACCOUNT = "NOT_MY_ACCOUNT";
     public static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
     public static final String INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE";
     public static final String BEYOND_OVERDRAFT_LIMIT = "BEYOND_OVERDRAFT_LIMIT";

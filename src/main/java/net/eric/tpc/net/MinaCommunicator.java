@@ -1,4 +1,4 @@
-package net.eric.tpc.coor.stub;
+package net.eric.tpc.net;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,17 +18,18 @@ import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Either;
+import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
-import net.eric.tpc.net.CommunicationRound;
+import net.eric.tpc.coor.stub.CoorCommunicator;
 import net.eric.tpc.net.CommunicationRound.RoundType;
-import net.eric.tpc.net.PeerResult;
+import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.proto.RoundResult;
 
 public class MinaCommunicator {
 
-    private static final Logger logger = LoggerFactory.getLogger(TpcCommunicator.class);
+    private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
     protected Map<Node, MinaChannel> channelMap = Collections.emptyMap();
     protected ExecutorService commuTaskPool;
     protected ExecutorService sequenceTaskPool;
@@ -41,7 +42,7 @@ public class MinaCommunicator {
             return (String) obj;
         }
     };
-    
+
     public static final Function<Object, MinaChannel> OBJECT_AS_CHANNEL = new Function<Object, MinaChannel>() {
         public MinaChannel apply(Object obj) {
             return (MinaChannel) obj;
@@ -66,8 +67,8 @@ public class MinaCommunicator {
         this.beforeSendHooks.add(hook);
     }
 
-    public ActionStatus connectPeers(List<Node> nodes) {
-        Either<ActionStatus, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes);
+    public ActionStatus connectPeers(List<Node> nodes, WaitType waitType) {
+        Either<ActionStatus, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes, waitType);
         if (either.isRight()) {
             this.channelMap = either.getRight();
             return ActionStatus.OK;
@@ -111,41 +112,46 @@ public class MinaCommunicator {
         return this.sequenceTaskPool.submit(closeAction);
     }
 
-    public Future<RoundResult> sendRequest(List<Pair<Node, Object>> requests) {
-        return this.sendRequest(requests, PeerResult.ONE_ITEM_ASSEMBLER);
-    }
-
     public Future<RoundResult> sendRequest(List<Pair<Node, Object>> requests, PeerResult.Assembler assembler) {
-        return this.communicate(requests, RoundType.DOUBLE_SIDE, assembler);
+        return this.communicate(requests, RoundType.DOUBLE_SIDE, WaitType.WAIT_ALL, assembler);
     }
 
     public Future<RoundResult> sendMessage(List<Pair<Node, Object>> messages) {
-        return this.communicate(messages, RoundType.SINGLE_SIDE, PeerResult.ONE_ITEM_ASSEMBLER);
+        return this.communicate(messages, RoundType.SINGLE_SIDE, WaitType.WAIT_ALL, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
     public Future<RoundResult> communicate(List<Pair<Node, Object>> messages, final RoundType roundType,
-            PeerResult.Assembler assembler) {
-        for (final Pair<Node, Object> p : messages) {
-            if (!this.channelMap.containsKey(p.fst())) {
-                throw new IllegalStateException("Given node not connected first " + p.fst());
+            final WaitType waitType, PeerResult.Assembler assembler) {
+        if (waitType == WaitType.WAIT_ALL) {
+            for (final Pair<Node, Object> p : messages) {
+                // 需要的节点是有没链接成功的
+                if (!this.channelMap.containsKey(p.fst())) {
+                    throw new IllegalStateException("Given node not connected first " + p.fst());
+                }
             }
         }
-        final CommunicationRound round = this.newRound(messages.size(), roundType, assembler);
+        final CommunicationRound round = this.newRound(messages.size(), roundType, waitType, assembler);
         final List<Pair<Node, Object>> request = callBeforeSendHooks(messages);
-        
+
         Runnable startAction = new Runnable() {
             @Override
             public void run() {
                 roundRef.set(round);
                 for (final Pair<Node, Object> p : request) {
                     final MinaChannel channel = channelMap.get(p.fst());
-                    Runnable task = new Runnable() {
-                        public void run() {
-                            final boolean sendOnly = roundType == RoundType.SINGLE_SIDE;
-                            channel.sendMessage(p.snd(), sendOnly);
-                        }
-                    };
-                    commuTaskPool.submit(task);
+                    if (channel == null) {
+                        final Node node = p.fst();
+                        round.regFailure(node, "NOT_CONNECTED", node.toString());
+                    } else {
+                        Runnable task = new Runnable() {
+                            public void run() {
+                                final boolean sendOnly = roundType == RoundType.SINGLE_SIDE;
+                                channel.sendMessage(p.snd(), sendOnly);
+                            }
+                        };
+                        commuTaskPool.submit(task);
+                    }
+
                 }
             }
         };
@@ -158,29 +164,30 @@ public class MinaCommunicator {
         closeChannels(this.channelMap.values());
     }
 
-    private List<Pair<Node, Object>> callBeforeSendHooks(List<Pair<Node, Object>> messages){
+    private List<Pair<Node, Object>> callBeforeSendHooks(List<Pair<Node, Object>> messages) {
         List<Pair<Node, Object>> callResult = messages;
-        for(Function<List<Pair<Node, Object>>, List<Pair<Node, Object>>> f : this.beforeSendHooks){
+        for (Function<List<Pair<Node, Object>>, List<Pair<Node, Object>>> f : this.beforeSendHooks) {
             callResult = f.apply(callResult);
-            if(callResult == null){
+            if (callResult == null) {
                 throw new NullPointerException("result of beforeSendHook");
             }
         }
         return callResult;
     }
-    
-    private CommunicationRound newRound(int peerCount, RoundType roundType, PeerResult.Assembler assembler) {
+
+    private CommunicationRound newRound(int peerCount, RoundType roundType, WaitType waitType,
+            PeerResult.Assembler assembler) {
         CommunicationRound round = new CommunicationRound(this.commuTaskPool, this.sequenceTaskPool, peerCount,
-                roundType, assembler);
+                roundType, waitType, assembler);
         return round;
     }
 
-    private Either<ActionStatus, Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes) {
+    private Maybe<Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes, WaitType waitType) {
         Future<RoundResult> future = connectThese(nodes);
         ActionStatus ar = RoundResult.force(future);
         if (!future.isDone()) {
             // Can do nothing
-            return Either.left(ar);
+            return Maybe.fail(ar);
         }
 
         RoundResult result = null;
@@ -190,20 +197,27 @@ public class MinaCommunicator {
             throw new ShouldNotHappenException();
         }
 
-        if (!result.isAllOK()) {
+        // 一个都没连上
+        if (result.okResultCount() == 0) {
+            return Maybe.fail(result.getAnError());
+        }
+        // 需要全都链接的不是都连上了
+        if (!result.isAllOK() && (waitType == WaitType.WAIT_ALL)) {
             closeChannels(result.okResultAs(MinaCommunicator.OBJECT_AS_CHANNEL));
-            return Either.left(result.getAnError());
+            return Maybe.fail(result.getAnError());
         }
 
         Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();
         for (PeerResult r : result.getResults()) {
-            map.put(r.peer(), (MinaChannel) r.result());
+            if (r.isRight()) {
+                map.put(r.peer(), (MinaChannel) r.result());
+            }
         }
-        return Either.right(map);
+        return Maybe.success(map);
     }
 
     private Future<RoundResult> connectThese(final List<Node> nodes) {
-        final CommunicationRound round = this.newRound(nodes.size(), RoundType.SINGLE_SIDE,
+        final CommunicationRound round = this.newRound(nodes.size(), RoundType.SINGLE_SIDE, WaitType.WAIT_ALL,
                 PeerResult.ONE_ITEM_ASSEMBLER);
         Runnable startAction = new Runnable() {
             @Override

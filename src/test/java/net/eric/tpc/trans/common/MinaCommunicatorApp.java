@@ -15,9 +15,9 @@ import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.coor.stub.CoorCommunicatorFactory;
-import net.eric.tpc.coor.stub.MinaChannel;
-import net.eric.tpc.coor.stub.MinaCommunicator;
+import net.eric.tpc.net.CommunicationRound.WaitType;
+import net.eric.tpc.net.MinaChannel;
+import net.eric.tpc.net.MinaCommunicator;
 import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.RoundResult;
 
@@ -92,14 +92,13 @@ public class MinaCommunicatorApp extends MinaCommunicator {
 //        super.closeConnections();
 //    }
 
-    @SuppressWarnings("unused")
     private void executeHttpCommand() {
         List<Node> nodes = ImmutableList.of(new Node("www.baidu.com", 80), // new
                 // Node("locafdsflhost",
                 // 80),
                 new Node("www.zhihu.com", 80), new Node("221.236.12.130", 80), new Node("www.sina.com", 80),
                 new Node("www.cnblogs.com", 80));
-        this.connectPeers(nodes);
+        this.connectPeers(nodes, WaitType.WAIT_ALL);
 
         List<Pair<Node, Object>> requests = this.generateHttpCommand(nodes);
         Future<RoundResult> resultFuture = sendRequest(requests, new HttpHeaderAssembler());

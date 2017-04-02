@@ -121,7 +121,7 @@ public interface CoorBizStrategy<B> {
          * 
          * @return may null
          */
-        public @Nullable B getCoorTask() {
+        public B getCoorTask() {
             return coorTask;
         }
 

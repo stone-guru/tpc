@@ -23,6 +23,7 @@ import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.Account;
+import net.eric.tpc.entity.AccountType;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.AccountDao;
 import net.eric.tpc.persist.TransferBillDao;
@@ -68,8 +69,8 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
             if (!locked) {
                 return ActionStatus.create(BizCode.ACCOUNT_LOCKED, accountNumber);
             }
-            ActionStatus accountCheckStatus = this.accountBalanceCheck(//
-                    accountNumber, oppAccountNumber, bill.getAmount());
+
+            ActionStatus accountCheckStatus = this.businessCheck(bill);
             if (!accountCheckStatus.isOK()) {
                 return accountCheckStatus;
             }
@@ -93,16 +94,41 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         }
     }
 
-    private ActionStatus accountBalanceCheck(String accountNumber, String oppAccountNumber, BigDecimal amount) {
+    private ActionStatus businessCheck(TransferBill bill) {
+        String accountNumber = bill.getAccount().getNumber();
+        String oppAccountNumber = bill.getOppositeAccount().getNumber();
+
         Account account = this.accountDao.selectByAcctNumber(accountNumber);
         if (account == null) {
             return ActionStatus.create(BizCode.ACCOUNT_NOT_EXISTS, accountNumber);
         }
+
         Account oppositeAccount = this.accountDao.selectByAcctNumber(oppAccountNumber);
         if (oppositeAccount == null) {
             return ActionStatus.create(BizCode.ACCOUNT_NOT_EXISTS, oppAccountNumber);
         }
 
+        // 确认所申请转账账户是在我方开户账户
+        if (!bill.getAccount().getBankCode().equalsIgnoreCase(account.getBankCode())) {
+            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getAccount().toString());
+        }
+
+        if (!bill.getOppositeAccount().getBankCode().equalsIgnoreCase(oppositeAccount.getBankCode())) {
+            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getOppositeAccount().toString());
+        }
+
+        // 同一个账户，转着玩吗 :-)
+        if (accountNumber.equals(oppAccountNumber)) {
+            return ActionStatus.create(BizCode.SAME_ACCOUNT, "Two accounts are same " + accountNumber);
+        }
+
+        return this.balanceCheck(account, bill.getAmount());
+    }
+
+    /**
+     * 对转出方进行余额检查
+     */
+    private ActionStatus balanceCheck(Account account, BigDecimal amount) {
         final int cmpZero = account.getOverdraftLimit().compareTo(BigDecimal.ZERO);
         if (cmpZero == 0) {// 不可透支账户
             if (account.getBalance().compareTo(amount) < 0) {
@@ -110,14 +136,15 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
                 return ActionStatus.create(BizCode.INSUFFICIENT_BALANCE, amount.toString());
             }
             return ActionStatus.OK;
-        } else if (cmpZero > 0) { // 可透支账户
+        }
+        if (cmpZero > 0) { // 可透支账户
             if (account.getBalance().add(account.getOverdraftLimit()).compareTo(amount) < 0) {
                 return ActionStatus.create(BizCode.BEYOND_OVERDRAFT_LIMIT, amount.toString());
             }
             return ActionStatus.OK;
-        } else {
-            throw new ShouldNotHappenException("Overdraft limit less than zero");
         }
+        //可透支金额居然为负
+        throw new ShouldNotHappenException("Overdraft limit less than zero");
     }
 
     @Override
