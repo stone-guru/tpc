@@ -30,8 +30,8 @@ public class AccountRepositoryTest {
         TransferBill msg = new TransferBill();
         msg.setTransSN(SnPrefix + n);
         msg.setLaunchTime(new Date());
-        msg.setAccount(new AccountIdentity("mike", "BOC"));
-        msg.setOppositeAccount(new AccountIdentity("rose", "ABC"));
+        msg.setPayer(new AccountIdentity("mike", "BOC"));
+        msg.setReceiver(new AccountIdentity("rose", "ABC"));
         msg.setReceivingBankCode("BOC");
         msg.setAmount(BigDecimal.valueOf(500));
         msg.setSummary("for cigrate");

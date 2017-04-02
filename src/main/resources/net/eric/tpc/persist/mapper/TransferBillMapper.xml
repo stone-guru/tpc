@@ -8,10 +8,10 @@
     <id column="TRANS_SN" property="transSN"/>
     <result column="RECEIVING_BANK_CODE" property="receivingBankCode"/>
     <result column="LAUNCH_TIME" property="launchTime"/>
-    <result column="ACCT_NUMBER" property="account.number"/>
-    <result column="ACCT_BANK_CODE" property="account.bankCode"/>
-    <result column="OPP_ACCT_NUMBER" property="oppositeAccount.number"/>
-    <result column="OPP_BANK_CODE" property="oppositeAccount.bankCode"/>
+    <result column="ACCT_NUMBER" property="payer.number"/>
+    <result column="ACCT_BANK_CODE" property="payer.bankCode"/>
+    <result column="OPP_ACCT_NUMBER" property="receiver.number"/>
+    <result column="OPP_BANK_CODE" property="receiver.bankCode"/>
     <result column="AMOUNT" property="amount"/>
     <result column="SUMMARY" property="summary"/> 
     <result column="VOUCHER_NUMBER" property="voucherNumber"/>
@@ -33,10 +33,10 @@
 	#{transSN},
         #{launchTime},
 	#{receivingBankCode},
-        #{account.number},
-        #{account.bankCode},
-	#{oppositeAccount.number},
-        #{oppositeAccount.bankCode},
+        #{payer.number},
+        #{payer.bankCode},
+	#{receiver.number},
+        #{receiver.bankCode},
         #{amount},
         #{summary},
         #{voucherNumber}

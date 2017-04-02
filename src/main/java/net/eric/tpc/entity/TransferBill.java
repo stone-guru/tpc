@@ -16,8 +16,8 @@ public class TransferBill implements Serializable {
     private String transSN;
     private Date launchTime;
     private String receivingBankCode;
-    private AccountIdentity account;
-    private AccountIdentity oppositeAccount;
+    private AccountIdentity payer;
+    private AccountIdentity receiver;
     private BigDecimal amount;
     private String voucherNumber;
     private String summary;
@@ -38,20 +38,20 @@ public class TransferBill implements Serializable {
         this.receivingBankCode = receivingBank;
     }
 
-    public AccountIdentity getAccount() {
-        return account;
+    public AccountIdentity getPayer() {
+        return payer;
     }
 
-    public void setAccount(AccountIdentity account) {
-        this.account = account;
+    public void setPayer(AccountIdentity payer) {
+        this.payer = payer;
     }
 
-    public AccountIdentity getOppositeAccount() {
-        return oppositeAccount;
+    public AccountIdentity getReceiver() {
+        return receiver;
     }
 
-    public void setOppositeAccount(AccountIdentity oppositeAccount) {
-        this.oppositeAccount = oppositeAccount;
+    public void setReceiver(AccountIdentity receiver) {
+        this.receiver = receiver;
     }
 
     public BigDecimal getAmount() {
@@ -89,7 +89,7 @@ public class TransferBill implements Serializable {
     @Override
     public String toString() {
         return "TransferBill [transSN=" + transSN + ", launchTime=" + launchTime + ", receivingBankCode="
-                + receivingBankCode + ", account=" + account + ", oppositeAccount=" + oppositeAccount + ", amount="
+                + receivingBankCode + ", Payer=" + payer + ", Receiver=" + receiver + ", amount="
                 + amount + ", voucherNumber=" + voucherNumber + ", summary=" + summary + "]";
     }
 
@@ -100,8 +100,8 @@ public class TransferBill implements Serializable {
         bill.receivingBankCode = this.receivingBankCode;
         bill.summary = this.summary;
         bill.amount = this.amount;
-        bill.account = this.account.copy();
-        bill.oppositeAccount = this.oppositeAccount.copy();
+        bill.payer = this.payer.copy();
+        bill.receiver = this.receiver.copy();
         bill.voucherNumber = this.voucherNumber;
         return bill;
     }
@@ -120,8 +120,8 @@ public class TransferBill implements Serializable {
             return ActionStatus.create(BizCode.AMOUNT_LE_ZERO, this.getAmount().toString());
         }
 
-        if (this.getAccount().equals(this.getOppositeAccount())) {
-            return ActionStatus.create(BizCode.SAME_ACCOUNT, this.getAccount().toString());
+        if (this.getPayer().equals(this.getReceiver())) {
+            return ActionStatus.create(BizCode.SAME_ACCOUNT, this.getPayer().toString());
         }
 
         if (this.getSummary() != null) {
@@ -142,20 +142,24 @@ public class TransferBill implements Serializable {
             return ActionStatus.create(BizCode.FIELD_TOO_LONG, "VoucherNumber");
         }
         
-        if(this.getAccount().getNumber().length() > 24){
+        if(this.getPayer().getNumber().length() > 24){
             return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.Number");
         }
         
-        if(this.getAccount().getBankCode().length() > 12){
+        if(this.getPayer().getBankCode().length() > 12){
             return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.BankCode");
         }
 
-        if(this.getOppositeAccount().getNumber().length() > 24){
+        if(this.getReceiver().getNumber().length() > 24){
             return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.Number");
         }
         
-        if(this.getOppositeAccount().getBankCode().length() > 12){
+        if(this.getReceiver().getBankCode().length() > 12){
             return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.BankCode");
+        }
+        
+        if(this.getAmount().precision() > 3){
+            return ActionStatus.create(BizCode.AMOUNT_PRECISION_ERROR,  "precision of amount can not great than 2");
         }
         
         return ActionStatus.OK;
@@ -178,27 +182,27 @@ public class TransferBill implements Serializable {
             return ActionStatus.create(BizCode.MISS_FIELD, "VoucherNumber");
         }
 
-        if (this.getAccount() == null) {
+        if (this.getPayer() == null) {
             return ActionStatus.create(BizCode.MISS_FIELD, "Account");
         }
 
-        if (Strings.isNullOrEmpty(this.getAccount().getBankCode())) {
+        if (Strings.isNullOrEmpty(this.getPayer().getBankCode())) {
             return ActionStatus.create(BizCode.MISS_FIELD, "Account.BankCode");
         }
 
-        if (Strings.isNullOrEmpty(this.getAccount().getNumber())) {
+        if (Strings.isNullOrEmpty(this.getPayer().getNumber())) {
             return ActionStatus.create(BizCode.MISS_FIELD, "Account.Number");
         }
 
-        if (this.getOppositeAccount() == null) {
+        if (this.getReceiver() == null) {
             return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount");
         }
 
-        if (Strings.isNullOrEmpty(this.getOppositeAccount().getBankCode())) {
+        if (Strings.isNullOrEmpty(this.getReceiver().getBankCode())) {
             return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount.BankCode");
         }
 
-        if (Strings.isNullOrEmpty(this.getOppositeAccount().getNumber())) {
+        if (Strings.isNullOrEmpty(this.getReceiver().getNumber())) {
             return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount.Number");
         }
 

@@ -62,26 +62,26 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
             return checkResult;
         }
 
-        if (!config.isBankNodeExists(bill.getAccount().getBankCode())) {
-            return ActionStatus.create(BizCode.NO_BANK_NODE, bill.getAccount().getBankCode());
+        if (!config.isBankNodeExists(bill.getPayer().getBankCode())) {
+            return ActionStatus.create(BizCode.NO_BANK_NODE, bill.getPayer().getBankCode());
         }
 
-        if (!config.isBankNodeExists(bill.getOppositeAccount().getBankCode())) {
-            return ActionStatus.create(BizCode.NO_BANK_NODE, bill.getOppositeAccount().getBankCode());
+        if (!config.isBankNodeExists(bill.getReceiver().getBankCode())) {
+            return ActionStatus.create(BizCode.NO_BANK_NODE, bill.getReceiver().getBankCode());
         }
 
         return ActionStatus.OK;
     }
 
     private boolean isSameBankTrans(TransferBill bill) {
-        return bill.getAccount().getBankCode().equals(bill.getOppositeAccount().getBankCode());
+        return bill.getPayer().getBankCode().equals(bill.getReceiver().getBankCode());
     }
 
     /**
      * 收款与付款账户都在同一银行
      */
     private Pair<Node, TransferBill> assignToSameBank(TransferBill bill) {
-        Node node = config.getNode(bill.getAccount().getBankCode()).get();
+        Node node = config.getNode(bill.getPayer().getBankCode()).get();
         TransferBill hisBill = bill.copy();
         return asPair(node, hisBill);
     }
@@ -90,13 +90,13 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
      * 给付款账户所在行的转账指令
      */
     private Pair<Node, TransferBill> asignToBankAtPayment(TransferBill bill) {
-        final String bankCode = bill.getAccount().getBankCode();
+        final String bankCode = bill.getPayer().getBankCode();
         Node node = config.getNode(bankCode).get();
 
         TransferBill hisBill = bill.copy();
         // 收款账户替换为本行在对方行所开账户
         String myAccount = config.getAbcAccountOn(bankCode).get();
-        hisBill.setOppositeAccount(new AccountIdentity(myAccount, bankCode));
+        hisBill.setReceiver(new AccountIdentity(myAccount, bankCode));
         return asPair(node, hisBill);
     }
 
@@ -104,13 +104,13 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
      * 给收款账户所在行的转账指令
      */
     private Pair<Node, TransferBill> asignToBankAtReceive(TransferBill bill) {
-        final String bankCode = bill.getOppositeAccount().getBankCode();
+        final String bankCode = bill.getReceiver().getBankCode();
         Node node = config.getNode(bankCode).get();
 
         TransferBill hisBill = bill.copy();
         // 付款账户替换为本行在对方行所开账户
         String myAccount = config.getAbcAccountOn(bankCode).get();
-        hisBill.setAccount(new AccountIdentity(myAccount, bankCode));
+        hisBill.setPayer(new AccountIdentity(myAccount, bankCode));
         return asPair(node, hisBill);
     }
 

@@ -34,8 +34,9 @@ public class Main {
 
         Maybe<Pair<Node, TransferBill>> maybe = analyzeCommand(args);
         if (!maybe.isRight()) {
-            System.out.println("Invalid transfer command.");
+            System.out.println("Invalid transfer command, " + maybe.getLeft().toString());
             displayUsage();
+            return;
         }
 
         Node node = maybe.getRight().fst();
@@ -99,7 +100,7 @@ public class Main {
             command = builder.toString();
         }
 
-        final String regex = "^\\s*((\\w+)(\\.\\w+)*):(\\d+)\\s+(\\w+)@(\\w+)\\s+(\\w+)@(\\w+)\\s+(\\d+)(.*)$";
+        final String regex = "^\\s*((\\w+)(\\.\\w+)*):(\\d+)\\s+(\\w+)@(\\w+)\\s+(\\w+)@(\\w+)\\s+(-?(\\d+)( *\\. *\\d*)?)(.*)$";
         final Pattern pattern = Pattern.compile(regex);
         Matcher m = pattern.matcher(command);
         if (!m.find()) {
@@ -107,20 +108,33 @@ public class Main {
         }
         AccountIdentity account1 = new AccountIdentity(m.group(5), m.group(6));
         AccountIdentity account2 = new AccountIdentity(m.group(7), m.group(8));
-        int amount = Integer.parseInt(m.group(9));
-        String summary = m.group(10);
+        BigDecimal amount;
+        try{
+          amount = new BigDecimal(m.group(9));
+        }catch(Exception e){
+            return Maybe.fail(BizCode.AMOUNT_FMT_WRONG, String.valueOf(m.group(9)));
+        }
+        
+        String summary = m.group(12);
         Node node = new Node(m.group(1), Integer.parseInt(m.group(4)));
 
         TransferBill bill = new TransferBill();
         bill.setTransSN(genNumber("B"));
         bill.setLaunchTime(new Date());
         bill.setReceivingBankCode("ABC");
-        bill.setAccount(account1);
-        bill.setOppositeAccount(account2);
-        bill.setAmount(BigDecimal.valueOf(amount));
+        bill.setPayer(account1);
+        bill.setReceiver(account2);
+        bill.setAmount(amount);
+        //bill.setAmount(BigDecimal.valueOf(2.01));
         bill.setVoucherNumber(genNumber("VC"));
         bill.setSummary(summary == null ? "" : summary.trim());
         System.out.println(bill);
+        
+        ActionStatus billStatus = bill.fieldCheck();
+        if(!billStatus.isOK()){
+            return Maybe.fail(billStatus);
+        }
+        
         return Maybe.success(asPair(node, bill));
     }
 

@@ -24,8 +24,8 @@ public class JavaSerialize {
         TransferBill msg = new TransferBill();
         msg.setTransSN("982872393");
         msg.setLaunchTime(new Date());
-        msg.setAccount(new AccountIdentity("mike", "BOC"));
-        msg.setOppositeAccount(new AccountIdentity("jack", "ABC"));
+        msg.setPayer(new AccountIdentity("mike", "BOC"));
+        msg.setReceiver(new AccountIdentity("jack", "ABC"));
         msg.setReceivingBankCode("BOC");
         msg.setAmount(BigDecimal.valueOf(200));
         msg.setSummary("for cigrate");

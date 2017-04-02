@@ -5,6 +5,7 @@ public class BizCode {
     public static final String NO_BANK_NODE = "NO_BANK_NODE";
     public static final String TIME_IS_FUTURE = "TIME_IS_FUTURE";
     public static final String AMOUNT_LE_ZERO = "AMOUNT_LE_ZERO";
+    public static final String AMOUNT_FMT_WRONG = "AMOUNT_FMT_WRONG";
     public static final String SAME_ACCOUNT = "SAME_ACCOUNT";
     public static final String NODE_UNREACH = "NODE_UNREACH";
     public static final String INNER_EXCEPTION = "INNER_EXCEPTION";
@@ -14,6 +15,8 @@ public class BizCode {
     public static final String INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE";
     public static final String BEYOND_OVERDRAFT_LIMIT = "BEYOND_OVERDRAFT_LIMIT";
     public static final String FIELD_TOO_LONG = "FIELD_TOO_LONG";
+    public static final String AMOUNT_PRECISION_ERROR = "AMOUNT_PRECISION_ERROR";
+    
     public static final String BEYOND_TRANS_AMOUNT_LIMIT = "BEYOND_TRANS_AMOUNT_LIMIT";
     
     public static final String REFUSE_TRANS = "REFUSE_TRANS";

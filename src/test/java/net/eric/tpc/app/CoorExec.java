@@ -33,8 +33,8 @@ public class CoorExec {
         TransferBill msg = new TransferBill();
         msg.setTransSN(transSn);
         msg.setLaunchTime(new Date());
-        msg.setAccount(new AccountIdentity("james", "BOC"));
-        msg.setOppositeAccount(new AccountIdentity("lori", "CCB"));
+        msg.setPayer(new AccountIdentity("james", "BOC"));
+        msg.setReceiver(new AccountIdentity("lori", "CCB"));
         msg.setReceivingBankCode("ABC");
         msg.setAmount(BigDecimal.valueOf(50000));
         msg.setSummary("for cigrate");

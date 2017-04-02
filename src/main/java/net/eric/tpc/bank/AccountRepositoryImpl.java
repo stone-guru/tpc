@@ -59,8 +59,8 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     }
 
     private ActionStatus innerPrepareCommint(String xid, TransferBill bill) {
-        String accountNumber = bill.getAccount().getNumber();
-        String oppAccountNumber = bill.getOppositeAccount().getNumber();
+        String accountNumber = bill.getPayer().getNumber();
+        String oppAccountNumber = bill.getReceiver().getNumber();
         boolean locked = false;
         boolean success = false;
         try {
@@ -95,8 +95,8 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     }
 
     private ActionStatus businessCheck(TransferBill bill) {
-        String accountNumber = bill.getAccount().getNumber();
-        String oppAccountNumber = bill.getOppositeAccount().getNumber();
+        String accountNumber = bill.getPayer().getNumber();
+        String oppAccountNumber = bill.getReceiver().getNumber();
 
         Account account = this.accountDao.selectByAcctNumber(accountNumber);
         if (account == null) {
@@ -109,12 +109,12 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         }
 
         // 确认所申请转账账户是在我方开户账户
-        if (!bill.getAccount().getBankCode().equalsIgnoreCase(account.getBankCode())) {
-            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getAccount().toString());
+        if (!bill.getPayer().getBankCode().equalsIgnoreCase(account.getBankCode())) {
+            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getPayer().toString());
         }
 
-        if (!bill.getOppositeAccount().getBankCode().equalsIgnoreCase(oppositeAccount.getBankCode())) {
-            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getOppositeAccount().toString());
+        if (!bill.getReceiver().getBankCode().equalsIgnoreCase(oppositeAccount.getBankCode())) {
+            return ActionStatus.create(BizCode.NOT_MY_ACCOUNT, bill.getReceiver().toString());
         }
 
         // 同一个账户，转着玩吗 :-)
@@ -129,6 +129,11 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
      * 对转出方进行余额检查
      */
     private ActionStatus balanceCheck(Account account, BigDecimal amount) {
+        
+        if(amount.compareTo(BigDecimal.ZERO) <= 0){
+            return ActionStatus.create(BizCode.AMOUNT_LE_ZERO,  amount.toPlainString() + " <= 0");
+        }
+        
         final int cmpZero = account.getOverdraftLimit().compareTo(BigDecimal.ZERO);
         if (cmpZero == 0) {// 不可透支账户
             if (account.getBalance().compareTo(amount) < 0) {
@@ -144,7 +149,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
             return ActionStatus.OK;
         }
         //可透支金额居然为负
-        throw new ShouldNotHappenException("Overdraft limit less than zero");
+        return ActionStatus.create(BizCode.INNER_EXCEPTION, "account data is not correct");
     }
 
     @Override
@@ -211,8 +216,8 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         TransferBill bill = this.transferBillDao.selectByXid(xid);
         Preconditions.checkNotNull(bill, "bill for xid " + xid + " not exists unexpectedly.");
 
-        final String accountNumber = bill.getAccount().getNumber();
-        final String oppositeAccountNumber = bill.getOppositeAccount().getNumber();
+        final String accountNumber = bill.getPayer().getNumber();
+        final String oppositeAccountNumber = bill.getReceiver().getNumber();
         BigDecimal amount = bill.getAmount();
 
         this.accountDao.modifyBalance(asPair(accountNumber, amount.negate()));
