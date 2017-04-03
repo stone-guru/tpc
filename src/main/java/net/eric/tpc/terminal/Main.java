@@ -125,7 +125,6 @@ public class Main {
         bill.setPayer(account1);
         bill.setReceiver(account2);
         bill.setAmount(amount);
-        //bill.setAmount(BigDecimal.valueOf(2.01));
         bill.setVoucherNumber(genNumber("VC"));
         bill.setSummary(summary == null ? "" : summary.trim());
         System.out.println(bill);

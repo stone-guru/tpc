@@ -17,6 +17,7 @@ import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.biz.BizCode;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.common.Configuration;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
@@ -32,7 +33,8 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     private TransferBillDao transferBillDao;
     private ExecutorService pool = Executors.newFixedThreadPool(2);
     private BillSaveStrategy billSaver = new BillSaveStrategy(this.pool);
-
+    private Validator<TransferBill> billBasicValidator ;
+    
     @Override
     public Maybe<TaskPartition<TransferBill>> splitTask(String xid, TransferBill bill) {
         logger.info("splitTask for " + xid);
@@ -150,6 +152,10 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
         return this.billSaver.abort(xid, abortListener);
     }
 
+    public void close(){
+        this.pool.shutdown();
+    }
+    
     public TransferBillDao getTransferBillDao() {
         return transferBillDao;
     }
@@ -158,4 +164,14 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
         this.transferBillDao = transferBillDao;
         this.billSaver.setTransferBillDao(transferBillDao);
     }
+
+    public Validator<TransferBill> getBillBasicValidator() {
+        return billBasicValidator;
+    }
+
+    public void setBillBasicValidator(Validator<TransferBill> billBasicValidator) {
+        this.billBasicValidator = billBasicValidator;
+    }
+    
+    
 }

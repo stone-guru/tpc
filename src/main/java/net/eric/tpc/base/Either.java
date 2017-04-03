@@ -1,6 +1,6 @@
 package net.eric.tpc.base;
 
-public interface Either<A, B> {
+public abstract class Either<A, B> {
 
     public static <L, R> Either<L, R> right(R value) {
         if(value == null){
@@ -26,13 +26,13 @@ public interface Either<A, B> {
     }
 
 
-    boolean isRight();
+    public abstract boolean isRight();
 
-    A getLeft();
+    public abstract A getLeft();
 
-    B getRight();
+    public abstract B getRight();
 
-    static class Left<L, R> implements Either<L, R> {
+    static class Left<L, R> extends Either<L, R> {
         private L value;
 
         public Left(L v) {
@@ -55,7 +55,7 @@ public interface Either<A, B> {
         }
     }
 
-    static class Right<L, R> implements Either<L, R> {
+    static class Right<L, R> extends Either<L, R> {
         private R value;
 
         public Right(R v) {

@@ -4,8 +4,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.common.KeyGenerator;
-import net.eric.tpc.common.KeyGenerator.KeyPersister;
 import net.eric.tpc.common.ServerConfig;
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.coor.CoordinatorFactory;
@@ -14,6 +12,8 @@ import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.TransactionManager;
 import net.eric.tpc.service.CommonServiceFactory;
+import net.eric.tpc.service.KeyGenerators;
+import net.eric.tpc.service.KeyGenerators.KeyPersister;
 
 public class CoorExec {
     public static void main(String[] args) {
@@ -24,7 +24,7 @@ public class CoorExec {
         UniFactory.setParam(PersisterFactory.class, dbUrl);
         UniFactory.setParam(CoordinatorFactory.class, new ServerConfig("ABC", 10088, dbUrl));
         
-        KeyGenerator.init(UniFactory.getObject(KeyPersister.class));
+        
         CoorExec coor = new CoorExec();
         coor.execute();
     }
@@ -48,7 +48,7 @@ public class CoorExec {
         @SuppressWarnings("unchecked")
         TransactionManager<TransferBill> transManager = UniFactory.getObject(TransactionManager.class);
         
-        ActionStatus r = transManager.transaction(createBill(KeyGenerator.nextKey("BILL")));
+        ActionStatus r = transManager.transaction(createBill(KeyGenerators.nextKey("BILL")));
         
         System.out.println(r);
         //

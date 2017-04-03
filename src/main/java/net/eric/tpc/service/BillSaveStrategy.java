@@ -22,7 +22,6 @@ public class BillSaveStrategy {
     private ExecutorService pool;
     private TransferBillDao transferBillDao;
     
-    
     public BillSaveStrategy(ExecutorService pool) {
         this.pool = pool;
     }

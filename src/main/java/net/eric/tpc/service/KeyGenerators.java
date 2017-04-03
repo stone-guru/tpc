@@ -1,4 +1,4 @@
-package net.eric.tpc.common;
+package net.eric.tpc.service;
 
 import java.util.Calendar;
 import java.util.Collections;
@@ -7,8 +7,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.eric.tpc.base.Pair;
+import net.eric.tpc.proto.KeyGenerator;
 
-public class KeyGenerator {
+/**
+ * 对KeyGenerator的实现。
+ * <p>
+ * 产生的键值格式为前缀 + 当日序号 + 日期
+ * </p>
+ * 
+ * @author Eric.G
+ *
+ */
+public class KeyGenerators {
 
     /**
      * 键存储器接口
@@ -35,8 +45,14 @@ public class KeyGenerator {
         void storeKey(String keyName, int dateDigit, int serial);
     }
 
-    private static ConcurrentHashMap<String, KeyGenerator> generatorMap;
+    private static ConcurrentHashMap<String, KeyGenerators> generatorMap;
     private static KeyPersister keyPersister;
+    public static KeyGenerator instance = new KeyGenerator() {
+        @Override
+        public String nextKey(String keyName) {
+            return KeyGenerators.nextKey(keyName);
+        }
+    };
 
     public static void init() {
         KeyPersister dummyPersister = new KeyPersister() {
@@ -47,7 +63,7 @@ public class KeyGenerator {
             public void storeKey(String keyName, int dateDigit, int serial) {
             }
         };
-        KeyGenerator.init(dummyPersister);
+        KeyGenerators.init(dummyPersister);
     }
 
     synchronized public static void init(KeyPersister persister) {
@@ -55,13 +71,17 @@ public class KeyGenerator {
         if (generatorMap != null) {
             throw new IllegalStateException("KeyGenerator has been initialized");
         }
-        KeyGenerator.keyPersister = persister;
-        generatorMap = new ConcurrentHashMap<String, KeyGenerator>();
+        KeyGenerators.keyPersister = persister;
+        generatorMap = new ConcurrentHashMap<String, KeyGenerators>();
         Map<String, Pair<Integer, Integer>> storedKeys = persister.loadStoredKeys();
         for (String keyName : storedKeys.keySet()) {
             Pair<Integer, Integer> keyPair = storedKeys.get(keyName);
-            generatorMap.put(keyName, new KeyGenerator(keyName, keyPair.fst(), keyPair.snd()));
+            generatorMap.put(keyName, new KeyGenerators(keyName, keyPair.fst(), keyPair.snd()));
         }
+    }
+
+    public static KeyGenerator getInstance() {
+        return KeyGenerators.instance;
     }
 
     public static String nextKey(String keyName) {
@@ -70,7 +90,7 @@ public class KeyGenerator {
         }
         assert (keyName != null);
         if (!generatorMap.containsKey(keyName)) {
-            generatorMap.putIfAbsent(keyName, new KeyGenerator(keyName));
+            generatorMap.putIfAbsent(keyName, new KeyGenerators(keyName));
         }
         return generatorMap.get(keyName).getNextId();
     }
@@ -80,13 +100,13 @@ public class KeyGenerator {
 
     private String prefix;
 
-    private KeyGenerator(String keyName) {
+    private KeyGenerators(String keyName) {
         this.prefix = keyName;
         this.dateDigit = new AtomicInteger(this.currentDateDigit());
         this.serial = new AtomicInteger(0);
     }
 
-    private KeyGenerator(String keyName, int dateDigit, int serial) {
+    private KeyGenerators(String keyName, int dateDigit, int serial) {
         this.prefix = keyName;
         this.dateDigit = new AtomicInteger(dateDigit);
         this.serial = new AtomicInteger(serial);
@@ -102,7 +122,7 @@ public class KeyGenerator {
         }
         final int nextSerial = this.serial.incrementAndGet();
 
-        KeyGenerator.keyPersister.storeKey(this.prefix, currentDateDigit, nextSerial);
+        KeyGenerators.keyPersister.storeKey(this.prefix, currentDateDigit, nextSerial);
         return this.formatId(this.prefix, currentDateDigit, nextSerial);
     }
 

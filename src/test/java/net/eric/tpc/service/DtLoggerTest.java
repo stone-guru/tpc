@@ -6,7 +6,6 @@ import java.util.Date;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.Node;
-import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
@@ -35,7 +34,7 @@ public class DtLoggerTest {
     }
 
     private static TransStartRec genTransRec(String prefix) {
-        String xid = KeyGenerator.nextKey(prefix); 
+        String xid = KeyGenerators.nextKey(prefix); 
         TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
         return st;
     }

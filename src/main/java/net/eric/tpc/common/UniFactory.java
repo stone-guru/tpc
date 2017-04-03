@@ -127,6 +127,7 @@ abstract public class UniFactory {
 
         factories = Lists.newArrayList();
         for (Pair<Integer, Class<?>> clz : cx) {
+            System.out.println("init factory " + clz.toString());
             try {
                 UniFactory factory = (UniFactory) clz.snd().newInstance();
                 Object param = paramMap.get(clz.snd());

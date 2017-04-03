@@ -7,11 +7,11 @@ import com.google.common.collect.Maps;
 
 import net.eric.tpc.base.Pair;
 import static net.eric.tpc.base.Pair.asPair;
-import net.eric.tpc.common.KeyGenerator;
+
 import net.eric.tpc.persist.KeyRecord;
 import net.eric.tpc.persist.KeyStoreDao;
 
-public class KeyPersisterDbImpl implements KeyGenerator.KeyPersister{
+public class KeyPersisterDbImpl implements KeyGenerators.KeyPersister{
     
     private KeyStoreDao keyStoreDao;
 
@@ -27,13 +27,17 @@ public class KeyPersisterDbImpl implements KeyGenerator.KeyPersister{
 
     @Override
     public void storeKey(String keyName, int dateDigit, int serial) {
-        KeyRecord key = keyStoreDao.selectByPrefix(keyName);
-        if(key == null){
+        //FIXME 这样效率不高，将就先
+        KeyRecord storedKey = keyStoreDao.selectByPrefix(keyName);
+        if(storedKey == null){
             keyStoreDao.insert(new KeyRecord(keyName, dateDigit, serial));
         }else{
-            key.setDateDigit(dateDigit);
-            key.setSerialNumber(serial);
-            keyStoreDao.update(key);
+            if(storedKey.getDateDigit() > dateDigit || storedKey.getSerialNumber() > serial){
+                return;
+            }
+            storedKey.setDateDigit(dateDigit);
+            storedKey.setSerialNumber(serial);
+            keyStoreDao.update(storedKey);
         }
     }
 

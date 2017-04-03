@@ -6,7 +6,6 @@ import java.util.Date;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.Node;
-import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
@@ -15,6 +14,7 @@ import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransStartRec;
 import net.eric.tpc.proto.Vote;
+import net.eric.tpc.service.KeyGenerators;
 
 public class JavaSerialize {
     static Node boc = new Node("server.boc.org", 10021);
@@ -35,7 +35,7 @@ public class JavaSerialize {
     }
 
     private static TransStartRec genTransRec(String prefix) {
-        String xid = KeyGenerator.nextKey(prefix); 
+        String xid = KeyGenerators.nextKey(prefix); 
         TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
         return st;
     }

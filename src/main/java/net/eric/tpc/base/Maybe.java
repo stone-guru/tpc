@@ -2,7 +2,7 @@ package net.eric.tpc.base;
 
 import java.util.concurrent.Future;
 
-public interface Maybe<T> extends Either<ActionStatus, T> {
+public abstract class Maybe<T> extends Either<ActionStatus, T> {
     public static <T> Maybe<T> success(T t) {
         if (t == null) {
             throw new NullPointerException("Maybe.success should not be null");
@@ -58,15 +58,52 @@ public interface Maybe<T> extends Either<ActionStatus, T> {
         }
     }
 
-    final static class Success<T> extends Either.Right<ActionStatus, T> implements Maybe<T> {
+    final static class Success<T> extends Maybe<T> {
+        private T value;
         Success(T v) {
-            super(v);
+            this.value = v;
+        }
+
+        @Override
+        public boolean isRight() {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        @Override
+        public ActionStatus getLeft() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public T getRight() {
+            // TODO Auto-generated method stub
+            return null;
         }
     }
 
-    final static class Failure<T> extends Either.Left<ActionStatus, T> implements Maybe<T> {
+    final static class Failure<T> extends  Maybe<T> {
         Failure(ActionStatus status) {
-            super(status);
+            
+        }
+
+        @Override
+        public boolean isRight() {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        @Override
+        public ActionStatus getLeft() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public T getRight() {
+            // TODO Auto-generated method stub
+            return null;
         }
     }
 }

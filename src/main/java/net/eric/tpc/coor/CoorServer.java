@@ -4,11 +4,9 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
-import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
 import net.eric.tpc.common.UniFactory;
-import net.eric.tpc.common.KeyGenerator.KeyPersister;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.service.CommonServiceFactory;
 
@@ -28,13 +26,9 @@ public class CoorServer extends MinaServer {
         CommonServiceFactory.register();
         CoordinatorFactory.register();
         
-        System.out.println(config.getDbUrl());
         UniFactory.setParam(PersisterFactory.class, config.getDbUrl());
         UniFactory.setParam(CoordinatorFactory.class, config);
-        
-        KeyGenerator.init(UniFactory.getObject(KeyPersister.class));
-
-        
+ 
         CoorServer server = new CoorServer(config);
 
         server.start();

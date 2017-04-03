@@ -11,7 +11,6 @@ import net.eric.tpc.base.Either;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.ShouldNotHappenException;
-import net.eric.tpc.common.KeyGenerator;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 
 public class Coordinator<B> implements TransactionManager<B> {
@@ -24,10 +23,12 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private CommunicatorFactory<B> communicatorFactory;
 
+    private KeyGenerator keyGenerator; 
+
     private Node self;
 
     public ActionStatus transaction(B biz) {
-        String xid = KeyGenerator.nextKey("TABC");
+        String xid = keyGenerator.nextKey("TABC");
         
         Maybe<TaskPartition<B>> taskEither = getBizStrategy().splitTask(xid, biz);
         if (!taskEither.isRight()) {
@@ -176,5 +177,14 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     public void setSelf(Node self) {
         this.self = self;
+    }
+    
+    
+    public KeyGenerator getKeyGenerator() {
+        return keyGenerator;
+    }
+
+    public void setKeyGenerator(KeyGenerator keyGenerator) {
+        this.keyGenerator = keyGenerator;
     }
 }

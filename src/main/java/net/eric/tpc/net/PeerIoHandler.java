@@ -99,7 +99,7 @@ public class PeerIoHandler extends IoHandlerAdapter {
         }
     }
 
-    private void sendMessage(IoSession session, DataPacket packet, boolean closeAfterSend) {
+    private void sendMessage(final IoSession session, final DataPacket packet, boolean closeAfterSend) {
         
         final WriteFuture wf = session.write(packet);
 
