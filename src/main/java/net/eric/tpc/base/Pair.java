@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
 public class Pair<T1, T2> implements Serializable {
@@ -18,6 +19,10 @@ public class Pair<T1, T2> implements Serializable {
         return new Pair<A, B>(a, b);
     }
 
+    public static <A, B> Optional<Pair<A,B>> of(A a, B b){
+        return Optional.of(asPair(a, b));
+    }
+    
     public static <T> Pair<T, T> fromIterator(Iterator<T> it) {
         Preconditions.checkNotNull(it);
 

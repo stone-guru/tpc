@@ -1,6 +1,10 @@
 package net.eric.tpc.bank;
 
-import net.eric.tpc.common.UniFactory;
+import com.google.common.base.Optional;
+
+import net.eric.tpc.base.NightWatch;
+import net.eric.tpc.base.Pair;
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.AccountDao;
@@ -9,50 +13,51 @@ import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Panticipantor;
 
 public class BankServiceFactory extends UniFactory {
-            
-    public static void register() {
-        UniFactory.register(BankServiceFactory.class, 10);
-    }
+    private PeerCommunicatorFactory peerCommunicatorFactory = new PeerCommunicatorFactory();
 
     
-    private PeerCommunicatorFactory peerCommunicatorFactory = new PeerCommunicatorFactory();
-            
+    public BankServiceFactory(){
+        NightWatch.regCloseAction(new Runnable() {
+            @Override
+            public void run() {
+                BankServiceFactory.this.peerCommunicatorFactory.close();
+            };
+        });
+    }
+    
     @SuppressWarnings("unchecked")
     @Override
-    protected <T> T createObject(Class<T> clz, String classifier) {
-        if (PeerIoHandler.class.equals(clz) &&  isBankServer(classifier)) {
+    protected <T> Optional<Pair<T, Boolean>> createObject(Class<T> clz, Object classifier ) {
+        if (PeerIoHandler.class.equals(clz) && isBankServer(classifier)) {
             PeerIoHandler handler = new PeerIoHandler();
-            handler.setTransManager(UniFactory.getObject(Panticipantor.class, classifier));
+            handler.setTransManager(getObject(Panticipantor.class, classifier));
+
             handler.setCommuTaskPool(peerCommunicatorFactory.getCommuTaskPool());
-            return (T) handler;
+            return Pair.of((T) handler, true);
         }
 
         if (Panticipantor.class.equals(clz) && isBankServer(classifier)) {
             Panticipantor<TransferBill> panticipantor;
             panticipantor = new Panticipantor<TransferBill>();
-            panticipantor.setDtLogger(UniFactory.getObject(DtLogger.class));
-            panticipantor.setBizStrategy(UniFactory.getObject(AccountRepositoryImpl.class));
-            panticipantor.setDecisionQuerier(peerCommunicatorFactory.getDecisionQuerier()); 
-            return (T) panticipantor;
+            panticipantor.setDtLogger(getObject(DtLogger.class));
+            panticipantor.setBizStrategy(getObject(AccountRepositoryImpl.class));
+            panticipantor.setDecisionQuerier(peerCommunicatorFactory.getDecisionQuerier());
+            return Pair.of((T) panticipantor, true);
         }
         if (AccountRepositoryImpl.class.equals(clz)) {
             AccountRepositoryImpl acctRepo = new AccountRepositoryImpl();
-            AccountDao accountDao = UniFactory.getObject(AccountDao.class);
-            TransferBillDao BillDao = UniFactory.getObject(TransferBillDao.class);
+            AccountDao accountDao = getObject(AccountDao.class);
+            TransferBillDao BillDao = getObject(TransferBillDao.class);
             acctRepo.setAccountDao(accountDao);
             acctRepo.setTransferBillDao(BillDao);
-            return (T) acctRepo;
+            return Pair.of((T) acctRepo, true);
         }
 
-        return null;
+        return Optional.absent();
     }
-    
-    private boolean isBankServer(String s){
-        return s!= null && "BANK".equalsIgnoreCase(s);
+
+    private boolean isBankServer(Object s) {
+        return s != null && "BANK".equals(s);
     }
-    
-    @Override
-    public void close(){
-        this.peerCommunicatorFactory.close();
-    }
+ 
 }

@@ -2,8 +2,8 @@ package net.eric.tpc.entity;
 
 import java.util.Date;
 
-import net.eric.tpc.proto.Decision;
-import net.eric.tpc.proto.Vote;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.Vote;
 
 public class DtRecord {
     private String xid;

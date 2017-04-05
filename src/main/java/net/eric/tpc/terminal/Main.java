@@ -1,10 +1,9 @@
 package net.eric.tpc.terminal;
 
-import static net.eric.tpc.base.Pair.asPair;
-
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,10 +17,14 @@ import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactor
 import org.apache.mina.transport.socket.SocketConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
-import net.eric.tpc.base.Pair;
 import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
@@ -29,28 +32,37 @@ import net.eric.tpc.net.DataPacket;
 
 public class Main {
 
+  
     public static void main(String[] args) {
         System.out.println("Welcome to use ABC transfer terminal T9876");
 
-        Maybe<Pair<Node, TransferBill>> maybe = analyzeCommand(args);
+        Maybe<ExecOptions> options = parseOptions(args);
+        if (!options.isRight()) {
+            return;
+        }
+
+        Maybe<TransferBill> maybe = generateBill(options.getRight());
         if (!maybe.isRight()) {
             System.out.println("Invalid transfer command, " + maybe.getLeft().toString());
             displayUsage();
             return;
         }
 
-        Node node = maybe.getRight().fst();
-        TransferBill bill = maybe.getRight().snd();
+        TransferBill bill = maybe.getRight();
 
-        BillSender sender = new BillSender(node);
+        BillSender sender = new BillSender(options.getRight().server);
         try {
             if (!sender.connect()) {
-                System.out.println("Unable to connect to " + node);
+                System.out.println("Unable to connect to " + options.getRight().server);
                 return;
             }
 
-            ActionStatus status = sender.sendBillRequest(bill);
-            displayResult(status);
+            for (int i = 0; i < options.getRight().repeatTimes; i++) {
+                bill.setTransSN(genNumber("B" + i));
+                bill.setVoucherNumber(genNumber("VC" + i));
+                ActionStatus status = sender.sendBillRequest(bill);
+                displayResult(status);
+            }
         } finally {
             sender.close();
         }
@@ -90,7 +102,86 @@ public class Main {
         System.out.println("example: 127.0.0.1:10024 james@ccb lori@boc 500 happy new year.");
     }
 
-    private static Maybe<Pair<Node, TransferBill>> analyzeCommand(String[] args) {
+    private static Maybe<TransferBill> generateBill(ExecOptions options) {
+
+        TransferBill bill = new TransferBill();
+        bill.setTransSN(genNumber("B"));
+        bill.setLaunchTime(new Date());
+        bill.setReceivingBankCode("ABC");
+        bill.setPayer(options.payer);
+        bill.setReceiver(options.receiver);
+        bill.setAmount(options.amount);
+        bill.setVoucherNumber(genNumber("VC"));
+        bill.setSummary(options.summary);
+        // System.out.println(bill);
+
+        ActionStatus billStatus = bill.fieldCheck();
+        if (!billStatus.isOK()) {
+            return Maybe.fail(billStatus);
+        }
+
+        return Maybe.success(bill);
+    }
+
+    private static String genNumber(String prefix) {
+        long t = System.currentTimeMillis() % 1000000000;
+        return prefix + String.valueOf(t);
+    }
+
+    public static class CmdOptions {
+        @Parameter(description = "payer@bank receiver@bank amount summary")
+        public List<String> parameters = Lists.newArrayList();
+
+        @Parameter(names = { "-r" }, description = "Repeat this command many times")
+        public Integer repeatTimes = 1;
+
+        @Parameter(names = { "-h" }, description = "The ABC server address")
+        public String server = "localhost";
+
+        @Parameter(names = { "-p", "--port" }, description = "The ABC server port")
+        public Integer port = 10024;
+    }
+
+    public static class ExecOptions {
+        public Node server;
+        public int repeatTimes;
+        public List<String> parameters;
+        public AccountIdentity payer;
+        public AccountIdentity receiver;
+        public BigDecimal amount;
+        public String summary;
+    }
+
+    public static Maybe<ExecOptions> parseOptions(String[] args) {
+        CmdOptions options = new CmdOptions();
+        ExecOptions execOptions = new ExecOptions();
+        JCommander jc = new JCommander(options);
+        try {
+            jc.parse(args);
+        } catch (Exception e) {
+            return Maybe.fail(BizCode.COMMAND_SYNTAX_ERROR, e.getMessage());
+        }
+
+        if (options.repeatTimes <= 0) {
+            return Maybe.fail(BizCode.COMMAND_SYNTAX_ERROR, "Repeat time should be a positive integer");
+        }
+        if (options.port <= 0) {
+            return Maybe.fail(BizCode.COMMAND_SYNTAX_ERROR, "Port should be a positive integer");
+        }
+
+        execOptions.server = new Node(options.server, options.port);
+        execOptions.repeatTimes = options.repeatTimes;
+        execOptions.parameters = options.parameters;
+
+        ActionStatus status = parseTransferArgument(options.parameters, execOptions);
+        if (!status.isOK()) {
+            return Maybe.fail(status);
+        }
+
+        return Maybe.success(execOptions);
+    }
+
+    private static ActionStatus parseTransferArgument(List<String> args, ExecOptions options) {
         String command = "";
         if (args != null) {
             StringBuilder builder = new StringBuilder();
@@ -100,46 +191,23 @@ public class Main {
             command = builder.toString();
         }
 
-        final String regex = "^\\s*((\\w+)(\\.\\w+)*):(\\d+)\\s+(\\w+)@(\\w+)\\s+(\\w+)@(\\w+)\\s+(-?(\\d+)( *\\. *\\d*)?)(.*)$";
+        final String regex = "^\\s*(\\w+)@(\\w+)\\s+(\\w+)@(\\w+)\\s+(-?(\\d+)( *\\. *\\d*)?)(.*)$";
         final Pattern pattern = Pattern.compile(regex);
         Matcher m = pattern.matcher(command);
         if (!m.find()) {
-            return Maybe.fail(BizCode.COMMAND_SYNTAX_ERROR, "");
+            return ActionStatus.create(BizCode.COMMAND_SYNTAX_ERROR, "Bad transfer command argument");
         }
-        AccountIdentity account1 = new AccountIdentity(m.group(5), m.group(6));
-        AccountIdentity account2 = new AccountIdentity(m.group(7), m.group(8));
-        BigDecimal amount;
-        try{
-          amount = new BigDecimal(m.group(9));
-        }catch(Exception e){
-            return Maybe.fail(BizCode.AMOUNT_FMT_WRONG, String.valueOf(m.group(9)));
+        try {
+            options.amount = new BigDecimal(m.group(5));
+        } catch (Exception e) {
+            return ActionStatus.create(BizCode.AMOUNT_FMT_WRONG, "Wrong number format " + m.group(5));
         }
-        
-        String summary = m.group(12);
-        Node node = new Node(m.group(1), Integer.parseInt(m.group(4)));
 
-        TransferBill bill = new TransferBill();
-        bill.setTransSN(genNumber("B"));
-        bill.setLaunchTime(new Date());
-        bill.setReceivingBankCode("ABC");
-        bill.setPayer(account1);
-        bill.setReceiver(account2);
-        bill.setAmount(amount);
-        bill.setVoucherNumber(genNumber("VC"));
-        bill.setSummary(summary == null ? "" : summary.trim());
-        System.out.println(bill);
+        options.payer = new AccountIdentity(m.group(1), m.group(2));
+        options.receiver = new AccountIdentity(m.group(3), m.group(4));
+        options.summary = Strings.nullToEmpty(m.group(8));
         
-        ActionStatus billStatus = bill.fieldCheck();
-        if(!billStatus.isOK()){
-            return Maybe.fail(billStatus);
-        }
-        
-        return Maybe.success(asPair(node, bill));
-    }
-
-    private static String genNumber(String prefix) {
-        long t = System.currentTimeMillis() % 1000000000;
-        return prefix + String.valueOf(t);
+        return ActionStatus.OK;
     }
 
     private static class BillSender {
@@ -189,7 +257,7 @@ public class Main {
         public void close() {
             if (session != null) {
                 CloseFuture cf = session.closeNow();
-               // cf.awaitUninterruptibly();
+                cf.awaitUninterruptibly();
             }
             if (connector != null) {
                 connector.dispose();

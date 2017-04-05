@@ -12,8 +12,8 @@ import com.google.common.collect.ImmutableList;
 import net.eric.tpc.bank.AccountRepositoryImpl;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Node;
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.biz.AccountRepository;
-import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.AccountType;
@@ -93,7 +93,7 @@ public class AccountRepositoryTest {
     public static void main(String[] args) {
         //final String url = "jdbc:h2:tcp://localhost:9100/bank";
 
-        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:tcp://localhost:9100/data_abc");
+        UniFactory.register(new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc") );
        
         AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) UniFactory.getObject(AccountRepositoryImpl.class);
 

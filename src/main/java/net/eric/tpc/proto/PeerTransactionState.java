@@ -3,6 +3,9 @@ package net.eric.tpc.proto;
 import java.util.concurrent.Future;
 
 import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 
 public class PeerTransactionState<B> {
     public static enum Stage {

@@ -151,7 +151,6 @@ public class MinaCommunicator {
                         };
                         commuTaskPool.submit(task);
                     }
-
                 }
             }
         };

@@ -6,20 +6,20 @@ import java.util.Date;
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.Node;
-import net.eric.tpc.common.UniFactory;
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
-import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DtLogger;
-import net.eric.tpc.proto.TransStartRec;
-import net.eric.tpc.proto.Vote;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 import net.eric.tpc.service.KeyGenerators;
 
 public class JavaSerialize {
     static Node boc = new Node("server.boc.org", 10021);
     static Node bbc = new Node("server.boc.org", 10022);
-    
+
     private static TransferBill genTransferMessage() {
         TransferBill msg = new TransferBill();
         msg.setTransSN("982872393");
@@ -35,30 +35,29 @@ public class JavaSerialize {
     }
 
     private static TransStartRec genTransRec(String prefix) {
-        String xid = KeyGenerators.nextKey(prefix); 
+        String xid = KeyGenerators.nextKey(prefix);
         TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
         return st;
     }
 
     public static void main(String[] args) {
-        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:tcp://localhost:9100/data_abc");
-              
+        UniFactory.register(new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc"));
+
         @SuppressWarnings("unchecked")
         DtLogger<TransferBill> dtLogger = UniFactory.getObject(DtLogger.class);
-        for(int i = 0; i < 30; i++){
+        for (int i = 0; i < 30; i++) {
             TransStartRec rec = genTransRec("A");
-            dtLogger.recordBeginTrans( rec, genTransferMessage(), true);
+            dtLogger.recordBeginTrans(rec, genTransferMessage(), true);
             int dice = i % 3;
-            if(dice == 0 || dice == 1){
-                dtLogger.recordVote(rec.getXid(), (i % 2 == 0)? Vote.YES : Vote.NO);
+            if (dice == 0 || dice == 1) {
+                dtLogger.recordVote(rec.getXid(), (i % 2 == 0) ? Vote.YES : Vote.NO);
             }
-            if(dice == 0 || dice == 2){
-                dtLogger.recordDecision(rec.getXid(), (i % 2 == 0)? Decision.COMMIT : Decision.ABORT);
+            if (dice == 0 || dice == 2) {
+                dtLogger.recordDecision(rec.getXid(), (i % 2 == 0) ? Decision.COMMIT : Decision.ABORT);
             }
         }
-//        for(int i = 0; i < 30; i++)
-//            
-        
-        
+        // for(int i = 0; i < 30; i++)
+        //
+
     }
 }

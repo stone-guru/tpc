@@ -15,6 +15,9 @@ import net.eric.tpc.base.Node;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.proto.PeerTransactionState.Stage;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 
 public class Panticipantor<B> implements PeerTransactionManager<B> {
 
@@ -29,6 +32,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         assert (startRec != null);
         assert (state != null);
         assert (bill != null);
+        
         synchronized (state) {
             if (state.getStage() != Stage.NONE) {
                 return new ActionStatus(DataPacket.PEER_PRTC_ERROR, "Nested transaction not suppored");
@@ -40,9 +44,9 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
             this.dtLogger.recordBeginTrans(startRec, bill, false);
 
-            System.out.println(bill.toString());
-            System.out.println(startRec.toString());
-            System.out.println(state.toString());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Begin Transaction : " + startRec.toString() + " " + bill.toString() + " " + state.toString());
+            }
 
             Future<ActionStatus> future = bizStrategy.checkAndPrepare(startRec.getXid(), bill);
             state.setVoteFuture(future);
@@ -79,7 +83,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
                 return;
             }
 
-            // 不允许在自己还没有投票的时候就收到COMMIT
+            // 不支持在自己还没有投票的时候就收到COMMIT
             if (state.getStage() != Stage.VOTED && decision == Decision.COMMIT) {
                 logger.debug("Decision Stage: got DECISION before vote " + xid);
                 return;

@@ -14,10 +14,10 @@ import net.eric.tpc.base.Node;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.DtRecordDao;
-import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DtLogger;
-import net.eric.tpc.proto.TransStartRec;
-import net.eric.tpc.proto.Vote;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 import net.eric.tpc.util.Util;
 
 public class DtLoggerDbImpl implements DtLogger<TransferBill> {
@@ -44,6 +44,7 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
         
         this.dtLoggerDao.insert(record);
     }
+
     
     
     @Override

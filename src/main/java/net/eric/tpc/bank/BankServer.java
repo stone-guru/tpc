@@ -5,16 +5,14 @@ import java.util.List;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.service.CommonServiceFactory;
-import net.eric.tpc.service.KeyGenerators;
-import net.eric.tpc.service.KeyGenerators.KeyPersister;
 import net.eric.tpc.util.Util;
 
 public class BankServer extends MinaServer {
@@ -26,7 +24,7 @@ public class BankServer extends MinaServer {
     public static void main(String[] args) throws IOException {
         ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
 
-        initFactory(config.getDbUrl());
+        initFactory(config);
 
         BankServer server = new BankServer(config);
 
@@ -35,12 +33,10 @@ public class BankServer extends MinaServer {
         server.displayAllAccount();
     }
 
-    private static void initFactory(String dbUrl) {
-        PersisterFactory.register();
-        CommonServiceFactory.register();
-        BankServiceFactory.register();
-
-        UniFactory.setParam(PersisterFactory.class, dbUrl);
+    private static void initFactory(ServerConfig config) {
+        UniFactory.register(new PersisterFactory(config.getDbUrl()));
+        UniFactory.register(new CommonServiceFactory());
+        UniFactory.register(new BankServiceFactory());
     }
 
     public BankServer(ServerConfig config) {

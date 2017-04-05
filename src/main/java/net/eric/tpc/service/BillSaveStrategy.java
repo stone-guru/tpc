@@ -11,20 +11,18 @@ import org.slf4j.LoggerFactory;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.UnImplementedException;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.BizActionListener;
-import net.eric.tpc.proto.Decision;
+import net.eric.tpc.proto.Types.Decision;
 
 public class BillSaveStrategy {
     private static final Logger logger = LoggerFactory.getLogger(BillSaveStrategy.class);
     
-    private ExecutorService pool;
+    private ExecutorService threadPool;
+    private Validator<TransferBill> billValidator;
     private TransferBillDao transferBillDao;
-    
-    public BillSaveStrategy(ExecutorService pool) {
-        this.pool = pool;
-    }
 
     public Future<ActionStatus> prepareCommit(String xid, TransferBill bill) {
         Callable<ActionStatus> task = new Callable<ActionStatus>() {
@@ -40,7 +38,7 @@ public class BillSaveStrategy {
                 }
             }
         };
-        return this.pool.submit(task);
+        return this.threadPool.submit(task);
     }
 
     public Future<Void> commit(String xid, BizActionListener commitListener) {
@@ -80,7 +78,7 @@ public class BillSaveStrategy {
                 return null;
             }
         };
-        return this.pool.submit(commitTask);
+        return this.threadPool.submit(commitTask);
     }
 
     private void callBizActionListener(String xid, Decision decision, boolean success, BizActionListener listener) {
@@ -96,6 +94,23 @@ public class BillSaveStrategy {
         } catch (Exception e) {
             logger.error("executeListener when " + xid + " " + decision + " and exec result is " + success, e);
         }
+    }
+
+    
+    public ExecutorService getThreadPool() {
+        return threadPool;
+    }
+
+    public void setThreadPool(ExecutorService threadPool) {
+        this.threadPool = threadPool;
+    }
+
+    public Validator<TransferBill> getBillValidator() {
+        return billValidator;
+    }
+
+    public void setBillValidator(Validator<TransferBill> billValidator) {
+        this.billValidator = billValidator;
     }
 
     public TransferBillDao getTransferBillDao() {

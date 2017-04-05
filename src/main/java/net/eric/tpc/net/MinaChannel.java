@@ -107,10 +107,9 @@ public class MinaChannel {
         final WriteFuture writeFuture = session.write(request);
         writeFuture.awaitUninterruptibly();
         if (!writeFuture.isWritten()) {
-            if (writeFuture.getException() != null) {
-                CommunicationRound round = roundRef.get();
-                round.regFailure(this.node, "ERROR_SEND", writeFuture.getException().getMessage());
-            }
+            String errMessage = (writeFuture.getException() != null) ? writeFuture.getException().getMessage() : "";
+            CommunicationRound round = roundRef.get();
+            round.regFailure(this.node, "ERROR_SEND", errMessage);
         } else if (sendOnly) {
             CommunicationRound round = roundRef.get();
             round.regMessage(node, true);
@@ -118,12 +117,13 @@ public class MinaChannel {
     }
 
     public void close() throws Exception {
-        if (logger.isDebugEnabled()) {
-            logger.debug("MinaChannel.close entry");
+        if (logger.isInfoEnabled()) {
+            logger.info("Close connection to " + this.node);
         }
-        //也许服务端已经在关了
+
+        // 也许服务端已经在关了
         if (!session.isClosing()) {
-            CloseFuture future = session.getCloseFuture();
+            CloseFuture future = session.closeNow();
             future.awaitUninterruptibly(2000);
         }
     }

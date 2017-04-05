@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.common.UniFactory;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.service.CommonServiceFactory;
 
@@ -22,18 +22,18 @@ public class CoorServer extends MinaServer {
     public static void main(String[] args) throws IOException {
         ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
 
-        PersisterFactory.register();
-        CommonServiceFactory.register();
-        CoordinatorFactory.register();
-        
-        UniFactory.setParam(PersisterFactory.class, config.getDbUrl());
-        UniFactory.setParam(CoordinatorFactory.class, config);
- 
+        CoorServer.registerFactories(config);
+
         CoorServer server = new CoorServer(config);
 
         server.start();
     }
-    
+
+    public static void registerFactories(ServerConfig config) {
+        UniFactory.register(new PersisterFactory(config.getDbUrl()));
+        UniFactory.register(new CommonServiceFactory());
+        UniFactory.register(new CoordinatorFactory(config));
+    }
     // KeyGenerator.init();
     // PersisterFactory.initialize("jdbc:h2:tcp://localhost:9100/bank");
     //
@@ -56,7 +56,6 @@ public class CoorServer extends MinaServer {
     //
     // CoordinatorFactory.shutDown();
 
-
     @Override
     protected IoHandler getIoHandler() {
         return UniFactory.getObject(CoorIoHandler.class);
@@ -69,7 +68,6 @@ public class CoorServer extends MinaServer {
         }
         return null;
     }
-    
 
     private static String splashText = //
             "          /$$$$$$  /$$$$$$$   /$$$$$$ \n"//

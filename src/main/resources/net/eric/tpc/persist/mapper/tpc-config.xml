@@ -9,9 +9,8 @@
   
   <typeAliases>
     <typeAlias alias="Pair" type="net.eric.tpc.base.Pair"/>  
-    <typeAlias alias="Decision" type="net.eric.tpc.proto.Decision"/>  
-    <typeAlias alias="Vote" type="net.eric.tpc.proto.Vote"/>  
-    <typeAlias alias="Pair" type="net.eric.tpc.base.Pair"/>  
+    <typeAlias alias="Decision" type="net.eric.tpc.proto.Types$Decision"/>  
+    <typeAlias alias="Vote" type="net.eric.tpc.proto.Types$Vote"/>  
     <typeAlias alias="DtRecord" type="net.eric.tpc.entity.DtRecord"/>
     <typeAlias alias="Account" type="net.eric.tpc.entity.Account"/>
     <typeAlias alias="TransferBill" type="net.eric.tpc.entity.TransferBill"/>
@@ -20,10 +19,10 @@
 
   <typeHandlers>
     <typeHandler handler="net.eric.tpc.persist.VoteTypeHandler" 
-                javaType="net.eric.tpc.proto.Vote"
+                javaType="net.eric.tpc.proto.Types$Vote"
                 jdbcType="CHAR"/>
     <typeHandler handler="net.eric.tpc.persist.DecisionTypeHandler" 
-                javaType="net.eric.tpc.proto.Decision"
+                javaType="net.eric.tpc.proto.Types$Decision"
                 jdbcType="CHAR"/>                
     <typeHandler handler="net.eric.tpc.persist.AccountTypeHandler" 
                 javaType="net.eric.tpc.entity.AccountType"

@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
-import net.eric.tpc.proto.Decision;
+import net.eric.tpc.proto.Types.Decision;
 
 public class DecisionTypeHandler extends BaseTypeHandler<Decision> {
 

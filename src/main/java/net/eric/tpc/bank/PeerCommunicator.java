@@ -21,9 +21,9 @@ import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.MinaCommunicator;
 import net.eric.tpc.net.PeerResult;
-import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.DecisionQuerier;
 import net.eric.tpc.proto.RoundResult;
+import net.eric.tpc.proto.Types.Decision;
 
 public class PeerCommunicator extends MinaCommunicator implements DecisionQuerier {
     private static final Logger logger = LoggerFactory.getLogger(PeerCommunicator.class);

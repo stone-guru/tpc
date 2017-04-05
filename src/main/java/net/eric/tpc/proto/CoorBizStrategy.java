@@ -5,8 +5,6 @@ import java.util.concurrent.Future;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.sun.istack.internal.Nullable;
-
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
@@ -23,11 +21,12 @@ import net.eric.tpc.base.Pair.FieldTag;
  * <li>事务提交 commit</li>
  * <li>事务终止 abort</li>
  * </ul>
- * 事务协调器保证如下三种对本接口方法的调用链
+ * 事务协调器保证如下几种对本接口方法的调用链
  * <ul>
  * <li>splitTask (result.isLeft 不开始事务)</li>
- * <li>splitTask resultOK, parepareCommit resultNo , abort</li>
+ * <li>splitTask resultOK, parepareCommit resultNo</li>
  * <li>splitTask resultOK, parepareCommit resultYes , commit</li>
+ * <li>splitTask resultOK, parepareCommit resultYes , abort</li>
  * </ul>
  * 该接口的prepareCommit, commit, abort方法都为异步调用, 其线程调度策略自行负责.
  * 

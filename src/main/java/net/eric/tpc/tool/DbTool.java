@@ -10,7 +10,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.common.UniFactory;
+import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.AccountType;
 import net.eric.tpc.persist.AccountDao;
@@ -23,61 +23,60 @@ public class DbTool {
             + "directory : a exist directory to contain the datafile , like d:/database or ./database/bank.";
 
     private static Set<String> codeSet = ImmutableSet.of("BOC", "CCB", "CBRC", "ABC");
-    
+
     public static void main(String[] args) {
-        PersisterFactory.register();
-        
+
         DbTool tool = new DbTool();
         Optional<Pair<String, String>> opt = tool.parseArgument(args);
-        if(!opt.isPresent()){
+        if (!opt.isPresent()) {
             System.out.println(USAGE);
             return;
         }
-        
+
         tool.initDatabase(opt.get().fst(), opt.get().snd());
     }
 
-    private Optional<Pair<String, String>> parseArgument(String[] args){
-        if(args == null || args.length != 2){
+    private Optional<Pair<String, String>> parseArgument(String[] args) {
+        if (args == null || args.length != 2) {
             return Optional.absent();
         }
-        if(args[0] == null || args[1] == null){
+        if (args[0] == null || args[1] == null) {
             return Optional.absent();
         }
-        
+
         String code = args[0].toUpperCase();
-        if(!codeSet.contains(code)){
+        if (!codeSet.contains(code)) {
             return Optional.absent();
         }
         return Optional.of(asPair(code, args[1]));
     }
-    
-    private void initDatabase(String bankCode, String dirname){
- 
-        UniFactory.setParam(PersisterFactory.class, "jdbc:h2:" + dirname + "/data_" + bankCode.toLowerCase());
-        
+
+    private void initDatabase(String bankCode, String dirname) {
+        final String jdbcUrl = "jdbc:h2:" + dirname + "/data_" + bankCode.toLowerCase();
+        UniFactory.register(new PersisterFactory(jdbcUrl));
+
         DatabaseInit dbInit = UniFactory.getObject(DatabaseInit.class);
         AccountDao accountDao = UniFactory.getObject(AccountDao.class);
-        
-        if(bankCode.equals("BOC") || bankCode.equals("CCB")){
+
+        if (bankCode.equals("BOC") || bankCode.equals("CCB")) {
             dbInit.dropAccountTable();
             dbInit.createAccountTable();
-            this.insertAccounts(bankCode, accountDao);    
+            this.insertAccounts(bankCode, accountDao);
         }
-        
+
         dbInit.dropTransferBillTable();
         dbInit.createTransferBillTable();
-        
+
         dbInit.dropDtTable();
         dbInit.createDtTable();
-        
+
         dbInit.dropKeyTable();
         dbInit.createKeyTable();
-     }
-    
-    private void insertAccounts(String bankCode, AccountDao accountDao){
+    }
+
+    private void insertAccounts(String bankCode, AccountDao accountDao) {
         Date current = new Date();
-        
+
         Account james = new Account();
         james.setType(AccountType.PERSONAL);
         james.setAcctNumber("james");
@@ -88,18 +87,18 @@ public class DbTool {
         james.setOpeningTime(current);
         james.setLastModiTime(current);
         accountDao.insert(james);
-        
+
         Account ryan = new Account();
         ryan.setType(AccountType.PERSONAL);
         ryan.setAcctName("Ryan.White");
         ryan.setAcctNumber("ryan");
         ryan.setBalance(BigDecimal.valueOf(1000L));
-        ryan.setOverdraftLimit(BigDecimal.valueOf(4000L));        
+        ryan.setOverdraftLimit(BigDecimal.valueOf(4000L));
         ryan.setBankCode(bankCode);
         ryan.setOpeningTime(current);
         ryan.setLastModiTime(current);
         accountDao.insert(ryan);
-        
+
         Account betty = new Account();
         betty.setType(AccountType.PERSONAL);
         betty.setAcctName("Betty.Moore");
@@ -110,7 +109,7 @@ public class DbTool {
         betty.setOpeningTime(current);
         betty.setLastModiTime(current);
         accountDao.insert(betty);
-        
+
         Account lori = new Account();
         lori.setType(AccountType.PERSONAL);
         lori.setAcctName("Lori.Lee");
@@ -121,7 +120,7 @@ public class DbTool {
         lori.setOpeningTime(current);
         lori.setLastModiTime(current);
         accountDao.insert(lori);
-        
+
         Account abc = new Account();
         abc.setType(AccountType.BANK);
         abc.setAcctName("Agricultural Bank of China");

@@ -23,9 +23,9 @@ import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.MinaCommunicator;
 import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.Communicator;
-import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.RoundResult;
-import net.eric.tpc.proto.TransStartRec;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
 
 public class CoorCommunicator extends MinaCommunicator implements Communicator<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);

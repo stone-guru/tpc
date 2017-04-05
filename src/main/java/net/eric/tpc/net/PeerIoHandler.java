@@ -1,6 +1,7 @@
 package net.eric.tpc.net;
 
-import java.util.ArrayList;
+import static net.eric.tpc.base.Pair.asPair;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,47 +17,56 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.base.UnImplementedException;
+import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.proto.Decision;
+import net.eric.tpc.net.RequestHandler.ProcessResult;
 import net.eric.tpc.proto.PeerTransactionManager;
 import net.eric.tpc.proto.PeerTransactionState;
-import net.eric.tpc.proto.TransStartRec;
-
-import static net.eric.tpc.base.Pair.asPair;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
 
 public class PeerIoHandler extends IoHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
 
-    private static final String TRANS_SESSION_ITEM = "transactionSession";
+    private static final RequestHandler UnknownCommandHandler = new RequestHandler() {
+        @Override
+        public String getCorrespondingCode() {
+            throw new ShouldNotHappenException("UnknownCommandHandler has no correspondingCode");
+        }
 
-    private Map<String, RequestHandler<TransferBill>> requestHandlerMap = initRequestHandlers();
-    private RequestHandler<TransferBill> unknownCommandHandler = new UnknowCommandRequestHandler<TransferBill>();
+        @Override
+        public ProcessResult process(IoSession session, DataPacket request) {
+            return ProcessResult.NO_RESPONSE_AND_CLOSE;
+        }
+    };
+
+    private Map<String, RequestHandler> requestHandlerMap = initRequestHandlers();
     private PeerTransactionManager<TransferBill> transManager;
     private ExecutorService commuTaskPool;
 
-    private Map<String, RequestHandler<TransferBill>> initRequestHandlers() {
-        List<RequestHandler<TransferBill>> handlers = new ArrayList<RequestHandler<TransferBill>>(10);
-        handlers.add(new HeartBeatRequestHandler<TransferBill>());
-        handlers.add(new BeginTransRequestHandler());
-        handlers.add(new VoteRequestHandler());
-        handlers.add(new TransDecisionHandler());
+    private Map<String, RequestHandler> initRequestHandlers() {
+        List<RequestHandler> handlers = ImmutableList.of(//
+                new BeginTransRequestHandler(), //
+                new VoteRequestHandler(), //
+                new TransDecisionHandler(), //
+                new PeerDecisonQueryHandler());
 
-        Map<String, RequestHandler<TransferBill>> handlerMap = new HashMap<String, RequestHandler<TransferBill>>();
-        for (RequestHandler<TransferBill> h : handlers) {
+        Map<String, RequestHandler> handlerMap = new HashMap<String, RequestHandler>();
+        for (RequestHandler h : handlers) {
             handlerMap.put(h.getCorrespondingCode(), h);
         }
         return handlerMap;
     }
 
-    private RequestHandler<TransferBill> getRequestHandler(String code) {
-        RequestHandler<TransferBill> handler = requestHandlerMap.get(code);
+    private RequestHandler getRequestHandler(String code) {
+        RequestHandler handler = requestHandlerMap.get(code);
         if (handler == null) {
-            return this.unknownCommandHandler;
+            return UnknownCommandHandler;
         }
         return handler;
     }
@@ -68,39 +78,36 @@ public class PeerIoHandler extends IoHandlerAdapter {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        super.sessionCreated(session);
-        session.setAttribute(PeerIoHandler.TRANS_SESSION_ITEM, new PeerTransactionState<TransferBill>());
+        if (logger.isInfoEnabled()) {
+            final String remote = session.getRemoteAddress().toString();
+            logger.info(remote + "  connected");
+        }
+    }
+
+    @Override
+    public void sessionClosed(IoSession session) throws Exception {
+        if (logger.isInfoEnabled()) {
+            final String remote = session.getRemoteAddress().toString();
+            logger.info(remote + "  closed");
+        }
     }
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Received: " + message.toString());
-        }
-
         DataPacket request = (DataPacket) message;
 
-        Optional<PeerTransactionState<TransferBill>> opt = getTransStateFromSession(session);
-        RequestHandler<TransferBill> handler = this.getRequestHandler(request.getCode());
+        RequestHandler handler = this.getRequestHandler(request.getCode());
 
-        if (handler.requireTransState() && !opt.isPresent()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("No transaction state, do nothing");
-            }
-            return;
-        }
-
-        final Pair<Optional<DataPacket>, Boolean> result = handler.process(request, opt.orNull());
-        final boolean closeAfterSend = result.snd();
-        if (result.fst().isPresent()) {
-            this.sendMessage(session, result.fst().get(), closeAfterSend);
-        } else if (closeAfterSend) {
+        final ProcessResult result = handler.process(session, request);
+        if (result.getResponse().isPresent()) {
+            this.sendMessage(session, result.getResponse().get(), result.closeAfterSend());
+        } else if (result.closeAfterSend()) {
             session.closeOnFlush();
         }
     }
 
     private void sendMessage(final IoSession session, final DataPacket packet, boolean closeAfterSend) {
-        
+
         final WriteFuture wf = session.write(packet);
 
         if (logger.isDebugEnabled()) {
@@ -118,8 +125,8 @@ public class PeerIoHandler extends IoHandlerAdapter {
                     session.closeOnFlush();
                 }
             };
-            if(this.commuTaskPool == null){
-                System.out.println("commuTaskPool is null");
+            if (this.commuTaskPool == null) {
+                throw new IllegalStateException("commuTaskPool not set");
             }
             this.commuTaskPool.submit(closeAction);
         }
@@ -131,11 +138,14 @@ public class PeerIoHandler extends IoHandlerAdapter {
             return;
         }
 
-        Optional<PeerTransactionState<TransferBill>> state = getTransStateFromSession(session);
+        // 通过一个handler来取session中的state，保证逻辑的负责者唯一
+        Optional<PeerTransactionState<TransferBill>> state = TransactionRequestHandler.getTransactionState(session);
+
         if (!state.isPresent()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("No transaction state on this session, do nothing in sessionIdle");
-            }
+            // if (logger.isDebugEnabled()) {
+            // logger.debug("No transaction state on this session, do nothing in
+            // sessionIdle");
+            // }
             return;
         }
 
@@ -150,14 +160,8 @@ public class PeerIoHandler extends IoHandlerAdapter {
         this.commuTaskPool = commuTaskPool;
     }
 
-    private Optional<PeerTransactionState<TransferBill>> getTransStateFromSession(IoSession session) {
-        @SuppressWarnings("unchecked")
-        PeerTransactionState<TransferBill> state = (PeerTransactionState<TransferBill>) session
-                .getAttribute(PeerIoHandler.TRANS_SESSION_ITEM);
-        return Optional.fromNullable(state);
-    }
-
-    class BeginTransRequestHandler implements RequestHandler<TransferBill> {
+    class BeginTransRequestHandler extends TransactionRequestHandler<TransferBill> {
+        @Override
         public String getCorrespondingCode() {
             return DataPacket.BEGIN_TRANS;
         }
@@ -176,8 +180,19 @@ public class PeerIoHandler extends IoHandlerAdapter {
             return Maybe.success(asPair(startRec.getRight(), bill.getRight()));
         }
 
-        public Pair<Optional<DataPacket>, Boolean> process(DataPacket request,
-                PeerTransactionState<TransferBill> state) {
+        @Override
+        public ProcessResult process(IoSession session, DataPacket request) {
+            Optional<PeerTransactionState<TransferBill>> state = TransactionRequestHandler
+                    .getTransactionState(session);
+            if (!state.isPresent()) {
+                state = Optional.of(new PeerTransactionState<TransferBill>());
+                TransactionRequestHandler.putTransactionState(session, state.get());
+            }
+            return this.process(request, state.get());
+        }
+
+        @Override
+        public ProcessResult process(DataPacket request, PeerTransactionState<TransferBill> state) {
             DataPacket response = null;
             ActionStatus r = null;
 
@@ -194,22 +209,23 @@ public class PeerIoHandler extends IoHandlerAdapter {
             } else {
                 response = new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, request.getParam1(), DataPacket.NO, r);
             }
-            return asPair(Optional.of(response), !r.isOK());
+            return new ProcessResult(response, !r.isOK());
         }
 
         @Override
         public boolean requireTransState() {
-            return true;
+            return false;
         }
     }
 
-    class VoteRequestHandler implements RequestHandler<TransferBill> {
+    class VoteRequestHandler extends TransactionRequestHandler<TransferBill> {
+        @Override
         public String getCorrespondingCode() {
             return DataPacket.VOTE_REQ;
         }
 
-        public Pair<Optional<DataPacket>, Boolean> process(DataPacket request,
-                PeerTransactionState<TransferBill> state) {
+        @Override
+        public ProcessResult process(DataPacket request, PeerTransactionState<TransferBill> state) {
             String xid = (String) request.getParam1();
 
             ActionStatus r = PeerIoHandler.this.transManager.processVoteReq(xid, state);
@@ -219,22 +235,18 @@ public class PeerIoHandler extends IoHandlerAdapter {
             } else {
                 response = new DataPacket(DataPacket.VOTE_ANSWER, xid, DataPacket.NO, r);
             }
-            return asPair(Optional.of(response), !r.isOK());
-        }
-
-        @Override
-        public boolean requireTransState() {
-            return true;
+            return new ProcessResult(response, !r.isOK());
         }
     }
 
-    class TransDecisionHandler implements RequestHandler<TransferBill> {
+    class TransDecisionHandler extends TransactionRequestHandler<TransferBill> {
+        @Override
         public String getCorrespondingCode() {
             return DataPacket.TRANS_DECISION;
         }
 
-        public Pair<Optional<DataPacket>, Boolean> process(DataPacket request,
-                PeerTransactionState<TransferBill> state) {
+        @Override
+        public ProcessResult process(DataPacket request, PeerTransactionState<TransferBill> state) {
             String xid = (String) request.getParam1();
             String decision = (String) request.getParam2();
 
@@ -245,49 +257,15 @@ public class PeerIoHandler extends IoHandlerAdapter {
             } else {
                 logger.error(DataPacket.PEER_PRTC_ERROR, "Unknown commit decision " + decision);
             }
-            return asPair(Optional.absent(), true);
-        }
-
-        @Override
-        public boolean requireTransState() {
-            return true;
+            return ProcessResult.NO_RESPONSE_AND_CLOSE;
         }
     }
 
-    // class DecisionQueryHandler implements RequestHandler<TransferBill> {
-    // public String getCorrespondingCode() {
-    // return DataPacket.DECISION_QUERY;
-    // }
-    //
-    // public Pair<Optional<DataPacket>, Boolean> process(DataPacket request,
-    // PeerTransactionState<TransferBill> state) {
-    // String xid = (String) request.getParam1();
-    //
-    // Optional<Decision> decision =
-    // PeerIoHandler.this.transManager.queryDecision(xid);
-    // String param2 = null;
-    // if (decision.isPresent()) {
-    // switch (decision.get()) {
-    // case ABORT:
-    // param2 = DataPacket.NO;
-    // break;
-    // case COMMIT:
-    // param2 = DataPacket.YES;
-    // break;
-    // default:
-    // throw new UnImplementedException();
-    // }
-    // } else {
-    // param2 = DataPacket.UNKNOWN;
-    // }
-    //
-    // return asPair(Optional.of(new DataPacket(DataPacket.DECISION_ANSWER, xid,
-    // param2)), true);
-    // }
-    //
-    // @Override
-    // public boolean requireTransState() {
-    // return false;
-    // }
-    // }
+    class PeerDecisonQueryHandler extends DecisionQueryHandler {
+        @Override
+        protected Optional<Decision> getDecisionFor(String xid) {
+            return PeerIoHandler.this.transManager.queryDecision(xid);
+        }
+    }
+
 }

@@ -61,49 +61,50 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
     final static class Success<T> extends Maybe<T> {
         private T value;
         Success(T v) {
+            if (v == null) {
+                throw new NullPointerException("Success value is null");
+            }
             this.value = v;
         }
 
         @Override
         public boolean isRight() {
-            // TODO Auto-generated method stub
-            return false;
+            return true;
         }
 
         @Override
         public ActionStatus getLeft() {
-            // TODO Auto-generated method stub
-            return null;
+            throw new IllegalStateException("Not fail, no left value");
         }
 
         @Override
         public T getRight() {
-            // TODO Auto-generated method stub
-            return null;
+            return value;
         }
     }
 
     final static class Failure<T> extends  Maybe<T> {
+        private ActionStatus status;
         Failure(ActionStatus status) {
-            
+            if (status == null) {
+                throw new NullPointerException("status is null");
+            }
+            this.status = status;
         }
 
         @Override
         public boolean isRight() {
-            // TODO Auto-generated method stub
             return false;
         }
 
         @Override
         public ActionStatus getLeft() {
-            // TODO Auto-generated method stub
-            return null;
+            return this.status;
         }
 
         @Override
         public T getRight() {
-            // TODO Auto-generated method stub
-            return null;
+            throw new IllegalStateException("Not success, no right value");
         }
     }
 }

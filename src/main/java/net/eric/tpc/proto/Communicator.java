@@ -6,6 +6,8 @@ import java.util.concurrent.Future;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
 
 public interface Communicator<B> {
     ActionStatus connectPanticipants(List<Node> nodes);

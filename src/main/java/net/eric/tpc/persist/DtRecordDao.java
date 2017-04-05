@@ -4,7 +4,7 @@ import java.util.Date;
 
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.DtRecord;
-import net.eric.tpc.proto.Decision;
+import net.eric.tpc.proto.Types.Decision;
 
 public interface DtRecordDao {
     void insert(DtRecord dtRecord);

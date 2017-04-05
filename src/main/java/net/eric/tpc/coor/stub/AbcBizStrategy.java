@@ -3,8 +3,6 @@ package net.eric.tpc.coor.stub;
 import static net.eric.tpc.base.Pair.asPair;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -21,7 +19,6 @@ import net.eric.tpc.biz.Validator;
 import net.eric.tpc.common.Configuration;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.CoorBizStrategy;
 import net.eric.tpc.service.BillSaveStrategy;
@@ -30,9 +27,7 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(AbcBizStrategy.class);
 
     private Configuration config = new Configuration();
-    private TransferBillDao transferBillDao;
-    private ExecutorService pool = Executors.newFixedThreadPool(2);
-    private BillSaveStrategy billSaver = new BillSaveStrategy(this.pool);
+    private BillSaveStrategy billSaver;
     private Validator<TransferBill> billBasicValidator ;
     
     @Override
@@ -152,17 +147,9 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
         return this.billSaver.abort(xid, abortListener);
     }
 
-    public void close(){
-        this.pool.shutdown();
-    }
     
-    public TransferBillDao getTransferBillDao() {
-        return transferBillDao;
-    }
-
-    public void setTransferBillDao(TransferBillDao transferBillDao) {
-        this.transferBillDao = transferBillDao;
-        this.billSaver.setTransferBillDao(transferBillDao);
+    public void setBillSaver(BillSaveStrategy billSaver) {
+        this.billSaver = billSaver;
     }
 
     public Validator<TransferBill> getBillBasicValidator() {

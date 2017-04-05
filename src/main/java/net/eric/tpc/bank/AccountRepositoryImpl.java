@@ -18,18 +18,16 @@ import com.google.common.util.concurrent.Futures;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.Account;
-import net.eric.tpc.entity.AccountType;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.AccountDao;
 import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.BizActionListener;
-import net.eric.tpc.proto.Decision;
 import net.eric.tpc.proto.PeerBizStrategy;
+import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.util.Util;
 
 public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy<TransferBill> {

@@ -12,6 +12,8 @@ import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Node;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
+import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.TransStartRec;
 
 public class Coordinator<B> implements TransactionManager<B> {
 
@@ -23,13 +25,13 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private CommunicatorFactory<B> communicatorFactory;
 
-    private KeyGenerator keyGenerator; 
+    private KeyGenerator keyGenerator;
 
     private Node self;
 
     public ActionStatus transaction(B biz) {
         String xid = keyGenerator.nextKey("TABC");
-        
+
         Maybe<TaskPartition<B>> taskEither = getBizStrategy().splitTask(xid, biz);
         if (!taskEither.isRight()) {
             logger.info("Invalid Biz Message", "Can not start trans " + taskEither.getLeft().toString());
@@ -45,28 +47,36 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
         Communicator<B> communicator = communicatorEither.getRight();
 
-        ActionStatus beginTransResult = this.askBeginTrans(xid, task, communicator);
-        if (!beginTransResult.isOK()) {
-            return beginTransResult;
+        try {
+            ActionStatus beginTransResult = this.askBeginTrans(xid, task, communicator);
+            if (!beginTransResult.isOK()) {
+                return beginTransResult;
+            }
+
+            ActionStatus voteResult = processVote(xid, task, communicator);
+            if (!voteResult.isOK()) {
+                return voteResult;
+            }
+
+            getDtLogger().recordDecision(xid, Decision.COMMIT);
+            Future<RoundResult> notifyFuture = communicator.notifyDecision(xid, Decision.COMMIT, peers);
+
+            @SuppressWarnings("unused")
+            Future<Void> canNotCare = this.getBizStrategy().commit(xid, this.finishTransListener);
+
+            try {
+                notifyFuture.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } finally {
+            getCommunicatorFactory().releaseCommunicator(communicator);
         }
-
-        ActionStatus voteResult = processVote(xid, task, communicator);
-        if (!voteResult.isOK()) {
-            return voteResult;
-        }
-
-        getDtLogger().recordDecision(xid, Decision.COMMIT);
-        communicator.notifyDecision(xid, Decision.COMMIT, peers);
-        
-        @SuppressWarnings("unused")
-        Future<Void> canNotCare = this.getBizStrategy().commit(xid, this.finishTransListener);
-
-        getCommunicatorFactory().releaseCommunicator(communicator);
 
         return ActionStatus.OK;
     }
 
-    private BizActionListener finishTransListener = new BizActionListener(){
+    private BizActionListener finishTransListener = new BizActionListener() {
         @Override
         public void onSuccess(String xid) {
             Coordinator.this.dtLogger.markTransFinished(xid);
@@ -77,7 +87,7 @@ public class Coordinator<B> implements TransactionManager<B> {
             logger.error("Transaction " + xid + " commit failed");
         }
     };
-    
+
     private ActionStatus processVote(String xid, TaskPartition<B> task, Communicator<B> communicator) {
         final List<Node> peers = task.getParticipants();
         Future<ActionStatus> selfVoteFuture = getBizStrategy().prepareCommit(xid, task.getCoorTask());
@@ -143,7 +153,7 @@ public class Coordinator<B> implements TransactionManager<B> {
 
         @SuppressWarnings("unused")
         Future<Void> canNotCare = this.bizStrategy.abort(xid, this.finishTransListener);
-        
+
         this.getCommunicatorFactory().releaseCommunicator(communicator);
     }
 
@@ -178,8 +188,7 @@ public class Coordinator<B> implements TransactionManager<B> {
     public void setSelf(Node self) {
         this.self = self;
     }
-    
-    
+
     public KeyGenerator getKeyGenerator() {
         return keyGenerator;
     }
