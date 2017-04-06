@@ -47,7 +47,6 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     private PeerBizStrategy<B> bizStrategy;
     private DecisionQuerier decisionQuerier;
     private ExecutorService taskPool = Executors.newFixedThreadPool(3);
-
     
     public Panticipantor() {
         timer.scheduleAtFixedRate(new TimerTask() {

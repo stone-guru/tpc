@@ -1,12 +1,12 @@
 * TPC issues
 
 ** Transaction Control Features
-*** Timeout control should implemented by tc itself instead of using mina idle
+*** DONE Timeout control should implemented by tc itself instead of using mina idle
 the reasons are:
 - after connection closed idle message will not triger, so when
   connection closed check action should be performed.
 - Let these mechannism dont depend on outside is more safer.
 *** Panticipants should query decision command after vote yes and decision not arriving
 ** TransStartRec . participans should under control for use java core list to prevent unserialize faile
-** TODO MinaChannel use mina's AttritubleKey to store var to IOSession in. ROUNT_REFan d NODE
+** DONE MinaChannel use mina's AttritubleKey to store var to IOSession in. ROUNT_REFan d NODE
 
