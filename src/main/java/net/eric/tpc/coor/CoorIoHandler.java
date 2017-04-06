@@ -2,7 +2,6 @@ package net.eric.tpc.coor;
 
 import java.util.List;
 
-import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +15,7 @@ import net.eric.tpc.net.AbstractIoHandler;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.DecisionQueryHandler;
 import net.eric.tpc.net.RequestHandler;
+import net.eric.tpc.net.TransSession;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransactionManager;
 import net.eric.tpc.proto.Types.Decision;
@@ -29,7 +29,7 @@ public class CoorIoHandler extends AbstractIoHandler {
     private DtLogger<TransferBill> dtLogger;
 
     @Override
-    protected List<RequestHandler> requestHanlers() {
+    protected List<RequestHandler> requestHandlers() {
         return ImmutableList.of(new TransferBillHandler(), new PeerDecisonQueryHandler());
     }
 
@@ -41,7 +41,7 @@ public class CoorIoHandler extends AbstractIoHandler {
         }
 
         @Override
-        public ProcessResult process(IoSession session, DataPacket request) {
+        public ProcessResult process(TransSession session, DataPacket request) {
             Maybe<TransferBill> billMaybe = Maybe.safeCast(request.getParam1(), TransferBill.class, //
                     DataPacket.PEER_PRTC_ERROR, "param1 is not a TransferBill");
             DataPacket reponse = null;

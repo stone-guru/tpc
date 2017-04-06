@@ -17,6 +17,7 @@ import net.eric.tpc.service.KeyGenerators;
 public class CoorExec {
 
     public static void main(String[] args) {
+        
         String dbUrl = "jdbc:h2:tcp://localhost:9100/data_abc";
 
         ServerConfig config = new ServerConfig("ABC", 10088, dbUrl);

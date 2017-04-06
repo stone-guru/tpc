@@ -26,5 +26,7 @@ public class BizCode {
     public static final String ACCOUNT_SYNTAX_ERROR = "ACCOUNT_SYNTAX_ERROR";
     public static final String AMOUNT_NOT_INT = "AMOUNT_NOT_INT";
     
+    public static final String XID_EXISTS = "XID_EXISTS";
+    
     private BizCode(){}
 }

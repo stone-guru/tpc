@@ -1,7 +1,5 @@
 package net.eric.tpc.net;
 
-import org.apache.mina.core.session.IoSession;
-
 import com.google.common.base.Optional;
 
 import net.eric.tpc.base.UnImplementedException;
@@ -15,7 +13,7 @@ public abstract class DecisionQueryHandler implements RequestHandler {
     }
 
     @Override
-    public ProcessResult process(IoSession session, DataPacket request) {
+    public ProcessResult process(TransSession session, DataPacket request) {
         String xid = (String) request.getParam1();
 
         Optional<Decision> decision = this.getDecisionFor(xid);

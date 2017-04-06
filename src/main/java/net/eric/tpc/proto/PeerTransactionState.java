@@ -1,5 +1,6 @@
 package net.eric.tpc.proto;
 
+import java.util.Date;
 import java.util.concurrent.Future;
 
 import net.eric.tpc.base.ActionStatus;
@@ -19,15 +20,48 @@ public class PeerTransactionState<B> {
     private Future<ActionStatus> voteResult;
     private B bizEntity;
     private TransStartRec transStartRec;
+    private Date startTime;
+    private Date VoteTime;
+    private Date decideTime;
     
     public Stage getStage() {
         return stage;
     }
 
     public void setStage(Stage stage) {
+
         this.stage = stage;
+        if (stage == Stage.BEGIN) {
+            this.startTime = new Date();
+        } else if (stage == Stage.VOTED) {
+            this.VoteTime = new Date();
+        }else if(stage == Stage.DECIDED){
+            this.decideTime = new Date();
+        }
     }
 
+    public boolean isTimedout(long currentMillis, long limit) {
+        Date at = this.activeTime();
+        if(at != null){
+            System.out.println(String.format("%d %d %d", currentMillis, at.getTime(), limit));
+            return  currentMillis - at.getTime() >= limit;
+        }
+        return false;
+    }
+
+    public Date activeTime(){
+        if (this.stage == Stage.BEGIN) {
+            return this.startTime;
+        }
+        if (this.stage == Stage.VOTED){
+            return this.VoteTime;
+        }
+        if (this.stage == Stage.DECIDED){
+            return this.decideTime;
+        }
+        return null;
+    }
+    
     public String getXid() {
         return xid;
     }
@@ -75,6 +109,13 @@ public class PeerTransactionState<B> {
     public void setTransStartRec(TransStartRec transStartRec) {
         this.transStartRec = transStartRec;
     }
-    
-    
+
+    public Date getStartTime() {
+        return startTime;
+    }
+
+    public Date getVoteTime() {
+        return VoteTime;
+    }
+
 }

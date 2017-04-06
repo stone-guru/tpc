@@ -26,17 +26,17 @@ public abstract class AbstractIoHandler extends IoHandlerAdapter{
         }
 
         @Override
-        public ProcessResult process(IoSession session, DataPacket request) {
+        public ProcessResult process(TransSession session, DataPacket request) {
             return ProcessResult.NO_RESPONSE_AND_CLOSE;
         }
     };
 
     private Map<String, RequestHandler> requestHandlerMap = initRequestHandlerMap();
     private ExecutorService taskPool;
-
+    private TransSession transSession = new TransSession();
     
     private Map<String, RequestHandler> initRequestHandlerMap() {
-        List<RequestHandler>  handlers = this.requestHanlers();
+        List<RequestHandler>  handlers = this.requestHandlers();
         Map<String, RequestHandler> handlerMap = new HashMap<String, RequestHandler>();
         for (RequestHandler h : handlers) {
             handlerMap.put(h.getCorrespondingCode(), h);
@@ -44,7 +44,7 @@ public abstract class AbstractIoHandler extends IoHandlerAdapter{
         return handlerMap;
     }
 
-    protected abstract List<RequestHandler> requestHanlers();
+    protected abstract List<RequestHandler> requestHandlers();
     
     protected RequestHandler getRequestHandler(String code) {
         RequestHandler handler = requestHandlerMap.get(code);
@@ -63,8 +63,11 @@ public abstract class AbstractIoHandler extends IoHandlerAdapter{
         DataPacket request = (DataPacket) message;
 
         RequestHandler handler = this.getRequestHandler(request.getCode());
-
-        final ProcessResult result = handler.process(session, request);
+        System.out.println("Got handler " + handler);
+        
+        final ProcessResult result = handler.process(transSession, request);
+        
+        
         if (result.getResponse().isPresent()) {
             this.replyMessage(session, result.getResponse().get(), result.closeAfterSend());
         } else if (result.closeAfterSend()) {

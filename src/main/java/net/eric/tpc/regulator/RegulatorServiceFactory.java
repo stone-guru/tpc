@@ -35,7 +35,7 @@ public class RegulatorServiceFactory extends UniFactory {
         if (PeerIoHandler.class.equals(clz) && this.isRegulator(classifier)) {
             PeerIoHandler handler = new PeerIoHandler();
             handler.setTransManager(getObject(PeerTransactionManager.class, MY_CLASSIFER));
-            handler.setCommuTaskPool(pool);
+            handler.setTaskPool(pool);
             return Pair.of((T) handler, true);
         }
 

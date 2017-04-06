@@ -31,8 +31,7 @@ public class BankServiceFactory extends UniFactory {
         if (PeerIoHandler.class.equals(clz) && isBankServer(classifier)) {
             PeerIoHandler handler = new PeerIoHandler();
             handler.setTransManager(getObject(Panticipantor.class, classifier));
-
-            handler.setCommuTaskPool(peerCommunicatorFactory.getCommuTaskPool());
+            handler.setTaskPool(peerCommunicatorFactory.getCommuTaskPool());
             return Pair.of((T) handler, true);
         }
 

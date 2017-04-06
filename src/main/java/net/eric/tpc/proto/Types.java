@@ -71,6 +71,10 @@ public class Types {
             this.participants = participants;
         }
 
+        public String xid(){
+            return xid;
+        }
+        
         public String getXid() {
             return xid;
         }
