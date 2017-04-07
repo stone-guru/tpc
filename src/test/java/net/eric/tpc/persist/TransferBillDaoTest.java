@@ -1,38 +1,41 @@
 package net.eric.tpc.persist;
 
 import static net.eric.tpc.base.Pair.asPair;
-import static org.junit.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.Test;
 
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
 
+@Test(singleThreaded=true)
 public class TransferBillDaoTest {
     private static final String BILL_SN = "982872393";
 
     private TransferBillDao transferBillDao;
 
-    @BeforeClass
+    @BeforeSuite
     public static void init() {
         final String dbUrl = "jdbc:h2:/tmp/account_test";
         UniFactory.registerMaybe(new PersisterFactory(dbUrl));
     }
 
-    @AfterClass
+    @AfterSuite
     public static void close() {
         NightWatch.executeCloseActions();
     }
 
-    @Before
+    @BeforeMethod
     public void beforeTest() {
         DatabaseInit initor = UniFactory.getObject(DatabaseInit.class);
         initor.dropTransferBillTable();
@@ -60,7 +63,7 @@ public class TransferBillDaoTest {
         assertEquals(BILL_SN, bill.getTransSN());
     }
 
-    @Test
+   @Test
     public void testDeleteByXid() {
         this.transferBillDao.updateLock(asPair(BILL_SN, 10086L));
 

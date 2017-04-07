@@ -1,14 +1,14 @@
 package net.eric.tpc.persist;
 
 import static net.eric.tpc.base.Pair.asPair;
-import static org.junit.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 import java.util.Date;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.UniFactory;
@@ -19,18 +19,18 @@ import net.eric.tpc.proto.Types.Vote;
 public class DtLRecordDaoTest {
     private DtRecordDao dtRecordDao;
 
-    @BeforeClass
+    @BeforeSuite
     public static void init() {
         final String dbUrl = "jdbc:h2:/tmp/account_test";
         UniFactory.registerMaybe(new PersisterFactory(dbUrl));
     }
 
-    @AfterClass
+    @AfterSuite
     public static void close() {
         NightWatch.executeCloseActions();
     }
 
-    @Before
+    @BeforeTest
     public void beforeTest() {
         DatabaseInit initor = UniFactory.getObject(DatabaseInit.class);
         initor.dropDtTable();
