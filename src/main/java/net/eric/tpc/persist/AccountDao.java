@@ -14,8 +14,6 @@ public interface AccountDao {
     
     void updateLock(Pair<String, Long> param);
     
-    Boolean isAccountLocked(String acctNumber);
-    
     Account selectByAcctNumber(String acctNumber);
     
     List<Account> selectAll();

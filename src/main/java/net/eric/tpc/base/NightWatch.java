@@ -1,5 +1,7 @@
 package net.eric.tpc.base;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +12,19 @@ import org.slf4j.LoggerFactory;
 public class NightWatch {
     private static final Logger logger = LoggerFactory.getLogger(NightWatch.class);
     private static final NightWatch instance = new NightWatch();
+    
+    public static void regCloseable(Closeable closeable){
+        instance.addCloseAction(new Runnable(){
+            @Override
+            public void run(){
+                try {
+                    closeable.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
     
     public static void regCloseAction(Runnable action){
         instance.addCloseAction(action);

@@ -1,5 +1,6 @@
 package net.eric.tpc.persist;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Properties;
@@ -15,7 +16,7 @@ import com.google.common.base.Preconditions;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
 
-public class PersisterFactory extends UniFactory {
+public class PersisterFactory extends UniFactory implements Closeable {
 
     public static String MY_BATIS_CONFIG_FILE = "net/eric/tpc/persist/mapper/tpc-config.xml";
 
@@ -44,5 +45,10 @@ public class PersisterFactory extends UniFactory {
         }
         T mapper = sqlSession.getMapper(clz);
         return Pair.of(mapper, false);
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.sqlSession.close();
     }
 }

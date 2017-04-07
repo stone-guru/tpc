@@ -45,7 +45,7 @@
     WHERE XID = #{fst}
   </update>
   
-  <select id="selectDecision" resultType="Decision" parameterType="String">
+  <select id="selectDecision" resultType="Decision" parameterType="Long">
     SELECT DECISION
     FROM DT_RECORD 
     WHERE XID = #{xid}

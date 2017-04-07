@@ -49,18 +49,18 @@
     WHERE TRANS_SN = #{fst}
   </update>
 
-    <update id="clearLockByXid" parameterType="String">
+    <update id="clearLockByXid" parameterType="Long">
     UPDATE TRANSFER_BILL
     SET LOCKING_TRANS = null
     WHERE LOCKING_TRANS = #{xid}
     </update>
     
-  <delete id="deleteByXid" parameterType="String">
+  <delete id="deleteByXid" parameterType="Long">
     DELETE FROM TRANSFER_BILL
     WHERE LOCKING_TRANS = #{xid}
   </delete>
   
-  <select id="selectByXid" parameterType="String" resultMap="transferBillMap">
+  <select id="selectByXid" parameterType="Long" resultMap="transferBillMap">
     SELECT *
     FROM TRANSFER_BILL
     WHERE LOCKING_TRANS = #{xid}

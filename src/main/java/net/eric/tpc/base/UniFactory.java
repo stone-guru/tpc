@@ -2,6 +2,7 @@ package net.eric.tpc.base;
 
 import static net.eric.tpc.base.Pair.asPair;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,16 +20,33 @@ abstract public class UniFactory {
     private static final int MAX_NEST_DEPTH = 100;
 
     public static void register(UniFactory factory) {
-        logger.debug("register factory " + factory.getClass().toString());
+        register(factory, false);
+    }
+
+    public static void registerMaybe(UniFactory factory) {
+        register(factory, true);
+    }
+
+    private static void register(UniFactory factory, boolean ignoreWhenExist) {
+        //logger.debug("register factory " + factory.getClass().toString());
         Preconditions.checkNotNull(factory);
 
         synchronized (factories) {
-            for(UniFactory f : factories){
-                if(f.getClass().equals(factory.getClass())){
-                    throw new IllegalArgumentException("Factory with same class exists already " + factory.getClass().getCanonicalName());
+            for (UniFactory f : factories) {
+                if (f.getClass().equals(factory.getClass())) {
+                    if (ignoreWhenExist) {
+                        return;
+                    } else {
+                        throw new IllegalArgumentException(
+                                "Factory with same class exists already " + factory.getClass().getCanonicalName());
+                    }
                 }
             }
             factories.add(factory);
+        }
+
+        if (factory instanceof Closeable) {
+            NightWatch.regCloseable(((Closeable) factory));
         }
     }
 
@@ -71,7 +89,7 @@ abstract public class UniFactory {
             synchronized (objectMap) {
                 if (objectMap.containsKey(key)) {
                     @SuppressWarnings("unchecked")
-                    T t =   (T) objectMap.get(key);
+                    T t = (T) objectMap.get(key);
                     return Optional.of(t);
                 }
                 Optional<Pair<T, Boolean>> opt = this.createObject(clz, classifier);
