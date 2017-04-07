@@ -24,11 +24,13 @@ import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.biz.BizCode;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.DataPacket;
+import net.eric.tpc.proto.Types.ErrorCode;
+import net.eric.tpc.service.BillBasicValidator;
 
 public class Main {
 
@@ -74,16 +76,16 @@ public class Main {
             return;
         }
         String errMsg;
-        if (status.getCode().equals(ActionStatus.PEER_NO_REPLY)) {
+        if (status.getCode() == ErrorCode.PEER_NO_REPLY) {
             errMsg = "ABC server no reponse";
-        } else if (status.getCode().equals(BizCode.REFUSE_COMMIT)) {
+        } else if (status.getCode() == ErrorCode.REFUSE_COMMIT) {
             String[] segs = status.getDescription().split(", *");
             if (segs.length != 3) {
                 errMsg = status.getDescription();
             } else {
                 errMsg = String.format("%s reply %s %s", segs[0], segs[1], segs[2]);
             }
-        } else if (status.getCode().equals("NOT_CONNECTED")) {
+        } else if (status.getCode() == ErrorCode.PEER_NOT_CONNECTED) {
             errMsg = " ABC server can not connect to " + status.getDescription();
         } else {
             errMsg = status.toString();
@@ -115,7 +117,8 @@ public class Main {
         bill.setSummary(options.summary);
         // System.out.println(bill);
 
-        ActionStatus billStatus = bill.fieldCheck();
+        Validator<TransferBill> validator = new BillBasicValidator();
+        ActionStatus billStatus = validator.check(bill);
         if (!billStatus.isOK()) {
             return Maybe.fail(billStatus);
         }
@@ -143,7 +146,7 @@ public class Main {
     }
 
     public static class ExecOptions {
-        public Node server;
+        public InetSocketAddress server;
         public int repeatTimes;
         public List<String> parameters;
         public AccountIdentity payer;
@@ -169,7 +172,7 @@ public class Main {
             return Maybe.fail(BizCode.COMMAND_SYNTAX_ERROR, "Port should be a positive integer");
         }
 
-        execOptions.server = new Node(options.server, options.port);
+        execOptions.server = InetSocketAddress.createUnresolved(options.server, options.port);
         execOptions.repeatTimes = options.repeatTimes;
         execOptions.parameters = options.parameters;
 
@@ -211,11 +214,11 @@ public class Main {
     }
 
     private static class BillSender {
-        private Node node;
+        private InetSocketAddress node;
         private SocketConnector connector;
         private IoSession session;
 
-        public BillSender(Node node) {
+        public BillSender(InetSocketAddress node) {
             this.node = node;
         }
 
@@ -246,7 +249,7 @@ public class Main {
             }
             DataPacket dataPacket = (DataPacket) readFuture.getMessage();
             if (!DataPacket.TRANS_BILL_ANSWER.equals(dataPacket.getCode())) {
-                return ActionStatus.create(DataPacket.PEER_PRTC_ERROR, "server reply error");
+                return ActionStatus.create(ErrorCode.PEER_PRTC_ERROR, "server reply error");
             }
             if (DataPacket.YES.equals(dataPacket.getParam1())) {
                 return ActionStatus.OK;

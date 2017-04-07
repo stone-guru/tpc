@@ -3,6 +3,7 @@ package net.eric.tpc.service;
 import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -11,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.bank.AccountRepositoryImpl;
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.entity.Account;
@@ -23,10 +23,10 @@ import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
 
 public class AccountRepositoryTest {
-    static Node boc = new Node("server.boc.org", 10021);
-    static Node bbc = new Node("server.boc.org", 10022);
+    static InetSocketAddress boc = InetSocketAddress.createUnresolved("server.boc.org", 10021);
+    static InetSocketAddress bbc = InetSocketAddress.createUnresolved("server.boc.org", 10022);
 
-    private static TransferBill genTransferMessage(String SnPrefix, int n) {
+    private static TransferBill genTransferMessage(String SnPrefix, long n) {
         TransferBill msg = new TransferBill();
         msg.setTransSN(SnPrefix + n);
         msg.setLaunchTime(new Date());
@@ -40,8 +40,8 @@ public class AccountRepositoryTest {
         return msg;
     }
 
-    public static void prepareCommit(String xid, PeerBizStrategy<TransferBill> bizStrategy) {
-        TransferBill bill = genTransferMessage(xid, 1);
+    public static void prepareCommit(long xid, PeerBizStrategy<TransferBill> bizStrategy) {
+        TransferBill bill = genTransferMessage("SN", xid);
         ActionStatus result = ActionStatus.force(bizStrategy.checkAndPrepare(xid, bill));
         System.out.println(result);
     }
@@ -80,12 +80,12 @@ public class AccountRepositoryTest {
 
     private static BizActionListener bizActionListener = new BizActionListener() {
         @Override
-        public void onSuccess(String xid) {
+        public void onSuccess(long xid) {
             System.out.println("success on " + xid);
         }
 
         @Override
-        public void onFailure(String xid) {
+        public void onFailure(long xid) {
             System.out.println("fail on " + xid);
         }
     };
@@ -104,7 +104,7 @@ public class AccountRepositoryTest {
         // acctRepo.resetLockedKey(ImmutableList.of(asPair("mike", "XID2"),
         // asPair("rose", "XID2")));
         // acctRepo.commit("XID2", bizActionListener);
-        acctRepo.resetLockedKey(ImmutableList.of(asPair("mike", "XID4"), asPair("rose", "XID4")));
-        acctRepo.abort("XID4", bizActionListener);
+        acctRepo.resetLockedKey(ImmutableList.of(asPair("mike", 10086L), asPair("rose", 10086L)));
+        acctRepo.abort(10086L, bizActionListener);
     }
 }

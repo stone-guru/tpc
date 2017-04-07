@@ -1,76 +1,77 @@
 package net.eric.tpc.net;
 
+import java.net.InetSocketAddress;
+
 import com.google.common.base.Optional;
 
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Node;
-import net.eric.tpc.base.SysErrorCode;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class PeerResult {
     public static enum State {
         PENDING, APPROVED, REFUSED, FAILED
     };
 
-    public static PeerResult pending(Node node, Object result) {
+    public static PeerResult pending(InetSocketAddress node, Object result) {
         return new PeerResult(node, State.PENDING, result, null);
     }
 
-    public static PeerResult approve(Node node, Object result) {
+    public static PeerResult approve(InetSocketAddress node, Object result) {
         return new PeerResult(node, State.APPROVED, result, null);
     }
 
-    public static PeerResult refuse(Node node, String code, String reason) {
+    public static PeerResult refuse(InetSocketAddress node, short code, String reason) {
         return new PeerResult(node, State.REFUSED, null, new ActionStatus(code, reason));
     }
 
-    public static PeerResult refuse(Node node, ActionStatus error) {
+    public static PeerResult refuse(InetSocketAddress node, ActionStatus error) {
         return new PeerResult(node, State.REFUSED, null, error);
     }
 
-    public static PeerResult fail(Node node, String code, String reason) {
+    public static PeerResult fail(InetSocketAddress node, short code, String reason) {
         return new PeerResult(node, State.FAILED, null, new ActionStatus(code, reason));
     }
 
-    public static PeerResult fail(Node node, ActionStatus error) {
+    public static PeerResult fail(InetSocketAddress node, ActionStatus error) {
         return new PeerResult(node, State.FAILED, null, error);
     }
 
     public static interface Assembler {
-        PeerResult start(Node node, Object message);
+        PeerResult start(InetSocketAddress node, Object message);
 
-        PeerResult fold(Node node, PeerResult previous, Object message);
+        PeerResult fold(InetSocketAddress node, PeerResult previous, Object message);
 
-        PeerResult finish(Node node, Optional<PeerResult> previous);
+        PeerResult finish(InetSocketAddress node, Optional<PeerResult> previous);
     }
 
     public static abstract class OneItemAssembler implements Assembler {
         @Override
-        public PeerResult fold(Node node, PeerResult previous, Object message) {
+        public PeerResult fold(InetSocketAddress node, PeerResult previous, Object message) {
             return previous;
         }
 
         @Override
-        public PeerResult finish(Node node, Optional<PeerResult> previous) {
+        public PeerResult finish(InetSocketAddress node, Optional<PeerResult> previous) {
             if (previous.isPresent()) {
                 return previous.get();
             } else {
-                return PeerResult.fail(node, SysErrorCode.NO_RESPONSE, "no data from " + node.toString());
+                return PeerResult.fail(node, ErrorCode.NO_RESPONSE, "no data from " + node.toString());
             }
         }
     }
 
     public static final Assembler ONE_ITEM_ASSEMBLER = new OneItemAssembler() {
         @Override
-        public PeerResult start(Node node, Object message) {
+        public PeerResult start(InetSocketAddress node, Object message) {
             return PeerResult.approve(node, message);
         }
     };
-    private Node peer;
+    private InetSocketAddress peer;
     private State state;
     private ActionStatus error;
     private Object result;
 
-    private PeerResult(Node peer, State state, Object result, ActionStatus error) {
+    private PeerResult(InetSocketAddress peer, State state, Object result, ActionStatus error) {
         this.peer = peer;
         this.state = state;
         this.result = result;
@@ -99,7 +100,7 @@ public class PeerResult {
         return PeerResult.approve(this.peer, this.result);
     }
 
-    public Node peer() {
+    public InetSocketAddress peer() {
         return this.peer;
     }
 
@@ -117,7 +118,7 @@ public class PeerResult {
         return this.error;
     }
 
-    public String errorCode() {
+    public short errorCode() {
         if (!this.hasError()) {
             throw new IllegalStateException("This PeerResult is right, has no errorCode");
         }

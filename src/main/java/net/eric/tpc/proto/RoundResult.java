@@ -1,5 +1,6 @@
 package net.eric.tpc.proto;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -12,7 +13,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.net.PeerResult;
 
 public class RoundResult {
@@ -117,8 +117,8 @@ public class RoundResult {
         return ActionStatus.INNER_ERROR;
     }
 
-    public List<Node> getSuccessNodes() {
-        List<Node> list = new ArrayList<Node>();
+    public List<InetSocketAddress> getSuccessNodes() {
+        List<InetSocketAddress> list = new ArrayList<InetSocketAddress>();
         for (PeerResult r : this.results) {
             if (r.isRight()) {
                 list.add(r.peer());

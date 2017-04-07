@@ -2,6 +2,8 @@ package net.eric.tpc.net;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.net.binary.Message;
+
 public interface RequestHandler {
 
     String getCorrespondingCode();

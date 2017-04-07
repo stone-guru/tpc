@@ -8,6 +8,7 @@ import com.google.common.base.Optional;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.proto.DtLogger;
@@ -42,6 +43,7 @@ public class RegulatorServiceFactory extends UniFactory {
         if (RegulatorBizStrategy.class.equals(clz)) {
             RegulatorBizStrategy strategy = new RegulatorBizStrategy();
             strategy.setBillSaver(getObject(BillSaveStrategy.class));
+            strategy.setBillValidator(getObject(Validator.class, TransferBill.class));
             return Pair.of((T) strategy, true);
         }
 

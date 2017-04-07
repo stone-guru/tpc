@@ -6,11 +6,11 @@ import net.eric.tpc.entity.TransferBill;
 public interface TransferBillDao {
     void insert(TransferBill bill);
 
-    void updateLock(Pair<String, String> snAndXid);
+    void updateLock(Pair<String, Long> snAndXid);
     
-    TransferBill selectByXid(String xid);
+    TransferBill selectByXid(long xid);
     
-    void deleteByXid(String xid);
+    void deleteByXid(long xid);
     
-    void clearLockByXid(String xid);
+    void clearLockByXid(long xid);
 }

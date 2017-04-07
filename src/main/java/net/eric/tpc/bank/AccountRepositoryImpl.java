@@ -21,6 +21,7 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.biz.BizCode;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.Account;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.AccountDao;
@@ -37,13 +38,12 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     private ExecutorService pool = Executors.newCachedThreadPool();
     private AccountDao accountDao;
     private TransferBillDao transferBillDao;
-
+    private Validator<TransferBill> billValidator;
     @Override
-    public Future<ActionStatus> checkAndPrepare(String xid, TransferBill bill) {
-        Preconditions.checkNotNull(xid, "xid");
+    public Future<ActionStatus> checkAndPrepare(long xid, TransferBill bill) {
         Preconditions.checkNotNull(bill, "bill");
 
-        ActionStatus status = bill.fieldCheck();
+        ActionStatus status = billValidator.check(bill);
         if (status.isOK()) {
             Callable<ActionStatus> prepareTask = new Callable<ActionStatus>() {
                 @Override
@@ -56,7 +56,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         return Futures.immediateFuture(status);
     }
 
-    private ActionStatus innerPrepareCommint(String xid, TransferBill bill) {
+    private ActionStatus innerPrepareCommint(long xid, TransferBill bill) {
         String accountNumber = bill.getPayer().getNumber();
         String oppAccountNumber = bill.getReceiver().getNumber();
         boolean locked = false;
@@ -151,16 +151,16 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     }
 
     @Override
-    public Future<Void> commit(String xid, BizActionListener listener) {
+    public Future<Void> commit(long xid, BizActionListener listener) {
         return doDecision(xid, Decision.COMMIT, listener);
     }
 
     @Override
-    public Future<Void> abort(String xid, BizActionListener listener) {
+    public Future<Void> abort(long xid, BizActionListener listener) {
         return doDecision(xid, Decision.ABORT, listener);
     }
 
-    private Future<Void> doDecision(String xid, Decision decision, final BizActionListener listener) {
+    private Future<Void> doDecision(long xid, Decision decision, final BizActionListener listener) {
         Maybe<Pair<String, String>> maybe = this.accountLocker.getLockedKeyByXid(xid);
         if (!maybe.isRight()) {
             logger.error("when " + decision + ", " + maybe.getLeft().toString());
@@ -194,7 +194,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         return this.pool.submit(commitTask);
     }
 
-    private void callBizActionListener(String xid, Decision decision, boolean success, BizActionListener listener) {
+    private void callBizActionListener(long xid, Decision decision, boolean success, BizActionListener listener) {
         if (listener == null) {
             return;
         }
@@ -210,7 +210,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         }
     }
 
-    private void innerCommit(String xid) {
+    private void innerCommit(long xid) {
         TransferBill bill = this.transferBillDao.selectByXid(xid);
         Preconditions.checkNotNull(bill, "bill for xid " + xid + " not exists unexpectedly.");
 
@@ -226,7 +226,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         this.accountLocker.releaseByXid(xid);
     }
 
-    private void innerAbort(String xid) {
+    private void innerAbort(long xid) {
         TransferBill bill = this.transferBillDao.selectByXid(xid);
         if (bill == null) {// 在检查阶段就没有保存，此处即可为空
             return;
@@ -259,7 +259,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         return this.accountDao.selectAll();
     }
 
-    public void resetLockedKey(List<Pair<String, String>> keys) {
+    public void resetLockedKey(List<Pair<String, Long>> keys) {
         this.accountLocker.setLockedKey(keys);
     }
 
@@ -280,4 +280,9 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
         this.transferBillDao = transferBillDao;
     }
 
+    public void setBillValidator(Validator<TransferBill> billValidator) {
+        this.billValidator = billValidator;
+    }
+
+    
 }

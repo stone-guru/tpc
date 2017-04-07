@@ -2,6 +2,7 @@ package net.eric.tpc.service;
 
 import static net.eric.tpc.base.Pair.asPair;
 
+import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -10,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.base.Node;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.DtRecordDao;
@@ -32,7 +32,7 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
         record.setCoordinator(transStartRec.getCoordinator().toString());
         
         
-        Iterator<Node> it = transStartRec.getParticipants().iterator();
+        Iterator<InetSocketAddress> it = transStartRec.getParticipants().iterator();
         StringBuilder builder = new StringBuilder(it.next().toString());
         while(it.hasNext()){
             builder.append(",").append(it.next().toString());
@@ -48,7 +48,7 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
     
     
     @Override
-    public void recordDecision(String xid, Decision decision) {
+    public void recordDecision(long xid, Decision decision) {
         logger.info("CoorDtLoggerDbImpl.recordDecison", xid + ", " +decision);
         
         DtRecord record = new DtRecord();
@@ -60,13 +60,13 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
     }
 
     @Override
-    public Optional<Decision>  getDecisionFor(String xid) {
+    public Optional<Decision>  getDecisionFor(long xid) {
         Decision decision = this.dtLoggerDao.selectDecision(xid);
         return Optional.fromNullable(decision);
     }
 
     @Override
-    public void recordVote(String xid, Vote vote) {
+    public void recordVote(long xid, Vote vote) {
         logger.info("CoorDtLoggerDbImpl.recordVote", xid + ", " +vote);
         
         DtRecord record = new DtRecord();
@@ -86,7 +86,7 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
     }
 
     @Override
-    public void markTransFinished(String xid) {
+    public void markTransFinished(long xid) {
        logger.info("mark transaction finishd " + xid);
        this.dtLoggerDao.updateFinishTime(asPair(xid, new Date()));
     }

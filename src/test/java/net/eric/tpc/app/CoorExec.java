@@ -36,7 +36,7 @@ public class CoorExec {
         msg.setPayer(new AccountIdentity("james", "BOC"));
         msg.setReceiver(new AccountIdentity("lori", "CCB"));
         msg.setReceivingBankCode("ABC");
-        msg.setAmount(BigDecimal.valueOf(50000));
+        msg.setAmount(BigDecimal.valueOf(12.8));
         msg.setSummary("for cigrate");
         msg.setVoucherNumber("BIK09283-33843");
 

@@ -48,7 +48,7 @@ public class CoordinatorFactory extends UniFactory {
         if (clz.equals(TransactionManager.class)) {
             AbcBizStrategy bizStrategy = new AbcBizStrategy();
             bizStrategy.setBillSaver(getObject(BillSaveStrategy.class));
-            bizStrategy.setBillBasicValidator(getObject(Validator.class, TransferBill.class.getCanonicalName()));
+            bizStrategy.setBillValidator(getObject(Validator.class, TransferBill.class));
 
             Coordinator<TransferBill> coor = new Coordinator<TransferBill>();
             coor.setBizStrategy(bizStrategy);

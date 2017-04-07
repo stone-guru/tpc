@@ -1,5 +1,6 @@
 package net.eric.tpc.proto;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -9,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Either;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 import net.eric.tpc.proto.Types.Decision;
@@ -27,10 +27,10 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private KeyGenerator keyGenerator;
 
-    private Node self;
+    private InetSocketAddress self;
 
     public ActionStatus transaction(B biz) {
-        String xid = keyGenerator.nextKey("TABC");
+        long xid = keyGenerator.nextKey("TABC");
 
         Maybe<TaskPartition<B>> taskEither = getBizStrategy().splitTask(xid, biz);
         if (!taskEither.isRight()) {
@@ -39,7 +39,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
 
         TaskPartition<B> task = taskEither.getRight();
-        List<Node> peers = task.getParticipants();
+        List<InetSocketAddress> peers = task.getParticipants();
 
         Either<ActionStatus, Communicator<B>> communicatorEither = getCommunicatorFactory().getCommunicator(peers);
         if (!communicatorEither.isRight()) {
@@ -78,18 +78,18 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private BizActionListener finishTransListener = new BizActionListener() {
         @Override
-        public void onSuccess(String xid) {
+        public void onSuccess(long xid) {
             Coordinator.this.dtLogger.markTransFinished(xid);
         }
 
         @Override
-        public void onFailure(String xid) {
+        public void onFailure(long xid) {
             logger.error("Transaction " + xid + " commit failed");
         }
     };
 
-    private ActionStatus processVote(String xid, TaskPartition<B> task, Communicator<B> communicator) {
-        final List<Node> peers = task.getParticipants();
+    private ActionStatus processVote(long xid, TaskPartition<B> task, Communicator<B> communicator) {
+        final List<InetSocketAddress> peers = task.getParticipants();
         Future<ActionStatus> selfVoteFuture = getBizStrategy().prepareCommit(xid, task.getCoorTask());
         Future<RoundResult> peersVoteFuture = communicator.gatherVote(xid, peers);
 
@@ -121,7 +121,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
     }
 
-    private ActionStatus askBeginTrans(String xid, TaskPartition<B> task, Communicator<B> communicator) {
+    private ActionStatus askBeginTrans(long xid, TaskPartition<B> task, Communicator<B> communicator) {
         TransStartRec transStart = new TransStartRec(xid, getSelf(), task.getParticipants());
         Future<RoundResult> beginTransFuture = communicator.askBeginTrans(transStart, task.getPeerTasks());
         getDtLogger().recordBeginTrans(transStart, task.getCoorTask(), true);
@@ -132,7 +132,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
 
         if (beginTransFuture.isDone()) {
-            List<Node> successPeers = null;
+            List<InetSocketAddress> successPeers = null;
             try {
                 successPeers = beginTransFuture.get().getSuccessNodes();
             } catch (Exception e) {
@@ -144,7 +144,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         return result;
     }
 
-    private void abandomTrans(String xid, List<Node> nodes, Communicator<B> communicator) {
+    private void abandomTrans(long xid, List<InetSocketAddress> nodes, Communicator<B> communicator) {
         if (logger.isDebugEnabled()) {
             logger.debug(xid + " abandom ");
         }
@@ -181,11 +181,11 @@ public class Coordinator<B> implements TransactionManager<B> {
         this.communicatorFactory = communicatorFactory;
     }
 
-    public Node getSelf() {
+    public InetSocketAddress getSelf() {
         return self;
     }
 
-    public void setSelf(Node self) {
+    public void setSelf(InetSocketAddress self) {
         this.self = self;
     }
 

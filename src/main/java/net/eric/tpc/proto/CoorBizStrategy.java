@@ -1,13 +1,14 @@
 package net.eric.tpc.proto;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.Pair.FieldTag;
 
@@ -45,7 +46,7 @@ public interface CoorBizStrategy<B> {
      * @param b not null 业务对象,接口自行负责解释其含义
      * @return not null May.right(TaskPartiotion) 或 Maybe.left(ActionStatus)
      */
-    Maybe<TaskPartition<B>> splitTask(String xid, B b);
+    Maybe<TaskPartition<B>> splitTask(long xid, B b);
 
     /**
      * 事务开始后,进行事务准备. 其结果也是vote_req的结果.
@@ -60,7 +61,7 @@ public interface CoorBizStrategy<B> {
      *            就是{@link CoorBizStrategy#splitTask}方法中返回的{@link TaskPartition#getCoorTask}
      * @return not null Future of ActionStatus
      */
-    Future<ActionStatus> prepareCommit(String xid, B b);
+    Future<ActionStatus> prepareCommit(long xid, B b);
 
     /**
      * 事务提交
@@ -75,12 +76,12 @@ public interface CoorBizStrategy<B> {
      * @param commitListener 动作完成后需要实现方调用的监听器
      * @return not null, Future of null
      */
-    Future<Void> commit(String xid, BizActionListener commitListener);
+    Future<Void> commit(long xid, BizActionListener commitListener);
 
     /**
      * 事务终止. 参数含义同{@link CoorBizStrategy#commit}
      */
-    Future<Void> abort(String xid, BizActionListener abortListener);
+    Future<Void> abort(long xid, BizActionListener abortListener);
 
     /**
      * 事务划分. 表达将要进行的一个事务由那些节点参加, 各个节点需要处理的业务数据.
@@ -89,7 +90,7 @@ public interface CoorBizStrategy<B> {
      */
     public static class TaskPartition<B> {
         private B coorTask;
-        private List<Pair<Node, B>> peerTasks;
+        private List<Pair<InetSocketAddress, B>> peerTasks;
 
         /**
          * 构造方法
@@ -103,7 +104,7 @@ public interface CoorBizStrategy<B> {
          * @param coorTask 需要协调方处理的业务对象 may null
          * @param peerTasks 其它节点及其对应的需要发送的业务对象 not null,
          */
-        public TaskPartition(B coorTask, List<Pair<Node, B>> peerTasks) {
+        public TaskPartition(B coorTask, List<Pair<InetSocketAddress, B>> peerTasks) {
             Preconditions.checkNotNull(peerTasks, "peerTasks");
             Preconditions.checkArgument(coorTask != null || !peerTasks.isEmpty(), "empty tasks is not allowed");
 
@@ -129,7 +130,7 @@ public interface CoorBizStrategy<B> {
          * 
          * @return 任务划分 not null
          */
-        public List<Pair<Node, B>> getPeerTasks() {
+        public List<Pair<InetSocketAddress, B>> getPeerTasks() {
             return peerTasks;
         }
 
@@ -138,7 +139,7 @@ public interface CoorBizStrategy<B> {
          * 
          * @return 参与节点列表 not null
          */
-        public List<Node> getParticipants() {
+        public List<InetSocketAddress> getParticipants() {
             return Pair.projectFirst(peerTasks);
         }
     }

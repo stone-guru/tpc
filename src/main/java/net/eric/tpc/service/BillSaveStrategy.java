@@ -24,7 +24,7 @@ public class BillSaveStrategy {
     private Validator<TransferBill> billValidator;
     private TransferBillDao transferBillDao;
 
-    public Future<ActionStatus> prepareCommit(String xid, TransferBill bill) {
+    public Future<ActionStatus> prepareCommit(long xid, TransferBill bill) {
         Callable<ActionStatus> task = new Callable<ActionStatus>() {
             @Override
             public ActionStatus call() throws Exception {
@@ -41,23 +41,23 @@ public class BillSaveStrategy {
         return this.threadPool.submit(task);
     }
 
-    public Future<Void> commit(String xid, BizActionListener commitListener) {
+    public Future<Void> commit(long xid, BizActionListener commitListener) {
         return this.doDecision(xid, Decision.COMMIT, commitListener);
     }
 
-    public Future<Void> abort(String xid, BizActionListener abortListener) {
+    public Future<Void> abort(long xid, BizActionListener abortListener) {
         return this.doDecision(xid, Decision.ABORT, abortListener);
     }
 
-    private void innerCommit(String xid) {
+    private void innerCommit(long xid) {
         this.transferBillDao.clearLockByXid(xid);
     }
 
-    private void innerAbort(String xid) {
+    private void innerAbort(long xid) {
         this.transferBillDao.deleteByXid(xid);
     }
 
-    private Future<Void> doDecision(String xid, Decision decision, final BizActionListener listener) {
+    private Future<Void> doDecision(long xid, Decision decision, final BizActionListener listener) {
         Callable<Void> commitTask = new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -81,7 +81,7 @@ public class BillSaveStrategy {
         return this.threadPool.submit(commitTask);
     }
 
-    private void callBizActionListener(String xid, Decision decision, boolean success, BizActionListener listener) {
+    private void callBizActionListener(long xid, Decision decision, boolean success, BizActionListener listener) {
         if (listener == null) {
             return;
         }

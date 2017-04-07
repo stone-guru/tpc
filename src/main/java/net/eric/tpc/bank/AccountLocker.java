@@ -17,7 +17,7 @@ import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.persist.AccountDao;
 
 public class AccountLocker {
-    private ConcurrentHashMap<String, String> keyMap = new ConcurrentHashMap<String, String>();
+    private ConcurrentHashMap<String, Long> keyMap = new ConcurrentHashMap<String, Long>();
     private int tryTimes;
     private int sleepMilis;
     private AccountDao accountDao;
@@ -27,7 +27,7 @@ public class AccountLocker {
         this.sleepMilis = sleepMilis;
     }
 
-    public boolean repeatTryLock(String accountNumber, String oppAccountNumber, String xid) {
+    public boolean repeatTryLock(String accountNumber, String oppAccountNumber, long xid) {
         int i = 0;
         do {
             boolean locked = this.tryLock(accountNumber, oppAccountNumber, xid);
@@ -44,7 +44,7 @@ public class AccountLocker {
         return false;
     }
 
-    synchronized public boolean tryLock(String key1, String key2, String xid) {
+    synchronized public boolean tryLock(String key1, String key2, long xid) {
         if (this.containAny(key1, key2)) {
             return false;
         }
@@ -56,7 +56,7 @@ public class AccountLocker {
         return true;
     }
 
-    synchronized public void releaseLock(String key1, String key2, String xid) {
+    synchronized public void releaseLock(String key1, String key2, long xid) {
         if (!this.containBoth(key1, key2)) {
             throw new ShouldNotHappenException();
         }
@@ -66,7 +66,7 @@ public class AccountLocker {
         accountDao.updateLock(Pair.asPair(key2, null));
     }
 
-    public boolean areBothLockedCorrectlly(String key1, String key2, String xid) {
+    public boolean areBothLockedCorrectlly(String key1, String key2, long xid) {
         if (!this.containBoth(key1, key2)) {
             return false;
         }
@@ -79,7 +79,7 @@ public class AccountLocker {
         return true;
     }
 
-    synchronized public ActionStatus releaseByXid(String xid) {
+    synchronized public ActionStatus releaseByXid(long xid) {
         Maybe<Pair<String, String>> maybe = this.getLockedKeyByXid(xid);
         if (!maybe.isRight()) {
             return maybe.getLeft();
@@ -90,7 +90,7 @@ public class AccountLocker {
         return ActionStatus.OK;
     }
 
-    synchronized public Maybe<Pair<String, String>> getLockedKeyByXid(String xid) {
+    synchronized public Maybe<Pair<String, String>> getLockedKeyByXid(long xid) {
         final List<String> keys = new ArrayList<String>(2);
         for (String k : keyMap.keySet()) {
             if (Objects.equal(xid, keyMap.get(k))) {
@@ -107,19 +107,19 @@ public class AccountLocker {
         }
     }
 
-    public void setLockedKey(List<Pair<String, String>> keys) {
+    public void setLockedKey(List<Pair<String, Long>> keys) {
         Preconditions.checkNotNull(keys, "Given keyset is null");
         
         assureKeyRule(keys);
         synchronized (this) {
             keyMap.clear();
-            for (Pair<String, String> p : keys) {
+            for (Pair<String, Long> p : keys) {
                 keyMap.put(p.fst(), p.snd());
             }
         }
     }
 
-    private void assureKeyRule(List<Pair<String, String>> keys) {
+    private void assureKeyRule(List<Pair< String, Long>> keys) {
          @SuppressWarnings("unchecked")
         Pair<String, String>[] sortedKeys =  keys.toArray(new Pair[keys.size()]);
         Arrays.sort(sortedKeys, Pair.newComparator());

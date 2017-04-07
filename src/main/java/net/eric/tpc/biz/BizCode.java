@@ -1,32 +1,28 @@
 package net.eric.tpc.biz;
 
 public class BizCode {
-    public static final String MISS_FIELD = "MISS_FIELD";
-    public static final String NO_BANK_NODE = "NO_BANK_NODE";
-    public static final String TIME_IS_FUTURE = "TIME_IS_FUTURE";
-    public static final String AMOUNT_LE_ZERO = "AMOUNT_LE_ZERO";
-    public static final String AMOUNT_FMT_WRONG = "AMOUNT_FMT_WRONG";
-    public static final String SAME_ACCOUNT = "SAME_ACCOUNT";
-    public static final String NODE_UNREACH = "NODE_UNREACH";
-    public static final String INNER_EXCEPTION = "INNER_EXCEPTION";
-    public static final String ACCOUNT_NOT_EXISTS = "ACCOUNT_NOT_EXISTS";
-    public static final String NOT_MY_ACCOUNT = "NOT_MY_ACCOUNT";
-    public static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
-    public static final String INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE";
-    public static final String BEYOND_OVERDRAFT_LIMIT = "BEYOND_OVERDRAFT_LIMIT";
-    public static final String FIELD_TOO_LONG = "FIELD_TOO_LONG";
-    public static final String AMOUNT_PRECISION_ERROR = "AMOUNT_PRECISION_ERROR";
+    public static final short MISS_FIELD = 2000;
+    public static final short NO_BANK_NODE = 2001;
+    public static final short TIME_IS_FUTURE = 2002;
+    public static final short AMOUNT_LE_ZERO = 2003;
+    public static final short AMOUNT_FMT_WRONG = 2004;
+    public static final short SAME_ACCOUNT = 2005;
+    public static final short NODE_UNREACH = 2006;
+    public static final short INNER_EXCEPTION = 2007;
+    public static final short ACCOUNT_NOT_EXISTS = 2008;
+    public static final short NOT_MY_ACCOUNT = 2009;
+    public static final short ACCOUNT_LOCKED = 2010;
+    public static final short INSUFFICIENT_BALANCE = 2011;
+    public static final short BEYOND_OVERDRAFT_LIMIT = 2012;
+    public static final short FIELD_TOO_LONG = 2013;
+    public static final short AMOUNT_PRECISION_ERROR = 2014;
     
-    public static final String BEYOND_TRANS_AMOUNT_LIMIT = "BEYOND_TRANS_AMOUNT_LIMIT";
-    
-    public static final String REFUSE_TRANS = "REFUSE_TRANS";
-    public static final String REFUSE_COMMIT = "REFUSE_COMMIT";
+    public static final short BEYOND_TRANS_AMOUNT_LIMIT = 2015;
 
-    public static final String COMMAND_SYNTAX_ERROR = "COMMAND_SYNTAX_ERROR";
-    public static final String ACCOUNT_SYNTAX_ERROR = "ACCOUNT_SYNTAX_ERROR";
-    public static final String AMOUNT_NOT_INT = "AMOUNT_NOT_INT";
-    
-    public static final String XID_EXISTS = "XID_EXISTS";
+
+    public static final short COMMAND_SYNTAX_ERROR = 2018;
+    public static final short ACCOUNT_SYNTAX_ERROR = 2019;
+    public static final short AMOUNT_NOT_INT = 2020;
     
     private BizCode(){}
 }

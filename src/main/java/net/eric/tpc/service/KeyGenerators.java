@@ -49,8 +49,13 @@ public class KeyGenerators {
     private static KeyPersister keyPersister;
     public static KeyGenerator instance = new KeyGenerator() {
         @Override
-        public String nextKey(String keyName) {
+        public String nextKeyAsString(String keyName) {
             return KeyGenerators.nextKey(keyName);
+        }
+
+        @Override
+        public long nextKey(String keyName) {
+            return KeyGenerators.nextValue(keyName);
         }
     };
 
@@ -85,6 +90,14 @@ public class KeyGenerators {
     }
 
     public static String nextKey(String keyName) {
+        return getOrCreateGenerator(keyName).getNextKey();
+    }
+
+    public static long nextValue(String keyName){
+        return getOrCreateGenerator(keyName).getNextValue();
+    }
+    
+    private static KeyGenerators getOrCreateGenerator(String keyName){
         if (generatorMap == null || keyPersister == null) {
             throw new IllegalStateException("not initialized, call KeyGenerator.init first");
         }
@@ -92,9 +105,9 @@ public class KeyGenerators {
         if (!generatorMap.containsKey(keyName)) {
             generatorMap.putIfAbsent(keyName, new KeyGenerators(keyName));
         }
-        return generatorMap.get(keyName).getNextId();
+        return generatorMap.get(keyName);
     }
-
+    
     private AtomicInteger dateDigit;
     private AtomicInteger serial;
 
@@ -112,7 +125,14 @@ public class KeyGenerators {
         this.serial = new AtomicInteger(serial);
     }
 
-    private String getNextId() {
+    private String getNextKey() {
+        long v = getNextValue();
+        int d = (int) (v % 100000000);
+        int x = (int) (v / 100000000);
+        return this.formatId(this.prefix, d, x);
+    }
+    
+    private long getNextValue(){
         final int currentDateDigit = currentDateDigit();
         final int storedDateDigit = this.dateDigit.get();
         if (currentDateDigit != storedDateDigit) {
@@ -121,11 +141,11 @@ public class KeyGenerators {
             }
         }
         final int nextSerial = this.serial.incrementAndGet();
-
+        
         KeyGenerators.keyPersister.storeKey(this.prefix, currentDateDigit, nextSerial);
-        return this.formatId(this.prefix, currentDateDigit, nextSerial);
+        return nextSerial * 100000000 + currentDateDigit;
     }
-
+    
     private String formatId(String prefix, int dateDigit, int serial) {
         return String.format("%s%04dD%d", prefix, serial, dateDigit);
     }

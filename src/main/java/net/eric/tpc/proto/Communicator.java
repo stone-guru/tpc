@@ -1,22 +1,22 @@
 package net.eric.tpc.proto;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 
 public interface Communicator<B> {
-    ActionStatus connectPanticipants(List<Node> nodes);
+    ActionStatus connectPanticipants(List<InetSocketAddress> nodes);
 
-    Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, B>> tasks);
+    Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);
 
-    Future<RoundResult> notifyDecision(String xid, Decision decision, List<Node> nodes);
+    Future<RoundResult> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes);
 
-    Future<RoundResult> gatherVote(String xid, List<Node> nodes);
+    Future<RoundResult> gatherVote(long xid, List<InetSocketAddress> nodes);
 
     void close();
 }

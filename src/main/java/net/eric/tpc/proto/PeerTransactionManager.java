@@ -9,9 +9,9 @@ import net.eric.tpc.proto.Types.TransStartRec;
 public interface PeerTransactionManager<B> {
     ActionStatus beginTrans(TransStartRec transNode, B b);
 
-    ActionStatus processVoteReq(String xid);
+    ActionStatus processVoteReq(long xid);
 
-    void processTransDecision(String xid, Decision decision);
+    void processTransDecision(long xid, Decision decision);
 
-    Optional<Decision> queryDecision(String xid);
+    Optional<Decision> queryDecision(long xid);
 }

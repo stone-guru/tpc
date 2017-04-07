@@ -63,7 +63,7 @@ public class TransferBill implements Serializable {
     }
 
     public String getVoucherNumber() {
-        return voucherNumber;
+        return Strings.nullToEmpty(voucherNumber);
     }
 
     public void setVoucherNumber(String voucherNumber) {
@@ -71,7 +71,7 @@ public class TransferBill implements Serializable {
     }
 
     public String getSummary() {
-        return summary;
+        return Strings.nullToEmpty(summary);
     }
 
     public void setSummary(String summary) {
@@ -104,113 +104,6 @@ public class TransferBill implements Serializable {
         bill.receiver = this.receiver.copy();
         bill.voucherNumber = this.voucherNumber;
         return bill;
-    }
-
-    public ActionStatus fieldCheck() {
-        ActionStatus r = checkFieldMissing();
-        if (!r.isOK()) {
-            return r;
-        }
-        long now = new Date().getTime();
-        if (this.getLaunchTime().getTime() > now) {
-            return ActionStatus.create(BizCode.TIME_IS_FUTURE, this.getLaunchTime().toString());
-        }
-
-        if (this.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return ActionStatus.create(BizCode.AMOUNT_LE_ZERO, this.getAmount().toString());
-        }
-
-        if (this.getPayer().equals(this.getReceiver())) {
-            return ActionStatus.create(BizCode.SAME_ACCOUNT, this.getPayer().toString());
-        }
-
-        if (this.getSummary() != null) {
-            if (this.getSummary().length() > 48) {
-                return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Summary");
-            }
-        }
-        
-        if(this.getTransSN().length() > 24){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "TransSn");
-        }
-        
-        if(this.getReceivingBankCode().length() > 24){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "ReceivingBankCode");
-        }
-        
-        if(this.getVoucherNumber().length() > 36){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "VoucherNumber");
-        }
-        
-        if(this.getPayer().getNumber().length() > 24){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.Number");
-        }
-        
-        if(this.getPayer().getBankCode().length() > 12){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "Account.BankCode");
-        }
-
-        if(this.getReceiver().getNumber().length() > 24){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.Number");
-        }
-        
-        if(this.getReceiver().getBankCode().length() > 12){
-            return ActionStatus.create(BizCode.FIELD_TOO_LONG, "OppositeAccount.BankCode");
-        }
-        
-        if(this.getAmount().precision() > 3){
-            return ActionStatus.create(BizCode.AMOUNT_PRECISION_ERROR,  "precision of amount can not great than 2");
-        }
-        
-        return ActionStatus.OK;
-    }
-
-    private ActionStatus checkFieldMissing() {
-        if (Strings.isNullOrEmpty(this.getTransSN())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "TransSN");
-        }
-
-        if (this.getLaunchTime() == null) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "launchTime");
-        }
-
-        if (Strings.isNullOrEmpty(this.getReceivingBankCode())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "ReceivingBankCode");
-        }
-
-        if (Strings.isNullOrEmpty(this.getVoucherNumber())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "VoucherNumber");
-        }
-
-        if (this.getPayer() == null) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "Account");
-        }
-
-        if (Strings.isNullOrEmpty(this.getPayer().getBankCode())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "Account.BankCode");
-        }
-
-        if (Strings.isNullOrEmpty(this.getPayer().getNumber())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "Account.Number");
-        }
-
-        if (this.getReceiver() == null) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount");
-        }
-
-        if (Strings.isNullOrEmpty(this.getReceiver().getBankCode())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount.BankCode");
-        }
-
-        if (Strings.isNullOrEmpty(this.getReceiver().getNumber())) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "OppositeAccount.Number");
-        }
-
-        if (this.getAmount() == null) {
-            return ActionStatus.create(BizCode.MISS_FIELD, "Amount");
-        }
-
-        return ActionStatus.OK;
     }
 
 }

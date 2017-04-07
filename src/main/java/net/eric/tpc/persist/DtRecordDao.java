@@ -13,7 +13,7 @@ public interface DtRecordDao {
 
     void updateDecision(DtRecord dtRecord);
 
-    void updateFinishTime(Pair<String, Date> param);
+    void updateFinishTime(Pair<Long, Date> param);
     
-    Decision selectDecision(String xid);
+    Decision selectDecision(long xid);
 }

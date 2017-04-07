@@ -1,5 +1,6 @@
 package net.eric.tpc.net;
 
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
-import net.eric.tpc.base.Node;
 import net.eric.tpc.proto.RoundResult;
 
 public class CommunicationRound {
@@ -37,7 +37,7 @@ public class CommunicationRound {
     private WaitType waitType = WaitType.WAIT_ALL;
     
     private PeerResult.Assembler assembler;
-    private ConcurrentMap<Node, PeerResult> resultMap = new ConcurrentHashMap<Node, PeerResult>();
+    private ConcurrentMap<InetSocketAddress, PeerResult> resultMap = new ConcurrentHashMap<InetSocketAddress, PeerResult>();
 
     private CountDownHolder latch;
     private ExecutorService commuTaskPool;
@@ -98,7 +98,7 @@ public class CommunicationRound {
         return !this.latch.isAllDone();
     }
 
-    synchronized public void regFailure(Node node, String errorCode, String errorReason) {
+    synchronized public void regFailure(InetSocketAddress node, short errorCode, String errorReason) {
         if (!this.isWithinRound() || this.isPeerResult2Done(node)) {
             return;
         }
@@ -109,15 +109,15 @@ public class CommunicationRound {
         }
     }
 
-    public void regMessage(Node node, Object message) {
+    public void regMessage(InetSocketAddress node, Object message) {
         regMessage(node, Optional.of(message));
     }
 
-    public void finishReceiving(Node node) {
+    public void finishReceiving(InetSocketAddress node) {
         regMessage(node, Optional.absent());
     }
 
-    private Optional<PeerResult> tryAddMeesageforNewNode(Node node, Optional<Object> r) {
+    private Optional<PeerResult> tryAddMeesageforNewNode(InetSocketAddress node, Optional<Object> r) {
         PeerResult result = null;
         synchronized (this.resultMap) {
             if (!this.resultMap.containsKey(node)) {
@@ -134,7 +134,7 @@ public class CommunicationRound {
         return Optional.absent();
     }
 
-    private void regMessage(Node node, Optional<Object> r) {
+    private void regMessage(InetSocketAddress node, Optional<Object> r) {
         if (!this.isWithinRound() || this.isPeerResult2Done(node)) {
             return;
         }
@@ -173,7 +173,7 @@ public class CommunicationRound {
         }
     }
 
-    private boolean isPeerResult2Done(Node node) {
+    private boolean isPeerResult2Done(InetSocketAddress node) {
         if (this.resultMap.containsKey(node)) {
             PeerResult r = this.resultMap.get(node);
             return r.isDone();
@@ -183,14 +183,14 @@ public class CommunicationRound {
 
     private static class CountDownHolder {
         private CountDownLatch countDown;
-        private Set<Node> callerSet;
+        private Set<InetSocketAddress> callerSet;
 
         public CountDownHolder(int n) {
             countDown = new CountDownLatch(n);
-            callerSet = new HashSet<Node>();
+            callerSet = new HashSet<InetSocketAddress>();
         }
 
-        synchronized public void countDown(Node node) {
+        synchronized public void countDown(InetSocketAddress node) {
             if (!this.callerSet.contains(node)) {
                 this.callerSet.add(node);
                 this.countDown.countDown();

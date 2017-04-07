@@ -14,7 +14,7 @@ import net.eric.tpc.entity.TransferBill;
 public class BillBasicValidator implements Validator<TransferBill> {
 
     @Override
-    public ActionStatus validate(TransferBill bill) {
+    public ActionStatus check(TransferBill bill) {
         Preconditions.checkNotNull(bill);
         ActionStatus r = checkFieldMissing(bill);
         if (!r.isOK()) {

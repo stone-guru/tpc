@@ -2,6 +2,7 @@ package net.eric.tpc.coor.stub;
 
 import static net.eric.tpc.base.Pair.asPair;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -13,10 +14,8 @@ import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.biz.BizCode;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.net.DataPacket;
@@ -25,6 +24,7 @@ import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 
 public class CoorCommunicator extends MinaCommunicator implements Communicator<TransferBill> {
@@ -35,40 +35,42 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator<T
     }
 
     @Override
-    public ActionStatus connectPanticipants(List<Node> nodes) {
+    public ActionStatus connectPanticipants(List<InetSocketAddress> nodes) {
         return super.connectPeers(nodes, WaitType.WAIT_ALL);
     }
 
     @Override
-    public Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<Node, TransferBill>> tasks) {
-        List<Pair<Node, Object>> requests = Lists.newArrayList();
-        for (Pair<Node, TransferBill> p : tasks) {
+    public Future<RoundResult> askBeginTrans(TransStartRec transStartRec,
+            List<Pair<InetSocketAddress, TransferBill>> tasks) {
+        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
+        for (Pair<InetSocketAddress, TransferBill> p : tasks) {
             final DataPacket packet = new DataPacket(DataPacket.BEGIN_TRANS, transStartRec.getXid(), transStartRec,
                     p.snd());
             requests.add(asPair(p.fst(), (Object) packet));
         }
 
-        return this.sendRequest(requests,
-                new YesOrNoAssembler(DataPacket.BEGIN_TRANS_ANSWER, BizCode.REFUSE_TRANS, transStartRec.getXid()));
+        return this.sendRequest(requests, //
+                new YesOrNoAssembler(DataPacket.BEGIN_TRANS_ANSWER, //
+                        ErrorCode.REFUSE_TRANS, transStartRec.getXid()));
     }
 
     @Override
-    public Future<RoundResult> gatherVote(String xid, List<Node> nodes) {
-        List<Pair<Node, Object>> requests = Lists.newArrayList();
-        for (Node node : nodes) {
+    public Future<RoundResult> gatherVote(long xid, List<InetSocketAddress> nodes) {
+        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
+        for (InetSocketAddress node : nodes) {
             final DataPacket packet = new DataPacket(DataPacket.VOTE_REQ, xid, "");
             requests.add(asPair(node, (Object) packet));
         }
 
         return this.sendRequest(requests, //
-                new YesOrNoAssembler(DataPacket.VOTE_ANSWER, BizCode.REFUSE_COMMIT, xid));
+                new YesOrNoAssembler(DataPacket.VOTE_ANSWER, ErrorCode.REFUSE_COMMIT, xid));
     }
 
     @Override
-    public Future<RoundResult> notifyDecision(String xid, Decision decision, List<Node> nodes) {
-        List<Pair<Node, Object>> requests = Lists.newArrayList();
+    public Future<RoundResult> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes) {
+        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
 
-        for (Node node : nodes) {
+        for (InetSocketAddress node : nodes) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Send " + decision + " to " + node);
             }
@@ -100,18 +102,18 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator<T
      */
     private static abstract class DataPacketAssembler extends PeerResult.OneItemAssembler {
         private String code;
-        private String xid;
+        private long xid;
 
-        public DataPacketAssembler(String code, String xid) {
+        public DataPacketAssembler(String code, long xid) {
             this.code = code;
             this.xid = xid;
         }
 
         @Override
-        public PeerResult start(Node node, Object message) {
+        public PeerResult start(InetSocketAddress node, Object message) {
             if (message == null || !(message instanceof DataPacket)) {
                 return PeerResult.fail(node,
-                        ActionStatus.create(DataPacket.BAD_DATA_PACKET, "message is not DataPacket"));
+                        ActionStatus.create(ErrorCode.BAD_DATA_PACKET, "message is not DataPacket"));
             }
             DataPacket packet = (DataPacket) message;
             ActionStatus status = packet.assureParam1(this.code, this.xid);
@@ -129,19 +131,19 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator<T
          * @param packet 收到的dataPacket, 此DataPacket已满足前述要求。
          * @return PeerResult not null, 通讯结果
          */
-        abstract protected PeerResult processDataPacket(Node node, DataPacket packet);
+        abstract protected PeerResult processDataPacket(InetSocketAddress node, DataPacket packet);
     }
 
     private static final class YesOrNoAssembler extends DataPacketAssembler {
-        private String refuseCode;
+        private short refuseCode;
 
-        public YesOrNoAssembler(String code, String refuseCode, String xid) {
+        public YesOrNoAssembler(String code, short refuseCode, long xid) {
             super(code, xid);
             this.refuseCode = refuseCode;
         }
 
         @Override
-        protected PeerResult processDataPacket(Node node, DataPacket packet) {
+        protected PeerResult processDataPacket(InetSocketAddress node, DataPacket packet) {
             Maybe<Boolean> maybe = DataPacket.checkYesOrNo(packet.getParam2());
             if (!maybe.isRight()) {
                 return PeerResult.fail(node, maybe.getLeft());
@@ -155,7 +157,7 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator<T
             }
         }
 
-        private String formatReason(Node node, Object param3) {
+        private String formatReason(InetSocketAddress node, Object param3) {
             if (ActionStatus.class.isInstance(param3)) {
                 ActionStatus status = (ActionStatus) param3;
                 return String.format("%s, %s, %s", node.toString(), status.getCode(), status.getDescription());

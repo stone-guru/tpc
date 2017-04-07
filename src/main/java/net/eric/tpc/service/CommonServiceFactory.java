@@ -44,12 +44,12 @@ public class CommonServiceFactory extends UniFactory {
         if (KeyGenerator.class.equals(clz)) {
             return Pair.of((T) KeyGenerators.getInstance(), true);
         }
-        if (Validator.class.equals(clz) && TransferBill.class.getCanonicalName().equals(classifier)) {
+        if (Validator.class.equals(clz) && TransferBill.class.equals(classifier)) {
             return Pair.of((T) new BillBasicValidator(), true);
         }
         if (BillSaveStrategy.class.equals(clz)) {
             BillSaveStrategy bsStrategy = new BillSaveStrategy();
-            bsStrategy.setBillValidator(getObject(Validator.class, TransferBill.class.getCanonicalName()));
+            bsStrategy.setBillValidator(getObject(Validator.class, TransferBill.class));
             bsStrategy.setThreadPool(threadPool);
             bsStrategy.setTransferBillDao(getObject(TransferBillDao.class));
             return Pair.of((T) bsStrategy, true);

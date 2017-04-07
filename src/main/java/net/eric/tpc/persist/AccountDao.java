@@ -12,7 +12,7 @@ public interface AccountDao {
 
     void modifyBalance(Pair<String, BigDecimal> param);
     
-    void updateLock(Pair<String, String> param);
+    void updateLock(Pair<String, Long> param);
     
     Boolean isAccountLocked(String acctNumber);
     

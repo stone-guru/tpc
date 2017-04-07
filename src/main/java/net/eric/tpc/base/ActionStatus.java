@@ -1,18 +1,31 @@
 package net.eric.tpc.base;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.concurrent.Future;
 
 public class ActionStatus implements Serializable {
 
-    private static final long serialVersionUID = -5309876481730374690L;
+    private static final long serialVersionUID = -8266863958701176496L;
+
+    public static class Codes {
+        public static final short OK = 0;
+        public static final short PEER_NO_REPLY = 1;
+        public static final short INNER_ERROR = 2;
+        
+        private Codes(){}
+    }
     
-    public static final ActionStatus OK = ActionStatus.create("OK", "");
-    public static final ActionStatus PEER_NO_REPLY = ActionStatus.create("PEER_NO_REPLY", "");
-    public static final ActionStatus INNER_ERROR = ActionStatus.create("INNER_ERROR", "");
+    public static final ActionStatus OK = ActionStatus.create(Codes.OK, "");
+    public static final ActionStatus PEER_NO_REPLY = ActionStatus.create(Codes.PEER_NO_REPLY, "");
+    public static final ActionStatus INNER_ERROR = ActionStatus.create(Codes.INNER_ERROR, "");
 
     public static final ActionStatus innerError(String description){
-        return new ActionStatus("INNER_ERROR", description);
+        return new ActionStatus(Codes.INNER_ERROR, description);
+    }
+    
+    public static final ActionStatus peerNoReplay(InetSocketAddress node){
+        return new ActionStatus(Codes.PEER_NO_REPLY, node.toString());
     }
     
     public static ActionStatus force(Future<ActionStatus> future) {
@@ -24,7 +37,7 @@ public class ActionStatus implements Serializable {
         }
     }
     
-    public static ActionStatus create(String code, String description) {
+    public static ActionStatus create(short code, String description) {
         return new ActionStatus(code, description);
     }
 
@@ -32,16 +45,16 @@ public class ActionStatus implements Serializable {
         return r == null || !r.isOK();
     }
 
-    private String code;
+    private short code;
     private String description;
 
-    public ActionStatus(String code, String description) {
+    public ActionStatus(short code, String description) {
         super();
         this.code = code;
         this.description = description;
     }
 
-    public String getCode() {
+    public short getCode() {
         return code;
     }
 
@@ -50,11 +63,11 @@ public class ActionStatus implements Serializable {
     }
 
     public boolean isOK() {
-        return ActionStatus.OK.getCode().equals(this.code);
+        return this.code == Codes.OK;
     }
 
     @Override
     public String toString() {
-        return "ErrorMessage [code=" + code + ", description=" + description + "]";
+        return "ActionStatus[" + code + ", " + description + "]";
     }
 }

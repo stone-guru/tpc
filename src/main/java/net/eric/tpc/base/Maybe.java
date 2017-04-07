@@ -17,10 +17,7 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         return new Failure<T>(status);
     }
 
-    public static <T> Maybe<T> fail(String code, String description) {
-        if (code == null) {
-            throw new NullPointerException("Maybe.status.code should not be null");
-        }
+    public static <T> Maybe<T> fail(short code, String description) {
         return new Failure<T>(ActionStatus.create(code, description));
     }
 
@@ -40,7 +37,7 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
     }
 
     
-    public static <T> Maybe<T> safeCast(Object obj, Class<T> c, String errorCode, String description) {
+    public static <T> Maybe<T> safeCast(Object obj, Class<T> c, short errorCode, String description) {
         if (c.isInstance(obj)) {
             @SuppressWarnings("unchecked")
             final T t = (T)obj;

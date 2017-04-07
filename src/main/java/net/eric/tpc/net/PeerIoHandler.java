@@ -16,6 +16,7 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.PeerTransactionManager;
 import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 
 public class PeerIoHandler extends AbstractIoHandler {
@@ -42,12 +43,12 @@ public class PeerIoHandler extends AbstractIoHandler {
 
         private Maybe<Pair<TransStartRec, TransferBill>> peekBizEntities(DataPacket request) {
             Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam2(), TransStartRec.class, //
-                    DataPacket.BAD_DATA_PACKET, "param2 should be a TransStartRec");
+                    ErrorCode.BAD_DATA_PACKET, "param2 should be a TransStartRec");
             if (!startRec.isRight()) {
                 return Maybe.fail(startRec.getLeft());
             }
             Maybe<TransferBill> bill = Maybe.safeCast(request.getParam3(), TransferBill.class, //
-                    DataPacket.BAD_DATA_PACKET, "param3 should be a TransStartRec");
+                    ErrorCode.BAD_DATA_PACKET, "param3 should be a TransStartRec");
             if (!bill.isRight()) {
                 return Maybe.fail(bill.getLeft());
             }
@@ -84,7 +85,7 @@ public class PeerIoHandler extends AbstractIoHandler {
 
         @Override
         public ProcessResult process(TransSession transSession, DataPacket request) {
-            String xid = (String) request.getParam1();
+            long xid = (Long) request.getParam1();
 
             ActionStatus r = PeerIoHandler.this.transManager.processVoteReq(xid);
             DataPacket response = null;
@@ -105,7 +106,7 @@ public class PeerIoHandler extends AbstractIoHandler {
 
         @Override
         public ProcessResult process(TransSession session, DataPacket request) {
-            String xid = (String) request.getParam1();
+            long xid = (Long) request.getParam1();
             String decision = (String) request.getParam2();
 
             if (DataPacket.YES.equals(decision)) {
@@ -121,7 +122,7 @@ public class PeerIoHandler extends AbstractIoHandler {
 
     class PeerDecisonQueryHandler extends DecisionQueryHandler {
         @Override
-        protected Optional<Decision> getDecisionFor(String xid) {
+        protected Optional<Decision> getDecisionFor(long xid) {
             return PeerIoHandler.this.transManager.queryDecision(xid);
         }
     }

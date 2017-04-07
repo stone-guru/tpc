@@ -14,5 +14,5 @@ import net.eric.tpc.base.ActionStatus;
  * @param <T>
  */
 public interface Validator<T> {
-    ActionStatus validate(T e);
+    ActionStatus check(T e);
 }

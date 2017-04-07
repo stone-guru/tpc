@@ -1,15 +1,14 @@
 package net.eric.tpc.common;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-
-import net.eric.tpc.base.Node;
 
 public class ServerConfig {
     private String bankCode;
     private int port;
     private String dbUrl;
-    private Node mySelf;
+    private InetSocketAddress mySelf;
     
     public ServerConfig(String bankCode, int port, String dbUrl) {
         this.bankCode = bankCode;
@@ -50,18 +49,18 @@ public class ServerConfig {
         return dbUrl;
     }
     
-    public Node getWorkingNode()
+    public InetSocketAddress getWorkingNode()
     {
         return this.mySelf;
     }
     
-    private Node getMySelf(int port, String bankCode){
+    private InetSocketAddress getMySelf(int port, String bankCode){
         InetAddress address;
         try {
             address = InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
-        return new Node(address.getHostAddress(), port, bankCode);
+        return new InetSocketAddress(address.getHostAddress(), port);
     }
 }

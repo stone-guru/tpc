@@ -1,25 +1,24 @@
 package net.eric.tpc.common;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
-import net.eric.tpc.base.Node;
-
 public class Configuration {
     public static String BANK_NODE_PREFIX = "";
 
-    private Map<String, Node> nodeMap = new HashMap<String, Node>();
+    private Map<String, InetSocketAddress> nodeMap = new HashMap<String, InetSocketAddress>();
     private Map<String, String> abcAccountNumberMap = new HashMap<String, String>();
-    private Node mySelf = new Node("localhost", 10020, "ABC");
-    
+    private InetSocketAddress mySelf = InetSocketAddress.createUnresolved("localhost", 10020);
+
     public Configuration() {
-        nodeMap.put("BOC", new Node("localhost", 10021, "BOC"));
-        nodeMap.put("CCB", new Node("localhost", 10022, "CCB"));
-        nodeMap.put("CBRC", new Node("localhost", 10023, "CBRC"));
-        
+        nodeMap.put("BOC", InetSocketAddress.createUnresolved("localhost", 10021));
+        nodeMap.put("CCB", InetSocketAddress.createUnresolved("localhost", 10022));
+        nodeMap.put("CBRC", InetSocketAddress.createUnresolved("localhost", 10023));
+
         abcAccountNumberMap.put("BOC", "abc");
         abcAccountNumberMap.put("CCB", "abc");
     }
@@ -31,7 +30,7 @@ public class Configuration {
         }
     }
 
-    public Optional<Node> getNode(String bankCode) {
+    public Optional<InetSocketAddress> getNode(String bankCode) {
         Preconditions.checkNotNull(bankCode);
         final String upperCase = bankCode.toUpperCase();
         synchronized (nodeMap) {
@@ -49,12 +48,12 @@ public class Configuration {
         }
         return Optional.of(abcAccountNumberMap.get(upperCase));
     }
-    
-    public Optional<Node> getRegulatoryNode(){
+
+    public Optional<InetSocketAddress> getRegulatoryNode() {
         return this.getNode("CBRC");
     }
-    
-    public Node getMySelf(){
+
+    public InetSocketAddress getMySelf() {
         return mySelf;
     }
 }

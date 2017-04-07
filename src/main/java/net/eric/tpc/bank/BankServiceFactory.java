@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.AccountDao;
@@ -49,6 +50,7 @@ public class BankServiceFactory extends UniFactory {
             TransferBillDao BillDao = getObject(TransferBillDao.class);
             acctRepo.setAccountDao(accountDao);
             acctRepo.setTransferBillDao(BillDao);
+            acctRepo.setBillValidator(getObject(Validator.class, TransferBill.class));
             return Pair.of((T) acctRepo, true);
         }
 

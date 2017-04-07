@@ -6,7 +6,7 @@ import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.Vote;
 
 public class DtRecord {
-    private String xid;
+    private long xid;
     private Date startTime;
     private String coordinator;
     private String pariticipants;
@@ -18,11 +18,11 @@ public class DtRecord {
     private Date finishTime;
     private byte[] bizMessage;
 
-    public String getXid() {
+    public long getXid() {
         return xid;
     }
 
-    public void setXid(String xid) {
+    public void setXid(long xid) {
         this.xid = xid;
     }
 

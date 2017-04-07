@@ -19,16 +19,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.net.CommunicationRound.RoundType;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class MinaChannel {
     private static final Logger logger = LoggerFactory.getLogger(MinaChannel.class);
 
     private static SocketConnector sharedConnector = null;
 
-    public static MinaChannel newInstance(Node node, AtomicReference<CommunicationRound> roundRef) {
+    public static MinaChannel newInstance(InetSocketAddress node, AtomicReference<CommunicationRound> roundRef) {
         checkConnectorInitialized();
         return new MinaChannel(node, roundRef);
     }
@@ -70,17 +70,17 @@ public class MinaChannel {
     }
 
     private IoSession session;
-    private Node node;
+    private InetSocketAddress node;
     private AtomicReference<CommunicationRound> roundRef;
 
-    private MinaChannel(Node node, AtomicReference<CommunicationRound> roundRef) {
+    private MinaChannel(InetSocketAddress node, AtomicReference<CommunicationRound> roundRef) {
         this.node = node;
         this.roundRef = roundRef;
     }
 
     public boolean connect() throws Exception {
         SocketConnector connector = MinaChannel.getSharedConnector();
-        ConnectFuture future = connector.connect(new InetSocketAddress(node.getAddress(), node.getPort()));
+        ConnectFuture future = connector.connect(this.node);
         future.awaitUninterruptibly();
         if (!future.isConnected()) {
             return false;
@@ -95,7 +95,7 @@ public class MinaChannel {
         return this.session;
     }
 
-    public Node node() {
+    public InetSocketAddress node() {
         return this.node;
     }
 
@@ -109,7 +109,7 @@ public class MinaChannel {
         if (!writeFuture.isWritten()) {
             String errMessage = (writeFuture.getException() != null) ? writeFuture.getException().getMessage() : "";
             CommunicationRound round = roundRef.get();
-            round.regFailure(this.node, "ERROR_SEND", errMessage);
+            round.regFailure(this.node, ErrorCode.SEND_ERROR, errMessage);
         } else if (sendOnly) {
             CommunicationRound round = roundRef.get();
             round.regMessage(node, true);
@@ -157,24 +157,24 @@ public class MinaChannel {
             if (logger.isDebugEnabled()) {
                 logger.debug("Got message from " + session.getServiceAddress().toString() + ", " + message);
             }
-            Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
+            Optional<Pair<CommunicationRound, InetSocketAddress>> opt = this.currentRound(session);
             if (opt.isPresent()) {
                 CommunicationRound round = opt.get().fst();
-                Node node = opt.get().snd();
+                InetSocketAddress node = opt.get().snd();
                 round.regMessage(node, message);
             }
         }
 
         private void finishReceive(IoSession session) {
-            Optional<Pair<CommunicationRound, Node>> opt = this.currentRound(session);
+            Optional<Pair<CommunicationRound, InetSocketAddress>> opt = this.currentRound(session);
             if (opt.isPresent()) {
                 CommunicationRound round = opt.get().fst();
-                Node node = opt.get().snd();
+                InetSocketAddress node = opt.get().snd();
                 round.finishReceiving(node);
             }
         }
 
-        private Optional<Pair<CommunicationRound, Node>> currentRound(IoSession session) {
+        private Optional<Pair<CommunicationRound, InetSocketAddress>> currentRound(IoSession session) {
             @SuppressWarnings("unchecked")
             AtomicReference<CommunicationRound> roundRef = (AtomicReference<CommunicationRound>) session
                     .getAttribute("ROUND_REF");
@@ -199,7 +199,7 @@ public class MinaChannel {
                 return Optional.absent();
             }
 
-            Node node = (Node) session.getAttribute("PEER");
+            InetSocketAddress node = (InetSocketAddress) session.getAttribute("PEER");
 
             if (node == null) {
                 if (logger.isDebugEnabled()) {

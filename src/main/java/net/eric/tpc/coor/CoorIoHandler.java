@@ -19,6 +19,7 @@ import net.eric.tpc.net.TransSession;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.TransactionManager;
 import net.eric.tpc.proto.Types.Decision;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class CoorIoHandler extends AbstractIoHandler {
     
@@ -43,14 +44,14 @@ public class CoorIoHandler extends AbstractIoHandler {
         @Override
         public ProcessResult process(TransSession session, DataPacket request) {
             Maybe<TransferBill> billMaybe = Maybe.safeCast(request.getParam1(), TransferBill.class, //
-                    DataPacket.PEER_PRTC_ERROR, "param1 is not a TransferBill");
+                    ErrorCode.PEER_PRTC_ERROR, "param1 is not a TransferBill");
             DataPacket reponse = null;
             if (billMaybe.isRight()) {
                 ActionStatus actionStatus = CoorIoHandler.this.transactionManager.transaction(billMaybe.getRight());
                 reponse = DataPacket.fromActionStatus(DataPacket.TRANS_BILL_ANSWER, actionStatus);
             } else {
                 reponse = new DataPacket(DataPacket.TRANS_BILL_ANSWER, DataPacket.NO,
-                        ActionStatus.create(DataPacket.BAD_DATA_PACKET, "param1 should be a TransferBill"));
+                        ActionStatus.create(ErrorCode.BAD_DATA_PACKET, "param1 should be a TransferBill"));
             }
 
             return new ProcessResult(reponse, false);
@@ -59,7 +60,7 @@ public class CoorIoHandler extends AbstractIoHandler {
 
     class PeerDecisonQueryHandler extends DecisionQueryHandler {
         @Override
-        protected Optional<Decision> getDecisionFor(String xid) {
+        protected Optional<Decision> getDecisionFor(long xid) {
             return CoorIoHandler.this.dtLogger.getDecisionFor(xid);
         }
     }

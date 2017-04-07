@@ -14,7 +14,7 @@ public class PeerTransactionState<B> {
     }
 
     private Stage stage = Stage.NONE;
-    private String xid;
+    private long xid;
     private Vote vote;
     private Decision decision;
     private Future<ActionStatus> voteResult;
@@ -62,11 +62,11 @@ public class PeerTransactionState<B> {
         return null;
     }
     
-    public String getXid() {
+    public long getXid() {
         return xid;
     }
 
-    public void setXid(String xid) {
+    public void setXid(long xid) {
         this.xid = xid;
     }
 

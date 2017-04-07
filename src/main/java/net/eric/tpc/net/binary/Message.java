@@ -9,9 +9,7 @@ public class Message implements Serializable {
 
     public static class TypeCode {
         public static final short ACTION_STATUS = 1001;
-        public static final short ACTION_STATUS2 = 1;
-        public static final short TRANS_START_REC = 2;
-        public static final short TRANSFER_BILL = 3;
+        public static final short TRANS_START_REC = 1002;
 
         private TypeCode() {
         };

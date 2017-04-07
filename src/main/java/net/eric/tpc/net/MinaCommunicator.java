@@ -1,5 +1,6 @@
 package net.eric.tpc.net;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -19,23 +20,23 @@ import com.google.common.collect.Lists;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Either;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.coor.stub.CoorCommunicator;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.proto.RoundResult;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class MinaCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
-    protected Map<Node, MinaChannel> channelMap = Collections.emptyMap();
+    protected Map<InetSocketAddress, MinaChannel> channelMap = Collections.emptyMap();
     protected ExecutorService commuTaskPool;
     protected ExecutorService sequenceTaskPool;
     protected AtomicReference<CommunicationRound> roundRef = new AtomicReference<CommunicationRound>(null);
 
-    private List<Function<List<Pair<Node, Object>>, List<Pair<Node, Object>>>> beforeSendHooks = Lists.newArrayList();
+    private List<Function<List<Pair<InetSocketAddress, Object>>, List<Pair<InetSocketAddress, Object>>>> beforeSendHooks = Lists.newArrayList();
 
     public static final Function<Object, String> OBJECT_AS_STRING = new Function<Object, String>() {
         public String apply(Object obj) {
@@ -62,13 +63,13 @@ public class MinaCommunicator {
      * 
      * @param hook Function 输入为将要发送的请求，输出的结果就实际用来发送
      */
-    public void addBeforeSendHook(Function<List<Pair<Node, Object>>, List<Pair<Node, Object>>> hook) {
+    public void addBeforeSendHook(Function<List<Pair<InetSocketAddress, Object>>, List<Pair<InetSocketAddress, Object>>> hook) {
         Preconditions.checkNotNull(hook);
         this.beforeSendHooks.add(hook);
     }
 
-    public ActionStatus connectPeers(List<Node> nodes, WaitType waitType) {
-        Either<ActionStatus, Map<Node, MinaChannel>> either = this.connectOrAbort(nodes, waitType);
+    public ActionStatus connectPeers(List<InetSocketAddress> nodes, WaitType waitType) {
+        Either<ActionStatus, Map<InetSocketAddress, MinaChannel>> either = this.connectOrAbort(nodes, waitType);
         if (either.isRight()) {
             this.channelMap = either.getRight();
             return ActionStatus.OK;
@@ -112,18 +113,18 @@ public class MinaCommunicator {
         return this.sequenceTaskPool.submit(closeAction);
     }
 
-    public Future<RoundResult> sendRequest(List<Pair<Node, Object>> requests, PeerResult.Assembler assembler) {
+    public Future<RoundResult> sendRequest(List<Pair<InetSocketAddress, Object>> requests, PeerResult.Assembler assembler) {
         return this.communicate(requests, RoundType.DOUBLE_SIDE, WaitType.WAIT_ALL, assembler);
     }
 
-    public Future<RoundResult> sendMessage(List<Pair<Node, Object>> messages) {
+    public Future<RoundResult> sendMessage(List<Pair<InetSocketAddress, Object>> messages) {
         return this.communicate(messages, RoundType.SINGLE_SIDE, WaitType.WAIT_ALL, PeerResult.ONE_ITEM_ASSEMBLER);
     }
 
-    public Future<RoundResult> communicate(List<Pair<Node, Object>> messages, final RoundType roundType,
+    public Future<RoundResult> communicate(List<Pair<InetSocketAddress, Object>> messages, final RoundType roundType,
             final WaitType waitType, PeerResult.Assembler assembler) {
         if (waitType == WaitType.WAIT_ALL) {
-            for (final Pair<Node, Object> p : messages) {
+            for (final Pair<InetSocketAddress, Object> p : messages) {
                 // 需要的节点是有没链接成功的
                 if (!this.channelMap.containsKey(p.fst())) {
                     throw new IllegalStateException("Given node not connected first " + p.fst());
@@ -131,17 +132,17 @@ public class MinaCommunicator {
             }
         }
         final CommunicationRound round = this.newRound(messages.size(), roundType, waitType, assembler);
-        final List<Pair<Node, Object>> request = callBeforeSendHooks(messages);
+        final List<Pair<InetSocketAddress, Object>> request = callBeforeSendHooks(messages);
 
         Runnable startAction = new Runnable() {
             @Override
             public void run() {
                 roundRef.set(round);
-                for (final Pair<Node, Object> p : request) {
+                for (final Pair<InetSocketAddress, Object> p : request) {
                     final MinaChannel channel = channelMap.get(p.fst());
                     if (channel == null) {
-                        final Node node = p.fst();
-                        round.regFailure(node, "NOT_CONNECTED", node.toString());
+                        final InetSocketAddress node = p.fst();
+                        round.regFailure(node, ErrorCode.PEER_NOT_CONNECTED, node.toString());
                     } else {
                         Runnable task = new Runnable() {
                             public void run() {
@@ -163,9 +164,9 @@ public class MinaCommunicator {
         closeChannels(this.channelMap.values());
     }
 
-    private List<Pair<Node, Object>> callBeforeSendHooks(List<Pair<Node, Object>> messages) {
-        List<Pair<Node, Object>> callResult = messages;
-        for (Function<List<Pair<Node, Object>>, List<Pair<Node, Object>>> f : this.beforeSendHooks) {
+    private List<Pair<InetSocketAddress, Object>> callBeforeSendHooks(List<Pair<InetSocketAddress, Object>> messages) {
+        List<Pair<InetSocketAddress, Object>> callResult = messages;
+        for (Function<List<Pair<InetSocketAddress, Object>>, List<Pair<InetSocketAddress, Object>>> f : this.beforeSendHooks) {
             callResult = f.apply(callResult);
             if (callResult == null) {
                 throw new NullPointerException("result of beforeSendHook");
@@ -181,7 +182,7 @@ public class MinaCommunicator {
         return round;
     }
 
-    private Maybe<Map<Node, MinaChannel>> connectOrAbort(List<Node> nodes, WaitType waitType) {
+    private Maybe<Map<InetSocketAddress, MinaChannel>> connectOrAbort(List<InetSocketAddress> nodes, WaitType waitType) {
         Future<RoundResult> future = connectThese(nodes);
         ActionStatus ar = RoundResult.force(future);
         if (!future.isDone()) {
@@ -206,7 +207,7 @@ public class MinaCommunicator {
             return Maybe.fail(result.getAnError());
         }
 
-        Map<Node, MinaChannel> map = new HashMap<Node, MinaChannel>();
+        Map<InetSocketAddress, MinaChannel> map = new HashMap<InetSocketAddress, MinaChannel>();
         for (PeerResult r : result.getResults()) {
             if (r.isRight()) {
                 map.put(r.peer(), (MinaChannel) r.result());
@@ -215,14 +216,14 @@ public class MinaCommunicator {
         return Maybe.success(map);
     }
 
-    private Future<RoundResult> connectThese(final List<Node> nodes) {
+    private Future<RoundResult> connectThese(final List<InetSocketAddress> nodes) {
         final CommunicationRound round = this.newRound(nodes.size(), RoundType.SINGLE_SIDE, WaitType.WAIT_ALL,
                 PeerResult.ONE_ITEM_ASSEMBLER);
         Runnable startAction = new Runnable() {
             @Override
             public void run() {
                 roundRef.set(round);
-                for (final Node node : nodes) {
+                for (final InetSocketAddress node : nodes) {
                     Runnable task = new Runnable() {
                         public void run() {
                             MinaChannel channel = MinaChannel.newInstance(node, MinaCommunicator.this.roundRef);
@@ -238,7 +239,7 @@ public class MinaCommunicator {
                                     logger.debug("connec " + node + " finish reg");
                                 }
                             } else {
-                                round.regFailure(node, "NOT_CONNECTED", node.toString());
+                                round.regFailure(node, ErrorCode.PEER_NOT_CONNECTED, node.toString());
                             }
                         }
                     };

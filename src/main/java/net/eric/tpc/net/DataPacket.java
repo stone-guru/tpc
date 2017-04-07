@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class DataPacket implements Serializable {
 
@@ -37,6 +38,8 @@ public class DataPacket implements Serializable {
 
     public static final String BAD_DATA_PACKET = "BAD_DATA_PACKET";
     public static final String WRONG_ANSWER = "WRONG_ANSWER";
+    
+    public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
 
     public static DataPacket fromActionStatus(String code, ActionStatus status) {
         if (status.isOK()) {
@@ -51,7 +54,7 @@ public class DataPacket implements Serializable {
         } else if (DataPacket.NO.equals(s)) {
             return Maybe.success(false);
         } else {
-            return Maybe.fail(DataPacket.PEER_PRTC_ERROR,
+            return Maybe.fail(ErrorCode.PEER_PRTC_ERROR,
                     "want " + DataPacket.YES + " or " + DataPacket.NO + ", but got " + s);
         }
     }
@@ -88,7 +91,7 @@ public class DataPacket implements Serializable {
     private Object param2;
     private Object param3;
 
-    public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
+    
 
     public DataPacket(String code) {
         this(code, "", "", "");
@@ -112,12 +115,12 @@ public class DataPacket implements Serializable {
     public DataPacket() {
     }
 
-    public ActionStatus assureParam1(String code, String param1) {
+    public ActionStatus assureParam1(String code, Object param1) {
         if (!Objects.equals(code, this.code)) {
-            return ActionStatus.create(DataPacket.WRONG_ANSWER, "want " + code + " but got " + this.code);
+            return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want " + code + " but got " + this.code);
         }
         if (!Objects.equals(this.param1, param1)) {
-            return ActionStatus.create(DataPacket.WRONG_ANSWER, "want " + param1 + " but got " + this.param1);
+            return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want " + param1 + " but got " + this.param1);
         }
         return ActionStatus.OK;
     }

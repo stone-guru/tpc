@@ -14,7 +14,7 @@ public abstract class DecisionQueryHandler implements RequestHandler {
 
     @Override
     public ProcessResult process(TransSession session, DataPacket request) {
-        String xid = (String) request.getParam1();
+        long xid = (Long) request.getParam1();
 
         Optional<Decision> decision = this.getDecisionFor(xid);
         
@@ -37,6 +37,6 @@ public abstract class DecisionQueryHandler implements RequestHandler {
         return new ProcessResult(new DataPacket(DataPacket.DECISION_ANSWER, xid, param2), true);
     }
 
-    protected abstract Optional<Decision> getDecisionFor(String xid);
+    protected abstract Optional<Decision> getDecisionFor(long xid);
     
 }

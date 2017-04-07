@@ -2,6 +2,7 @@ package net.eric.tpc.bank;
 
 import static net.eric.tpc.base.Pair.asPair;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -14,7 +15,6 @@ import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.CommunicationRound.WaitType;
@@ -33,16 +33,16 @@ public class PeerCommunicator extends MinaCommunicator implements DecisionQuerie
     }
 
     @Override
-    public Optional<Decision> queryDecision(String xid, List<Node> peers) {
+    public Optional<Decision> queryDecision(long xid, List<InetSocketAddress> peers) {
         ActionStatus connectStatus = this.connectPeers(peers, WaitType.WAIT_ONE);
         if (!connectStatus.isOK()) {
             return Optional.absent();
         }
 
         try {
-            List<Pair<Node, Object>> requests = Lists.newArrayList();
+            List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
             DataPacket dataPacket = new DataPacket(DataPacket.DECISION_QUERY, xid);
-            for (Node node : peers) {
+            for (InetSocketAddress node : peers) {
                 requests.add(asPair(node, dataPacket));
             }
             Future<RoundResult> resultFuture = super.communicate(requests, RoundType.DOUBLE_SIDE, WaitType.WAIT_ONE,
@@ -62,15 +62,15 @@ public class PeerCommunicator extends MinaCommunicator implements DecisionQuerie
 
     private static class DecisionQueryAssembler extends PeerResult.OneItemAssembler {
         private String code;
-        private String xid;
+        private long xid;
 
-        public DecisionQueryAssembler(String code, String xid) {
+        public DecisionQueryAssembler(String code, long xid) {
             this.code = code;
             this.xid = xid;
         }
 
         @Override
-        public PeerResult start(Node node, Object message) {
+        public PeerResult start(InetSocketAddress node, Object message) {
             DataPacket packet = (DataPacket) message;
             ActionStatus status = packet.assureParam1(this.code, this.xid);
             if (status.isOK()) {

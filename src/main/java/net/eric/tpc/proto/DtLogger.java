@@ -9,11 +9,11 @@ import net.eric.tpc.proto.Types.Vote;
 public interface DtLogger<B> {
     void recordBeginTrans(TransStartRec startRec, B b, boolean isInitiator);
 
-    void recordVote(String xid, Vote vote);
+    void recordVote(long xid, Vote vote);
 
-    void recordDecision(String xid, Decision decsion);
+    void recordDecision(long xid, Decision decsion);
 
-    void markTransFinished(String xid);
+    void markTransFinished(long xid);
     
-    Optional<Decision> getDecisionFor(String xid);
+    Optional<Decision> getDecisionFor(long xid);
 }

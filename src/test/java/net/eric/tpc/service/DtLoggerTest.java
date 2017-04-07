@@ -1,11 +1,11 @@
 package net.eric.tpc.service;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.util.Date;
 
 import com.google.common.collect.ImmutableList;
 
-import net.eric.tpc.base.Node;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.AccountIdentity;
 import net.eric.tpc.entity.TransferBill;
@@ -16,8 +16,8 @@ import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
 public class DtLoggerTest {
-    static Node boc = new Node("server.boc.org", 10021);
-    static Node bbc = new Node("server.boc.org", 10022);
+    static InetSocketAddress boc = InetSocketAddress.createUnresolved("server.boc.org", 10021);
+    static InetSocketAddress bbc = InetSocketAddress.createUnresolved("server.boc.org", 10022);
 
     private static TransferBill genTransferMessage() {
         TransferBill msg = new TransferBill();
@@ -34,8 +34,10 @@ public class DtLoggerTest {
     }
 
     private static TransStartRec genTransRec(String prefix) {
-        String xid = KeyGenerators.nextKey(prefix);
-        TransStartRec st = new TransStartRec(xid, new Node("localhost", 9001), ImmutableList.of(boc, bbc));
+        long xid = KeyGenerators.nextValue(prefix);
+        TransStartRec st = new TransStartRec(xid, //
+                InetSocketAddress.createUnresolved("localhost", 9001), //
+                ImmutableList.of(boc, bbc));
         return st;
     }
 

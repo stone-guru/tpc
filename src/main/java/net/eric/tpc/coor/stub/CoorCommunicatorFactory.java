@@ -1,5 +1,6 @@
 package net.eric.tpc.coor.stub;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -8,7 +9,6 @@ import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactor
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Node;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.MinaChannel;
 import net.eric.tpc.proto.Communicator;
@@ -24,7 +24,7 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill
     }
 
     @Override
-    public Maybe<Communicator<TransferBill>> getCommunicator(List<Node> peers) {
+    public Maybe<Communicator<TransferBill>> getCommunicator(List<InetSocketAddress> peers) {
         Communicator<TransferBill> communicator = new CoorCommunicator(this.commuTaskPool,
                 this.sequenceTaskPool);
         ActionStatus result = communicator.connectPanticipants(peers);

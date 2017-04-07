@@ -2,7 +2,7 @@ package net.eric.tpc.proto;
 
 public interface BizActionListener {
     
-    void onSuccess(String xid);
+    void onSuccess(long xid);
 
-    void onFailure(String xid);
+    void onFailure(long xid);
 }

@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.Futures;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.biz.BizCode;
+import net.eric.tpc.biz.Validator;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
@@ -19,11 +20,12 @@ public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(RegulatorBizStrategy.class);
 
     private BillSaveStrategy billSaver;
-
+    private Validator<TransferBill> billValidator;
+    
     @Override
-    public Future<ActionStatus> checkAndPrepare(String xid, TransferBill bill) {
+    public Future<ActionStatus> checkAndPrepare(long xid, TransferBill bill) {
         logger.info("checkAndPrepare trans " + xid);
-        ActionStatus status = bill.fieldCheck();
+        ActionStatus status = billValidator.check(bill);
         if (status.isOK()) {
             status = this.ruleCheck(bill);
             if (status.isOK()) {
@@ -34,13 +36,13 @@ public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill> {
     }
 
     @Override
-    public Future<Void> commit(String xid, BizActionListener commitListener) {
+    public Future<Void> commit(long xid, BizActionListener commitListener) {
         logger.info("commit trans " + xid);
         return this.billSaver.commit(xid, commitListener);
     }
 
     @Override
-    public Future<Void> abort(String xid, BizActionListener abortListener) {
+    public Future<Void> abort(long xid, BizActionListener abortListener) {
         logger.info("abort trans " + xid);
         return this.billSaver.abort(xid, abortListener);
     }
@@ -57,4 +59,10 @@ public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill> {
     public void setBillSaver(BillSaveStrategy billSaver) {
         this.billSaver = billSaver;
     }
+
+    public void setBillValidator(Validator<TransferBill> billValidator) {
+        this.billValidator = billValidator;
+    }
+    
+    
 }
