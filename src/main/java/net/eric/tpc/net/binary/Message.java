@@ -8,7 +8,8 @@ public class Message implements Serializable {
     private static final long serialVersionUID = 6971835564417011087L;
 
     public static class TypeCode {
-        public static final short ACTION_STATUS = 1;
+        public static final short ACTION_STATUS = 1001;
+        public static final short ACTION_STATUS2 = 1;
         public static final short TRANS_START_REC = 2;
         public static final short TRANSFER_BILL = 3;
 

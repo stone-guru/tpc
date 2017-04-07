@@ -19,6 +19,7 @@ import net.eric.tpc.net.binary.MessageCodecFactory;
 
 public class MessageCodecTestClient {
     public static void main(String[] args) {
+      
         SocketConnector connector = new NioSocketConnector();
         connector.setConnectTimeoutMillis(3000);
         DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();

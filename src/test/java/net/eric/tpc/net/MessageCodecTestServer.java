@@ -10,6 +10,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
+import net.eric.tpc.base.ActionStatus2;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.net.binary.MessageCodecFactory;
 
@@ -25,6 +26,7 @@ public class MessageCodecTestServer {
                 System.out.println(message.toString());
                 Message request = (Message)message;
                 request.setCommandAnswer((short)3);
+                request.setParam(ActionStatus2.innerError("Shit!"));
                 session.write(request);
             }
         });

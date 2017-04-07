@@ -1,9 +1,8 @@
 package net.eric.tpc.net.binary;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 
 import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.ActionStatus2;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.Types.TransStartRec;
@@ -44,7 +44,8 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         listBuilder.add(new SerializeCodec(ActionStatus.class, Message.TypeCode.ACTION_STATUS));
         listBuilder.add(new SerializeCodec(TransStartRec.class, Message.TypeCode.TRANS_START_REC));
         listBuilder.add(new SerializeCodec(TransferBill.class, Message.TypeCode.TRANSFER_BILL));
-
+        listBuilder.add(new ActionStatusCodec());
+        
         Builder<Short, ObjectCodec> codeMapBuilder = ImmutableMap.builder();
         Builder<Class<?>, ObjectCodec> classMapBuilder = ImmutableMap.builder();
 
@@ -82,64 +83,33 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         }
         return c;
     }
-    
-    class SerializeCodec implements ObjectCodec {
-        private short typeCode = 0;
-        private Class<?> objectClass;
 
-        public SerializeCodec(Class<?> objectClass, short typeCode) {
-            this.typeCode = typeCode;
-            this.objectClass = objectClass;
-        }
-
-        @Override
-        public short getTypeCode() {
-            return this.typeCode;
-        }
-
-        @Override
-        public byte[] encode(Object entity) throws Exception {
-            ByteArrayOutputStream bo = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bo);
-            oos.writeObject(entity);
-            return bo.toByteArray();
-        }
-
-        @Override
-        public Object decode(byte[] bytes) throws Exception {
-            ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(bytes));
-            return is.readObject();
-        }
-
-        @Override
-        public Class<?> getObjectClass() {
-            return this.objectClass;
-        }
-    }
 
     class MessageEncoder implements ProtocolEncoder {
-        final private Pair<Short, byte[]> NO_OBJECT = Pair.asPair((short)0, new byte[0]);
+        final private Pair<Short, Integer> NO_OBJECT = Pair.asPair((short)0, 0);
         @Override
         public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception {
             Message msg = (Message) message;
-            Pair<Short, byte[]> paramBytes = encodeObject(msg.getParam());
-            Pair<Short, byte[]> contentBytes = encodeObject(msg.getContent());
-            final int length = paramBytes.fst() + contentBytes.fst() + 28;
+            IoBuffer buf = IoBuffer.allocate(32).setAutoExpand(true);
             
-            IoBuffer buf = IoBuffer.allocate(length + 4).setAutoExpand(true);
+            Pair<Short, Integer> param = encodeObject(msg.getParam(), buf, 32);
+            Pair<Short, Integer>  content = encodeObject(msg.getContent(), buf, 32 + param.snd());
+            final int length = param.snd() + content.snd() + 28;
+            System.out.println("length = " + length);
+            buf.position(0);
             buf.putInt(length);
             buf.putShort(msg.getVersion());
             buf.putShort(msg.getRound());
             buf.putLong(msg.getXid());
             buf.putShort(msg.getCommandCode());
             buf.putShort(msg.getCommandAnswer());
-            buf.putShort(paramBytes.fst());
-            buf.putShort(contentBytes.fst());
-            buf.putInt(paramBytes.snd().length);
-            buf.putInt(contentBytes.snd().length);
-            buf.put(paramBytes.snd());
-            buf.put(contentBytes.snd());
+            buf.putShort(param.fst());
+            buf.putShort(content.fst());
+            buf.putInt(param.snd());
+            buf.putInt(content.snd());
 
+            System.out.println("buf capacity " + buf.capacity());
+            buf.position(length + 4);//total length is data length plus length field int (4 bytes)
             buf.flip();
             out.write(buf);
         }
@@ -148,13 +118,17 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         public void dispose(IoSession session) throws Exception {
         }
         
-        Pair<Short, byte[]> encodeObject(Object entity) throws Exception {
+        Pair<Short, Integer> encodeObject(Object entity, IoBuffer buf, int pos) throws Exception {
             if(entity == null){
                 return NO_OBJECT;
             }
             ObjectCodec codec = MessageCodecFactory.this.getObjectCodecForClass(entity.getClass());
-            byte[] bytes = codec.encode(entity);
-            return Pair.asPair(codec.getTypeCode(), bytes);
+            //buf.expand(pos, 128);
+            buf.position(pos);
+            codec.encode(entity, buf);
+            int length = buf.position() - pos;
+            System.out.println("encodeObject position is " + buf.position());
+            return Pair.asPair(codec.getTypeCode(), length);
         }
     }
 
@@ -162,7 +136,10 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
 
         @Override
         public boolean doDecode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception {
+            System.out.println("get length " + in.getInt(0));
             if (!in.prefixedDataAvailable(4, 1024 * 1024)) {
+                System.out.println("wait more");
+                System.out.println("remain is " + in.remaining());
                 return false;
             }
             Message msg = new Message();
@@ -177,27 +154,137 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             short contentType = in.getShort();
             int paramLength = in.getInt();
             int contentLength = in.getInt();
-
-            byte[] paramBytes = new byte[paramLength];
-            in.get(paramBytes);
-            msg.setParam(this.decodeObject(paramType, paramBytes));
-
-            byte[] contentBytes = new byte[contentLength];
-            in.get(contentBytes);
-            msg.setContent(this.decodeObject(contentType, contentBytes));
+            msg.setParam(this.decodeObject(paramType, paramLength, in));
+            msg.setContent(this.decodeObject(contentType, contentLength, in));
             
             out.write(msg);
 
             return true;
         }
         
-        private Object decodeObject(short typeCode, byte[] bytes) throws Exception {
+        private Object decodeObject(short typeCode, int length, IoBuffer in) throws Exception {
             if(typeCode == 0){
                 return null;
             }
             ObjectCodec c = MessageCodecFactory.this.getObjectCodecForTypeCode(typeCode);
-            return c.decode(bytes);
+            return c.decode(length, in);
         }
     }
+    
+    
+    static class SerializeCodec implements ObjectCodec {
+        private short typeCode = 0;
+        private Class<?> objectClass;
 
+        public SerializeCodec(Class<?> objectClass, short typeCode) {
+            this.typeCode = typeCode;
+            this.objectClass = objectClass;
+        }
+
+        @Override
+        public short getTypeCode() {
+            return this.typeCode;
+        }
+
+
+        @Override
+        public Class<?> getObjectClass() {
+            return this.objectClass;
+        }
+
+        @Override
+        public void encode(Object entity, IoBuffer buf) throws Exception {
+            buf.putObject(entity);
+        }
+
+        @Override
+        public Object decode(int length, IoBuffer in) throws Exception {
+            return in.getObject();
+        }
+    }
+    
+    static class ActionStatusCodec implements ObjectCodec {
+        private CharsetEncoder utf8Encoder = Charset.forName("UTF-8").newEncoder();
+        private CharsetDecoder utf8Decoder = Charset.forName("UTF-8").newDecoder();
+        
+        @Override
+        public short getTypeCode() {
+            return Message.TypeCode.ACTION_STATUS2;
+        }
+
+        @Override
+        public Class<?> getObjectClass() {
+            return ActionStatus2.class;
+        }
+
+        @Override
+        public void encode(Object entity, IoBuffer buf) throws Exception {
+            ActionStatus2 status = (ActionStatus2)entity;
+            buf.putShort(status.getCode());
+            buf.putString(status.getDescription(), utf8Encoder);
+        }
+
+        @Override
+        public Object decode(int length, IoBuffer in) throws Exception {
+            short code = in.getShort();
+            String s = in.getString(length - 2, utf8Decoder);
+            return new ActionStatus2(code, s);
+        }
+    }
+    
+   static class NodeCodec implements ObjectCodec {
+
+    @Override
+    public short getTypeCode() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    @Override
+    public Class<?> getObjectClass() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void encode(Object entity, IoBuffer buf) throws Exception {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public Object decode(int length, IoBuffer in) throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
+       
+   }
+   
+   static class TransStartRecCodec implements ObjectCodec {
+
+        @Override
+        public short getTypeCode() {
+            // TODO Auto-generated method stub
+            return 0;
+        }
+
+        @Override
+        public Class<?> getObjectClass() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public void encode(Object entity, IoBuffer buf) throws Exception {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public Object decode(int length, IoBuffer in) throws Exception {
+            // TODO Auto-generated method stub
+            return null;
+        }
+        
+    }
 }
