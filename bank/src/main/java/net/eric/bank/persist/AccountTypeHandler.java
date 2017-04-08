@@ -1,4 +1,4 @@
-package net.eric.tpc.persist;
+package net.eric.bank.persist;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -8,7 +8,8 @@ import java.sql.SQLException;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
-import net.eric.tpc.entity.AccountType;
+import net.eric.bank.entity.AccountType;
+import net.eric.tpc.persist.PersistException;
 
 public class AccountTypeHandler extends BaseTypeHandler<AccountType> {
 

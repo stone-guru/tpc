@@ -1,4 +1,4 @@
-package net.eric.tpc.entity;
+package net.eric.bank.entity;
 
 import java.io.Serializable;
 

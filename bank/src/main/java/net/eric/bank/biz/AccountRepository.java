@@ -1,8 +1,8 @@
-package net.eric.tpc.biz;
+package net.eric.bank.biz;
 
 import java.util.List;
 
-import net.eric.tpc.entity.Account;
+import net.eric.bank.entity.Account;
 
 public interface AccountRepository {
     void createAccount(Account account);

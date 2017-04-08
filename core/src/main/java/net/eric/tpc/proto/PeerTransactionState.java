@@ -8,7 +8,7 @@ import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
-public class PeerTransactionState<B> {
+public class PeerTransactionState {
     public static enum Stage {
         NONE, BEGIN, VOTED, DECIDED, ENDED
     }
@@ -18,7 +18,7 @@ public class PeerTransactionState<B> {
     private Vote vote;
     private Decision decision;
     private Future<ActionStatus> voteResult;
-    private B bizEntity;
+    private Object bizEntity;
     private TransStartRec transStartRec;
     private Date startTime;
     private Date VoteTime;
@@ -86,11 +86,11 @@ public class PeerTransactionState<B> {
         this.voteResult = voteResult;
     }
 
-    public B getBizEntity() {
+    public Object getBizEntity() {
         return bizEntity;
     }
 
-    public void setBizEntity(B bizEntity) {
+    public void setBizEntity(Object bizEntity) {
         this.bizEntity = bizEntity;
     }
 

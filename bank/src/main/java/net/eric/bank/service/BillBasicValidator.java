@@ -1,4 +1,4 @@
-package net.eric.tpc.service;
+package net.eric.bank.service;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -6,10 +6,10 @@ import java.util.Date;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
+import net.eric.bank.biz.BizCode;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.TransferBill;
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.biz.Validator;
-import net.eric.tpc.entity.TransferBill;
 
 public class BillBasicValidator implements Validator<TransferBill> {
 

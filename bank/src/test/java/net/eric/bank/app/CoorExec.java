@@ -1,17 +1,17 @@
-package net.eric.tpc.app;
+package net.eric.bank.app;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
+import net.eric.bank.entity.AccountIdentity;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.CommonServiceFactory;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.ServerConfig;
 import net.eric.tpc.coor.CoordinatorFactory;
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.TransactionManager;
-import net.eric.tpc.service.CommonServiceFactory;
 import net.eric.tpc.service.KeyGenerators;
 
 public class CoorExec {

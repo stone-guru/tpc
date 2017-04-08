@@ -1,15 +1,15 @@
-package net.eric.tpc.regulator;
+package net.eric.bank.regulator;
 
 import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.bank.net.PeerIoHandler;
+import net.eric.bank.service.CommonServiceFactory;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.PersisterFactory;
-import net.eric.tpc.service.CommonServiceFactory;
 
 public class RegulatorServer extends MinaServer {
 

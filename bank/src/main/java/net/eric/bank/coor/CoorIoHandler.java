@@ -1,4 +1,4 @@
-package net.eric.tpc.coor;
+package net.eric.bank.coor;
 
 import java.util.List;
 
@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
+import net.eric.bank.entity.TransferBill;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.AbstractIoHandler;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.DecisionQueryHandler;

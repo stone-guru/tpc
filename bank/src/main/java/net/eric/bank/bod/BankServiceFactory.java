@@ -1,15 +1,15 @@
-package net.eric.tpc.bank;
+package net.eric.bank.bod;
 
 import com.google.common.base.Optional;
 
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.net.PeerIoHandler;
+import net.eric.bank.persist.AccountDao;
+import net.eric.bank.persist.TransferBillDao;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.biz.Validator;
-import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.net.PeerIoHandler;
-import net.eric.tpc.persist.AccountDao;
-import net.eric.tpc.persist.TransferBillDao;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Panticipantor;
 

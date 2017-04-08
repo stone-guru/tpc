@@ -1,4 +1,4 @@
-package net.eric.tpc.entity;
+package net.eric.bank.entity;
 
 public enum AccountType {
     PERSONAL("PERSONAL"), BANK("BANK");

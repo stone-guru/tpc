@@ -14,7 +14,7 @@ public interface KeyGenerator {
      * @param keyName 键值名称 not empty
      * @return 键值 not empty result.length <= 24
      */
-    String nextKeyAsString(String keyName);
+    String nextKeyWithName(String keyName);
     
     long nextKey(String keyName);
 }

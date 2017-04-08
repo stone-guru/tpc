@@ -49,7 +49,7 @@ public class KeyGenerators {
     private static KeyPersister keyPersister;
     public static KeyGenerator instance = new KeyGenerator() {
         @Override
-        public String nextKeyAsString(String keyName) {
+        public String nextKeyWithName(String keyName) {
             return KeyGenerators.nextKey(keyName);
         }
 

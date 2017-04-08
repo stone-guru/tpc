@@ -1,19 +1,19 @@
-package net.eric.tpc.bank;
+package net.eric.bank.bod;
 
 import java.io.IOException;
 import java.util.List;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.bank.biz.AccountRepository;
+import net.eric.bank.entity.Account;
+import net.eric.bank.net.PeerIoHandler;
+import net.eric.bank.service.CommonServiceFactory;
+import net.eric.bank.util.Util;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.biz.AccountRepository;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.entity.Account;
-import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.persist.PersisterFactory;
-import net.eric.tpc.service.CommonServiceFactory;
-import net.eric.tpc.util.Util;
 
 public class BankServer extends MinaServer {
 

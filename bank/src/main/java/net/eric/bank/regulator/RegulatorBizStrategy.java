@@ -1,4 +1,4 @@
-package net.eric.tpc.regulator;
+package net.eric.bank.regulator;
 
 import java.math.BigDecimal;
 import java.util.concurrent.Future;
@@ -8,13 +8,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.Futures;
 
+import net.eric.bank.biz.BizCode;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.biz.Validator;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
-import net.eric.tpc.service.BillSaveStrategy;
 
 public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(RegulatorBizStrategy.class);

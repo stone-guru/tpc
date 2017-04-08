@@ -1,4 +1,4 @@
-package net.eric.tpc.tool;
+package net.eric.bank.tool;
 
 import static net.eric.tpc.base.Pair.asPair;
 
@@ -9,11 +9,11 @@ import java.util.Set;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
+import net.eric.bank.entity.Account;
+import net.eric.bank.entity.AccountType;
+import net.eric.bank.persist.AccountDao;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.entity.Account;
-import net.eric.tpc.entity.AccountType;
-import net.eric.tpc.persist.AccountDao;
 import net.eric.tpc.persist.DatabaseInit;
 import net.eric.tpc.persist.PersisterFactory;
 

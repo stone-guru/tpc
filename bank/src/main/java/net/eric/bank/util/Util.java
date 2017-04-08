@@ -1,4 +1,4 @@
-package net.eric.tpc.util;
+package net.eric.bank.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -9,8 +9,8 @@ import java.util.List;
 
 import com.google.common.base.Preconditions;
 
+import net.eric.bank.entity.Account;
 import net.eric.tpc.base.ShouldNotHappenException;
-import net.eric.tpc.entity.Account;
 
 public class Util {
     public static byte[] ObjectToBytes(Object obj) {

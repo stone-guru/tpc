@@ -2,6 +2,8 @@ package net.eric.tpc.service;
 
 import static net.eric.tpc.base.Pair.asPair;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.Iterator;
@@ -11,21 +13,38 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 
+import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.entity.DtRecord;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.DtRecordDao;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
-import net.eric.tpc.util.Util;
 
-public class DtLoggerDbImpl implements DtLogger<TransferBill> {
+public class DtLoggerDbImpl implements DtLogger{
     private static final Logger logger = LoggerFactory.getLogger(DtLoggerDbImpl.class);
     private DtRecordDao dtLoggerDao;
     
+    public static byte[] ObjectToBytes(Object obj) {
+        byte[] bytes = null;
+        try {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            ObjectOutputStream oo = new ObjectOutputStream(bo);
+            oo.writeObject(obj);
+
+            bytes = bo.toByteArray();
+
+            bo.close();
+            oo.close();
+        } catch (Exception e) {
+            throw new ShouldNotHappenException(e);
+        }
+
+        return bytes;
+    }
+    
     @Override
-    public void recordBeginTrans(TransStartRec transStartRec, TransferBill bill, boolean isInitiator) {
+    public void recordBeginTrans(TransStartRec transStartRec, Object bill, boolean isInitiator) {
         logger.info("CoorDtLoggerDbImpl.recordBeginTrans", transStartRec.toString());
         DtRecord record = new DtRecord();
         record.setXid(transStartRec.getXid());
@@ -40,7 +59,7 @@ public class DtLoggerDbImpl implements DtLogger<TransferBill> {
         record.setPariticipants(builder.toString());
         record.setStartTime(new Date());
         record.setStart2PC(isInitiator);
-        record.setBizMessage(Util.ObjectToBytes(bill));
+        record.setBizMessage(ObjectToBytes(bill));
         
         this.dtLoggerDao.insert(record);
     }

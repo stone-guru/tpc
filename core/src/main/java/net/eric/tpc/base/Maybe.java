@@ -29,6 +29,14 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         }
     }
 
+    public static <T> Maybe<T> fromNullable(T v, short code, String description) {
+        if (v == null) {
+            return Maybe.fail(code, description);
+        } else {
+            return Maybe.success(v);
+        }
+    }
+    
     public static <T> Maybe<T> might(ActionStatus status, T v) {
         if (status.isOK()) {
             return Maybe.success(v);
@@ -55,6 +63,8 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         }
     }
 
+    public abstract <B> Maybe<B> castLeft();
+    
     final static class Success<T> extends Maybe<T> {
         private T value;
         Success(T v) {
@@ -77,6 +87,11 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         @Override
         public T getRight() {
             return value;
+        }
+
+        @Override
+        public <B> Maybe<B> castLeft() {
+            throw new IllegalStateException("Not fail, no left value");
         }
     }
 
@@ -102,6 +117,12 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         @Override
         public T getRight() {
             throw new IllegalStateException("Not success, no right value");
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <B> Maybe<B> castLeft() {
+            return (Maybe<B>)this;
         }
     }
 }

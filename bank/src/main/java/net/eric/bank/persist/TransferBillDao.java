@@ -1,7 +1,7 @@
-package net.eric.tpc.persist;
+package net.eric.bank.persist;
 
+import net.eric.bank.entity.TransferBill;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.entity.TransferBill;
 
 public interface TransferBillDao {
     void insert(TransferBill bill);

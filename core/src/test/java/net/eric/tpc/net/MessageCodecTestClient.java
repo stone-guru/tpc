@@ -1,10 +1,8 @@
 package net.eric.tpc.net;
 
-import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Date;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.future.ConnectFuture;
@@ -17,8 +15,6 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
 import com.google.common.collect.ImmutableList;
 
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.net.binary.MessageCodecFactory;
 import net.eric.tpc.proto.Types.TransStartRec;
@@ -42,7 +38,7 @@ public class MessageCodecTestClient {
         request.setRound((short)7);
         //request.setParam(new ActionStatus(BizCode.ACCOUNT_LOCKED, "ACCOUNT9383873"));
         request.setParam(genTransStartRec());
-        request.setContent(createBill("ABC8008"));
+        //request.setContent(createBill("ABC8008"));
         WriteFuture wf = session.write(request);
         wf.awaitUninterruptibly();
         
@@ -54,20 +50,20 @@ public class MessageCodecTestClient {
         session.closeNow();
         connector.dispose();
     }
-    
-    private static TransferBill createBill(String transSn) {
-        TransferBill msg = new TransferBill();
-        msg.setTransSN(transSn);
-        msg.setLaunchTime(new Date());
-        msg.setPayer(new AccountIdentity("james", "BOC"));
-        msg.setReceiver(new AccountIdentity("lori", "CCB"));
-        msg.setReceivingBankCode("ABC");
-        msg.setAmount(BigDecimal.valueOf(12.8));
-        msg.setSummary("for cigrate");
-        msg.setVoucherNumber("BIK09283-33843");
-
-        return msg;
-    }
+//    
+//    private static TransferBill createBill(String transSn) {
+//        TransferBill msg = new TransferBill();
+//        msg.setTransSN(transSn);
+//        msg.setLaunchTime(new Date());
+//        msg.setPayer(new AccountIdentity("james", "BOC"));
+//        msg.setReceiver(new AccountIdentity("lori", "CCB"));
+//        msg.setReceivingBankCode("ABC");
+//        msg.setAmount(BigDecimal.valueOf(12.8));
+//        msg.setSummary("for cigrate");
+//        msg.setVoucherNumber("BIK09283-33843");
+//
+//        return msg;
+//    }
     
     private static TransStartRec genTransStartRec(){
         TransStartRec rec = new TransStartRec();

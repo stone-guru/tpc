@@ -1,129 +1,109 @@
 package net.eric.tpc.net;
 
-import static net.eric.tpc.base.Pair.asPair;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
+import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
+import net.eric.tpc.base.ShouldNotHappenException;
+import net.eric.tpc.net.RequestHandler.ProcessResult;
+import net.eric.tpc.net.binary.Message;
 
-import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Maybe;
-import net.eric.tpc.base.Pair;
-import net.eric.tpc.proto.PeerTransactionManager;
-import net.eric.tpc.proto.Types.Decision;
-import net.eric.tpc.proto.Types.ErrorCode;
-import net.eric.tpc.proto.Types.TransStartRec;
-
-public class PeerIoHandler<B> extends AbstractIoHandler {
+public class PeerIoHandler extends IoHandlerAdapter{
     private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
-    private PeerTransactionManager<B> transManager;
-
-    @Override
-    protected List<RequestHandler> requestHandlers() {
-        return ImmutableList.of(new BeginTransRequestHandler(), //
-                new VoteRequestHandler(), //
-                new TransDecisionHandler(), //
-                new PeerDecisonQueryHandler());
-    }
-
-    public void setTransManager(PeerTransactionManager<B> transManager) {
-        this.transManager = transManager;
-    }
-
-    class BeginTransRequestHandler implements RequestHandler {
+    
+    private static final RequestHandler UnknownCommandHandler = new RequestHandler() {
         @Override
-        public String getCorrespondingCode() {
-            return DataPacket.BEGIN_TRANS;
-        }
-
-        private Maybe<Pair<TransStartRec, B>> peekBizEntities(DataPacket request) {
-            Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam2(), TransStartRec.class, //
-                    ErrorCode.BAD_DATA_PACKET, "param2 should be a TransStartRec");
-            if (!startRec.isRight()) {
-                return Maybe.fail(startRec.getLeft());
-            }
-            Maybe<B> bill = Maybe.safeCast(request.getParam3(), null , //FIXME TransferBill.class, //
-                    ErrorCode.BAD_DATA_PACKET, "param3 should be a TransStartRec");
-            if (!bill.isRight()) {
-                return Maybe.fail(bill.getLeft());
-            }
-            return Maybe.success(asPair(startRec.getRight(), bill.getRight()));
+        public short getCorrespondingCode() {
+            throw new ShouldNotHappenException("UnknownCommandHandler has no correspondingCode");
         }
 
         @Override
-        public ProcessResult process(TransSession session, DataPacket request) {
-            DataPacket response = null;
-            ActionStatus r = null;
-
-            Maybe<Pair<TransStartRec, B>> bizEntities = this.peekBizEntities(request);
-            if (!bizEntities.isRight()) {
-                r = bizEntities.getLeft();
-            } else {
-                TransStartRec startRec = bizEntities.getRight().fst();
-                B bill = bizEntities.getRight().snd();
-                r = PeerIoHandler.this.transManager.beginTrans(startRec, bill);
-            }
-            if (r.isOK()) {
-                response = new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, request.getParam1(), DataPacket.YES);
-            } else {
-                response = new DataPacket(DataPacket.BEGIN_TRANS_ANSWER, request.getParam1(), DataPacket.NO, r);
-            }
-            return new ProcessResult(response, !r.isOK());
-        }
-    }
-
-    class VoteRequestHandler implements RequestHandler {
-        @Override
-        public String getCorrespondingCode() {
-            return DataPacket.VOTE_REQ;
-        }
-
-        @Override
-        public ProcessResult process(TransSession transSession, DataPacket request) {
-            long xid = (Long) request.getParam1();
-
-            ActionStatus r = PeerIoHandler.this.transManager.processVoteReq(xid);
-            DataPacket response = null;
-            if (r.isOK()) {
-                response = new DataPacket(DataPacket.VOTE_ANSWER, xid, DataPacket.YES);
-            } else {
-                response = new DataPacket(DataPacket.VOTE_ANSWER, xid, DataPacket.NO, r);
-            }
-            return new ProcessResult(response, !r.isOK());
-        }
-    }
-
-    class TransDecisionHandler implements RequestHandler {
-        @Override
-        public String getCorrespondingCode() {
-            return DataPacket.TRANS_DECISION;
-        }
-
-        @Override
-        public ProcessResult process(TransSession session, DataPacket request) {
-            long xid = (Long) request.getParam1();
-            String decision = (String) request.getParam2();
-
-            if (DataPacket.YES.equals(decision)) {
-                PeerIoHandler.this.transManager.processTransDecision(xid, Decision.COMMIT);
-            } else if (DataPacket.NO.equals(decision)) {
-                PeerIoHandler.this.transManager.processTransDecision(xid, Decision.ABORT);
-            } else {
-                logger.error(DataPacket.PEER_PRTC_ERROR, "Unknown commit decision " + decision);
-            }
+        public ProcessResult process(TransSession session, Message request) {
             return ProcessResult.NO_RESPONSE_AND_CLOSE;
         }
-    }
+    };
 
-    class PeerDecisonQueryHandler extends DecisionQueryHandler {
-        @Override
-        protected Optional<Decision> getDecisionFor(long xid) {
-            return PeerIoHandler.this.transManager.queryDecision(xid);
+    private Map<Short, RequestHandler> requestHandlerMap;;
+    private ExecutorService taskPool;
+    private TransSession transSession = new TransSession();
+    
+    
+    public PeerIoHandler(List<RequestHandler>  handlers){
+        this.initRequestHandlerMap(handlers);
+    }
+    
+    private void initRequestHandlerMap(List<RequestHandler>  handlers) {
+        requestHandlerMap = new HashMap<Short, RequestHandler>();
+        for (RequestHandler h : handlers) {
+            requestHandlerMap.put(h.getCorrespondingCode(), h);
+        }
+    }
+    
+    protected RequestHandler getRequestHandler(short code) {
+        RequestHandler handler = requestHandlerMap.get(code);
+        if (handler == null) {
+            return UnknownCommandHandler;
+        }
+        return handler;
+    }
+    
+    @Override
+    public void messageReceived(IoSession session, Object message) throws Exception {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Received: " + message.toString());
+        }
+
+        Message request = (Message) message;
+
+        RequestHandler handler = this.getRequestHandler(request.getCommandCode());
+        System.out.println("Got handler " + handler);
+        
+        final ProcessResult result = handler.process(transSession, request);
+        
+        
+        if (result.getResponse().isPresent()) {
+            this.replyMessage(session, result.getResponse().get(), result.closeAfterSend());
+        } else if (result.closeAfterSend()) {
+            session.closeOnFlush();
         }
     }
 
+    private void replyMessage(final IoSession session, final Message packet, boolean closeAfterSend) {
+
+        final WriteFuture wf = session.write(packet);
+
+        if (logger.isDebugEnabled()) {
+            wf.addListener(new IoFutureListener<IoFuture>() {
+                public void operationComplete(IoFuture future) {
+                    logger.debug("response written : " + packet);
+                }
+            });
+        }
+        if (closeAfterSend) {
+            Runnable closeAction = new Runnable() {
+                @Override
+                public void run() {
+                    wf.awaitUninterruptibly();
+                    session.closeOnFlush();
+                }
+            };
+            if (this.taskPool == null) {
+                throw new IllegalStateException("commuTaskPool not set");
+            }
+            this.taskPool.submit(closeAction);
+        }
+    }
+
+    public void setTaskPool(ExecutorService taskPool) {
+        this.taskPool = taskPool;
+    }
 }

@@ -1,4 +1,4 @@
-package net.eric.tpc.coor.stub;
+package net.eric.tpc.coor;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -9,12 +9,11 @@ import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactor
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.MinaChannel;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.CommunicatorFactory;
 
-public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill> {
+public class CoorCommunicatorFactory implements CommunicatorFactory {
 
     private ExecutorService commuTaskPool = Executors.newCachedThreadPool();
     private ExecutorService sequenceTaskPool = Executors.newSingleThreadExecutor();
@@ -24,15 +23,15 @@ public class CoorCommunicatorFactory implements CommunicatorFactory<TransferBill
     }
 
     @Override
-    public Maybe<Communicator<TransferBill>> getCommunicator(List<InetSocketAddress> peers) {
-        Communicator<TransferBill> communicator = new CoorCommunicator(this.commuTaskPool,
+    public Maybe<Communicator> getCommunicator(List<InetSocketAddress> peers) {
+        Communicator communicator = new CoorCommunicator(this.commuTaskPool,
                 this.sequenceTaskPool);
         ActionStatus result = communicator.connectPanticipants(peers);
         return Maybe.might(result, communicator);
     }
 
     @Override
-    public void releaseCommunicator(Communicator<TransferBill> communicator) {
+    public void releaseCommunicator(Communicator communicator) {
         communicator.close();
     }
 

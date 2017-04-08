@@ -51,7 +51,7 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         // Message.TypeCode.TRANSFER_BILL));
         listBuilder.add(new ActionStatusCodec());
         listBuilder.add(new TransStartRecCodec());
-        listBuilder.add(new TransferBillCodec());
+        //listBuilder.add(new TransferBillCodec());
 
         Builder<Short, ObjectCodec> codeMapBuilder = ImmutableMap.builder();
         Builder<Class<?>, ObjectCodec> classMapBuilder = ImmutableMap.builder();

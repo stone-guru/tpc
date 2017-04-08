@@ -1,4 +1,4 @@
-package net.eric.tpc.persist;
+package net.eric.bank.persist;
 
 import static net.eric.tpc.base.Pair.asPair;
 import static org.testng.Assert.assertEquals;
@@ -13,10 +13,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import net.eric.bank.entity.AccountIdentity;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.persist.TransferBillDao;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
+import net.eric.tpc.persist.DatabaseInit;
+import net.eric.tpc.persist.PersisterFactory;
 
 @Test(singleThreaded=true)
 public class TransferBillDaoTest {

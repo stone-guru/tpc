@@ -1,14 +1,10 @@
 package net.eric.tpc.service;
 
-import java.math.BigDecimal;
 import java.net.InetSocketAddress;
-import java.util.Date;
 
 import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Types.Decision;
@@ -19,19 +15,19 @@ public class DtLoggerTest {
     static InetSocketAddress boc = InetSocketAddress.createUnresolved("server.boc.org", 10021);
     static InetSocketAddress bbc = InetSocketAddress.createUnresolved("server.boc.org", 10022);
 
-    private static TransferBill genTransferMessage() {
-        TransferBill msg = new TransferBill();
-        msg.setTransSN("982872393");
-        msg.setLaunchTime(new Date());
-        msg.setPayer(new AccountIdentity("mike", "BOC"));
-        msg.setReceiver(new AccountIdentity("jack", "ABC"));
-        msg.setReceivingBankCode("BOC");
-        msg.setAmount(BigDecimal.valueOf(200));
-        msg.setSummary("for cigrate");
-        msg.setVoucherNumber("BIK09283-33843");
-
-        return msg;
-    }
+//    private static TransferBill genTransferMessage() {
+//        TransferBill msg = new TransferBill();
+//        msg.setTransSN("982872393");
+//        msg.setLaunchTime(new Date());
+//        msg.setPayer(new AccountIdentity("mike", "BOC"));
+//        msg.setReceiver(new AccountIdentity("jack", "ABC"));
+//        msg.setReceivingBankCode("BOC");
+//        msg.setAmount(BigDecimal.valueOf(200));
+//        msg.setSummary("for cigrate");
+//        msg.setVoucherNumber("BIK09283-33843");
+//
+//        return msg;
+//    }
 
     private static TransStartRec genTransRec(String prefix) {
         long xid = KeyGenerators.nextValue(prefix);
@@ -47,11 +43,11 @@ public class DtLoggerTest {
 
         TestUtil.clearTable("DT_RECORD", "org.h2.Driver", url, "sa", "");
         @SuppressWarnings("unchecked")
-        DtLogger<TransferBill> dtLogger = UniFactory.getObject(DtLogger.class);
+        DtLogger dtLogger = UniFactory.getObject(DtLogger.class);
 
         for (int i = 0; i < 30; i++) {
             TransStartRec rec = genTransRec("A");
-            dtLogger.recordBeginTrans(rec, genTransferMessage(), true);
+            dtLogger.recordBeginTrans(rec, null, true);//FIXME null
             int dice = i % 3;
             if (dice == 0 || dice == 1) {
                 dtLogger.recordVote(rec.getXid(), (i % 2 == 0) ? Vote.YES : Vote.NO);

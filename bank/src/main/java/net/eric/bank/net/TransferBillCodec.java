@@ -1,4 +1,4 @@
-package net.eric.tpc.net.binary;
+package net.eric.bank.net;
 
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -8,8 +8,9 @@ import java.util.Date;
 
 import org.apache.mina.core.buffer.IoBuffer;
 
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
+import net.eric.bank.entity.AccountIdentity;
+import net.eric.bank.entity.TransferBill;
+import net.eric.tpc.net.binary.ObjectCodec;
 
 public class TransferBillCodec implements ObjectCodec{
     public static final short BILL_TYPE_CODE = 2001;

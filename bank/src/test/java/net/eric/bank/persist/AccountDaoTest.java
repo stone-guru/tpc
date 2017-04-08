@@ -1,4 +1,4 @@
-package net.eric.tpc.persist;
+package net.eric.bank.persist;
 
 import static net.eric.tpc.base.Pair.asPair;
 import static org.testng.Assert.assertEquals;
@@ -13,10 +13,13 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import net.eric.bank.entity.Account;
+import net.eric.bank.entity.AccountType;
+import net.eric.bank.persist.AccountDao;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.entity.Account;
-import net.eric.tpc.entity.AccountType;
+import net.eric.tpc.persist.DatabaseInit;
+import net.eric.tpc.persist.PersisterFactory;
 
 public class AccountDaoTest {
     private AccountDao accountDao;

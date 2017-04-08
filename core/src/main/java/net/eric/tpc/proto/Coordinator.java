@@ -19,11 +19,11 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private static final Logger logger = LoggerFactory.getLogger(Coordinator.class);
 
-    private DtLogger<B> dtLogger;
+    private DtLogger dtLogger;
 
     private CoorBizStrategy<B> bizStrategy;
 
-    private CommunicatorFactory<B> communicatorFactory;
+    private CommunicatorFactory communicatorFactory;
 
     private KeyGenerator keyGenerator;
 
@@ -41,11 +41,11 @@ public class Coordinator<B> implements TransactionManager<B> {
         TaskPartition<B> task = taskEither.getRight();
         List<InetSocketAddress> peers = task.getParticipants();
 
-        Either<ActionStatus, Communicator<B>> communicatorEither = getCommunicatorFactory().getCommunicator(peers);
+        Maybe<Communicator> communicatorEither = this.communicatorFactory.getCommunicator(peers);
         if (!communicatorEither.isRight()) {
             return communicatorEither.getLeft();
         }
-        Communicator<B> communicator = communicatorEither.getRight();
+        Communicator communicator = communicatorEither.getRight();
 
         try {
             ActionStatus beginTransResult = this.askBeginTrans(xid, task, communicator);
@@ -58,7 +58,7 @@ public class Coordinator<B> implements TransactionManager<B> {
                 return voteResult;
             }
 
-            getDtLogger().recordDecision(xid, Decision.COMMIT);
+            this.dtLogger.recordDecision(xid, Decision.COMMIT);
             Future<RoundResult> notifyFuture = communicator.notifyDecision(xid, Decision.COMMIT, peers);
 
             @SuppressWarnings("unused")
@@ -70,7 +70,7 @@ public class Coordinator<B> implements TransactionManager<B> {
                 e.printStackTrace();
             }
         } finally {
-            getCommunicatorFactory().releaseCommunicator(communicator);
+            communicatorFactory.releaseCommunicator(communicator);
         }
 
         return ActionStatus.OK;
@@ -88,12 +88,12 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
     };
 
-    private ActionStatus processVote(long xid, TaskPartition<B> task, Communicator<B> communicator) {
+    private ActionStatus processVote(long xid, TaskPartition<B> task, Communicator communicator) {
         final List<InetSocketAddress> peers = task.getParticipants();
         Future<ActionStatus> selfVoteFuture = getBizStrategy().prepareCommit(xid, task.getCoorTask());
         Future<RoundResult> peersVoteFuture = communicator.gatherVote(xid, peers);
 
-        // getDtLogger().recordStart2PC(xid);
+        // this.dtLogger.recordStart2PC(xid);
 
         ActionStatus voteResult = ActionStatus.force(selfVoteFuture);
         ActionStatus peersVoteResult = RoundResult.force(peersVoteFuture);
@@ -121,10 +121,10 @@ public class Coordinator<B> implements TransactionManager<B> {
         }
     }
 
-    private ActionStatus askBeginTrans(long xid, TaskPartition<B> task, Communicator<B> communicator) {
+    private ActionStatus askBeginTrans(long xid, TaskPartition<B> task, Communicator communicator) {
         TransStartRec transStart = new TransStartRec(xid, getSelf(), task.getParticipants());
         Future<RoundResult> beginTransFuture = communicator.askBeginTrans(transStart, task.getPeerTasks());
-        getDtLogger().recordBeginTrans(transStart, task.getCoorTask(), true);
+        this.dtLogger.recordBeginTrans(transStart, task.getCoorTask(), true);
 
         ActionStatus result = RoundResult.force(beginTransFuture);
         if (result.isOK()) {
@@ -144,24 +144,20 @@ public class Coordinator<B> implements TransactionManager<B> {
         return result;
     }
 
-    private void abandomTrans(long xid, List<InetSocketAddress> nodes, Communicator<B> communicator) {
+    private void abandomTrans(long xid, List<InetSocketAddress> nodes, Communicator communicator) {
         if (logger.isDebugEnabled()) {
             logger.debug(xid + " abandom ");
         }
-        this.getDtLogger().recordDecision(xid, Decision.ABORT);
+        this.dtLogger.recordDecision(xid, Decision.ABORT);
         communicator.notifyDecision(xid, Decision.ABORT, nodes);
 
         @SuppressWarnings("unused")
         Future<Void> canNotCare = this.bizStrategy.abort(xid, this.finishTransListener);
 
-        this.getCommunicatorFactory().releaseCommunicator(communicator);
+        this.communicatorFactory.releaseCommunicator(communicator);
     }
 
-    public DtLogger<B> getDtLogger() {
-        return dtLogger;
-    }
-
-    public void setDtLogger(DtLogger<B> dtLogger) {
+    public void setDtLogger(DtLogger dtLogger) {
         this.dtLogger = dtLogger;
     }
 
@@ -173,11 +169,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         this.bizStrategy = bizStrategy;
     }
 
-    public CommunicatorFactory<B> getCommunicatorFactory() {
-        return communicatorFactory;
-    }
-
-    public void setCommunicatorFactory(CommunicatorFactory<B> communicatorFactory) {
+    public void setCommunicatorFactory(CommunicatorFactory communicatorFactory) {
         this.communicatorFactory = communicatorFactory;
     }
 

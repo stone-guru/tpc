@@ -1,4 +1,4 @@
-package net.eric.tpc.biz;
+package net.eric.bank.biz;
 
 public class BizCode {
     public static final short MISS_FIELD = 2000;

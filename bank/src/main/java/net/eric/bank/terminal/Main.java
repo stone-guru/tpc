@@ -1,4 +1,4 @@
-package net.eric.tpc.terminal;
+package net.eric.bank.terminal;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
@@ -22,15 +22,15 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
+import net.eric.bank.biz.BizCode;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.AccountIdentity;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.BillBasicValidator;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.biz.Validator;
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.proto.Types.ErrorCode;
-import net.eric.tpc.service.BillBasicValidator;
 
 public class Main {
 

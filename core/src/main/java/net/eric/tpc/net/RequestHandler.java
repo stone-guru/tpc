@@ -6,21 +6,21 @@ import net.eric.tpc.net.binary.Message;
 
 public interface RequestHandler {
 
-    String getCorrespondingCode();
+    short getCorrespondingCode();
 
-    ProcessResult process(TransSession session, DataPacket request);
+    ProcessResult process(TransSession session, Message request);
 
     class ProcessResult {
-        public static ProcessResult NO_RESPONSE_AND_CLOSE = new ProcessResult(false);
+        public static ProcessResult NO_RESPONSE_AND_CLOSE = new ProcessResult(true);
         
-        private DataPacket response;
+        private Message response;
         private boolean closeAfterSend;
 
         public ProcessResult(boolean closeAfterSend) {
             this(null, closeAfterSend);
         }
 
-        public ProcessResult(DataPacket response, boolean closeAfterSend) {
+        public ProcessResult(Message response, boolean closeAfterSend) {
             this.response = response;
             this.closeAfterSend = closeAfterSend;
         }
@@ -29,7 +29,7 @@ public interface RequestHandler {
             return this.closeAfterSend;
         }
 
-        Optional<DataPacket> getResponse() {
+        Optional<Message> getResponse() {
             return Optional.fromNullable(response);
         }
     };

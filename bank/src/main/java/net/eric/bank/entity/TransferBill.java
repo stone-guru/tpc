@@ -1,13 +1,10 @@
-package net.eric.tpc.entity;
+package net.eric.bank.entity;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
 import com.google.common.base.Strings;
-
-import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.biz.BizCode;
 
 public class TransferBill implements Serializable {
 

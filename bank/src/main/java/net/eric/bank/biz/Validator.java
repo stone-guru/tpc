@@ -1,4 +1,4 @@
-package net.eric.tpc.biz;
+package net.eric.bank.biz;
 
 import net.eric.tpc.base.ActionStatus;
 

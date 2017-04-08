@@ -1,4 +1,4 @@
-package net.eric.tpc.bank;
+package net.eric.bank.bod;
 
 import static net.eric.tpc.base.Pair.asPair;
 

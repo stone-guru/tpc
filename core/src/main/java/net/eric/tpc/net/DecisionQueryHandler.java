@@ -3,40 +3,41 @@ package net.eric.tpc.net;
 import com.google.common.base.Optional;
 
 import net.eric.tpc.base.UnImplementedException;
+import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.proto.Types.Decision;
 
 public abstract class DecisionQueryHandler implements RequestHandler {
 
     @Override
-    public String getCorrespondingCode() {
-        return DataPacket.DECISION_QUERY;
+    public short getCorrespondingCode() {
+        return CommandCodes.DECISION_QUERY;
     }
 
     @Override
-    public ProcessResult process(TransSession session, DataPacket request) {
-        long xid = (Long) request.getParam1();
+    public ProcessResult process(TransSession session, Message request) {
+        long xid = request.getXid();
 
         Optional<Decision> decision = this.getDecisionFor(xid);
-        
-        String param2 = null;
+
+        short answer = 0;
         if (decision.isPresent()) {
             switch (decision.get()) {
             case ABORT:
-                param2 = DataPacket.NO;
+                answer = CommandCodes.YES;
                 break;
             case COMMIT:
-                param2 = DataPacket.YES;
+                answer = CommandCodes.NO;
                 break;
             default:
                 throw new UnImplementedException();
             }
         } else {
-            param2 = DataPacket.UNKNOWN;
+            answer = CommandCodes.UNKNOWN;
         }
 
-        return new ProcessResult(new DataPacket(DataPacket.DECISION_ANSWER, xid, param2), true);
+        return new ProcessResult(Message.fromRequest(request, CommandCodes.DECISION_ANSWER, answer), true);
     }
 
     protected abstract Optional<Decision> getDecisionFor(long xid);
-    
+
 }

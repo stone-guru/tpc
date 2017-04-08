@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <settings>
+    <setting name="logImpl" value="SLF4J"/>
+  </settings>
+  
+  <typeAliases>
+    <typeAlias alias="Pair" type="net.eric.tpc.base.Pair"/>  
+    <typeAlias alias="Decision" type="net.eric.tpc.proto.Types$Decision"/>  
+    <typeAlias alias="Vote" type="net.eric.tpc.proto.Types$Vote"/>  
+    <typeAlias alias="DtRecord" type="net.eric.tpc.entity.DtRecord"/>
+    <typeAlias alias="KeyRecord" type="net.eric.tpc.persist.KeyRecord"/>
+  </typeAliases>
+
+  <typeHandlers>
+    <typeHandler handler="net.eric.tpc.persist.VoteTypeHandler" 
+                javaType="net.eric.tpc.proto.Types$Vote"
+                jdbcType="CHAR"/>
+    <typeHandler handler="net.eric.tpc.persist.DecisionTypeHandler" 
+                javaType="net.eric.tpc.proto.Types$Decision"
+                jdbcType="CHAR"/>                
+  </typeHandlers>
+  
+  <environments default="default">
+    <environment id="default">
+      <transactionManager type="JDBC">
+      </transactionManager>
+      <dataSource type="POOLED">
+        <property name="driver" value="org.h2.Driver"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="sa"/>
+        <property name="password" value=""/>
+        
+      </dataSource>
+    </environment>
+  </environments>
+
+  <mappers>
+    <mapper resource="net/eric/tpc/persist/mapper/DatabaseInitMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/KeyStoreMapper.xml"/>
+  </mappers>
+  
+</configuration>

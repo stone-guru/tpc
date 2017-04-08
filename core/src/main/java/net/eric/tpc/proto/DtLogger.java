@@ -6,8 +6,8 @@ import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
-public interface DtLogger<B> {
-    void recordBeginTrans(TransStartRec startRec, B b, boolean isInitiator);
+public interface DtLogger {
+    void recordBeginTrans(TransStartRec startRec, Object b, boolean isInitiator);
 
     void recordVote(long xid, Vote vote);
 

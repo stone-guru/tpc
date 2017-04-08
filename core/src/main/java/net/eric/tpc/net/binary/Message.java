@@ -1,7 +1,6 @@
 package net.eric.tpc.net.binary;
 
 import java.io.Serializable;
-import java.util.Arrays;
 
 public class Message implements Serializable {
 
@@ -15,43 +14,42 @@ public class Message implements Serializable {
         };
     }
 
-    public static final String HEART_BEAT = "HEART_BEAT";
-    public static final String HEART_BEAT_ANSWER = "HEART_BEAT_ANSWER";
+    public static Message fromRequest(Message request, short command, short answer){
+        return new Message(request.xid, request.round, command, answer);
+    }
 
-    public static final String BEGIN_TRANS = "BEGIN_TRANS";
-    public static final String BEGIN_TRANS_ANSWER = "BEGIN_TRANS_ANSWER";
-
-    public static final String VOTE_REQ = "VOTE_REQ";
-    public static final String VOTE_ANSWER = "VOTE_ANSWER";
-
-    public static final String TRANS_DECISION = "TRANS_DECISION";
-
-    public static final String DECISION_QUERY = "DECISION_QUERY";
-    public static final String DECISION_ANSWER = "DECISION_ANSWER";
-
-    public static final String BAD_COMMNAD = "BAD_COMMAND";
-
-    public static final String ERROR = "ERROR";
-
-    public static final String YES = "YES";
-    public static final String NO = "NO";
-    public static final String UNKNOWN = "UNKNOWN";
-
-    public static final String TRANS_BILL = "TRANS_BILL";
-    public static final String TRANS_BILL_ANSWER = "TRANS_BILL_ANSWER";
-
-    public static final String BAD_DATA_PACKET = "BAD_DATA_PACKET";
-    public static final String WRONG_ANSWER = "WRONG_ANSWER";
-
-    public static final String PEER_PRTC_ERROR = "PEER_PRTC_ERROR";
+    public static Message fromRequest(Message request, short command, short answer, Object param){
+        return new Message(request.xid, request.round, command, answer, param, null);
+    }
 
     private short version = 1;
     private long xid = 7878748;
     private short round = 3;
     private short commandCode = 1;
     private short commandAnswer = 2;
-    private Object param ;
+    private Object param;
     private Object content;
+
+    public Message(){
+    }
+    
+    public Message(long xid, short round, short commandCode) {
+        this(xid, round, commandCode, (short) 0, null, null);
+    }
+
+    public Message(long xid, short round, short commandCode, short commandAnswer) {
+        this(xid, round, commandCode, commandAnswer, null, null);
+    }
+
+    public Message(long xid, short round, short commandCode, short commandAnswer, Object param, Object content) {
+        this.version = 11;
+        this.xid = xid;
+        this.round = round;
+        this.commandCode = commandCode;
+        this.commandAnswer = commandAnswer;
+        this.param = param;
+        this.content = content;
+    }
 
     public short getVersion() {
         return version;
@@ -112,7 +110,7 @@ public class Message implements Serializable {
     @Override
     public String toString() {
         return "Message [version=" + version + ", xid=" + xid + ", round=" + round + ", commandCode=" + commandCode
-                + ", commandAnswer=" + commandAnswer + ", param=" + String.valueOf(param)
-                + ", content=" + String.valueOf(content) + "]";
+                + ", commandAnswer=" + commandAnswer + ", param=" + String.valueOf(param) + ", content="
+                + String.valueOf(content) + "]";
     }
 }

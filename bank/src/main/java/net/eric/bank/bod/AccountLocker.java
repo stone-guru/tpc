@@ -1,4 +1,4 @@
-package net.eric.tpc.bank;
+package net.eric.bank.bod;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,11 +10,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
+import net.eric.bank.persist.AccountDao;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
-import net.eric.tpc.persist.AccountDao;
 
 public class AccountLocker {
     private ConcurrentHashMap<String, Long> keyMap = new ConcurrentHashMap<String, Long>();

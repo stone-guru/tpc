@@ -29,22 +29,22 @@ import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
-public class Panticipantor<B> implements PeerTransactionManager<B> {
+public class Panticipantor implements PeerTransactionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(Panticipantor.class);
     
-    private static Comparator<PeerTransactionState<?>> activeTimeComparator = new Comparator<PeerTransactionState<?>>(){
+    private static Comparator<PeerTransactionState> activeTimeComparator = new Comparator<PeerTransactionState>(){
         @Override
-        public int compare(PeerTransactionState<?> o1, PeerTransactionState<?> o2) {
+        public int compare(PeerTransactionState o1, PeerTransactionState o2) {
             return 0;
         }
     };
     
-    private ConcurrentSkipListMap<Long, PeerTransactionState<B>> transactionMap = new ConcurrentSkipListMap<Long, PeerTransactionState<B>>();
+    private ConcurrentSkipListMap<Long, PeerTransactionState> transactionMap = new ConcurrentSkipListMap<Long, PeerTransactionState>();
     private Timer timer = new Timer();
 
-    private DtLogger<B> dtLogger;
-    private PeerBizStrategy<B> bizStrategy;
+    private DtLogger dtLogger;
+    private PeerBizStrategy bizStrategy;
     private DecisionQuerier decisionQuerier;
     private ExecutorService taskPool = Executors.newFixedThreadPool(3);
     
@@ -70,16 +70,16 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     }
     
     @Override
-    public ActionStatus beginTrans(TransStartRec startRec, B bill) {
+    public <B> ActionStatus beginTrans(TransStartRec startRec, B bill) {
         assert (startRec != null);
         assert (bill != null);
 
-        PeerTransactionState<B> state = new PeerTransactionState<B>();
+        PeerTransactionState state = new PeerTransactionState();
         state.setStage(Stage.BEGIN);
         state.setXid(startRec.getXid());
         state.setTransStartRec(startRec);
 
-        PeerTransactionState<B> prev = transactionMap.putIfAbsent(startRec.xid(), state);
+        PeerTransactionState prev = transactionMap.putIfAbsent(startRec.xid(), state);
         if (prev != null) {
             return new ActionStatus(ErrorCode.XID_EXISTS, String.valueOf(startRec.xid()));
         }
@@ -98,7 +98,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     @Override
     public ActionStatus processVoteReq(long xid) {
-        PeerTransactionState<B> state = this.transactionMap.get(xid);
+        PeerTransactionState state = this.transactionMap.get(xid);
         if (state == null) {
             return new ActionStatus(ErrorCode.PEER_PRTC_ERROR, "no trans action for this xid " + xid);
         }
@@ -119,7 +119,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     @Override
     public void processTransDecision(long xid, Decision decision) {
-        PeerTransactionState<B> state = this.transactionMap.get(xid);
+        PeerTransactionState state = this.transactionMap.get(xid);
         if (state == null) {
             logger.info("processTransDecison,  trans not exists now" + xid);
             return;
@@ -148,14 +148,14 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     }
 
     private void timerTask() {
-        final List<PeerTransactionState<B>> outdatedTrans = Lists.newArrayList();
+        final List<PeerTransactionState> outdatedTrans = Lists.newArrayList();
         final long now = new Date().getTime();
         
         if (logger.isDebugEnabled()) {
             logger.debug("Panticipanter timer task");
         }
         for (long xid : this.transactionMap.keySet()) {
-            PeerTransactionState<B> state = this.transactionMap.get(xid);
+            PeerTransactionState state = this.transactionMap.get(xid);
             synchronized (state) {
                 if (state.isTimedout(now, 3000)) {
                     logger.debug(xid + " timed out!");
@@ -170,11 +170,11 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         }
     }
 
-    private Future<Void> processOutdatedTrans(List<PeerTransactionState<B>> outdatedTrans) {
+    private Future<Void> processOutdatedTrans(List<PeerTransactionState> outdatedTrans) {
         Callable<Void> task = new Callable<Void>() {
             @Override
             public Void call() {
-                for (PeerTransactionState<B> state : outdatedTrans) {
+                for (PeerTransactionState state : outdatedTrans) {
                     if (state.getStage() == Stage.BEGIN) { // WANT VOTE_REQ
                         Panticipantor.this.performAbort(state);// 直接放弃
                     } else if (state.getStage() == Stage.VOTED && state.getVote() == Vote.YES) {
@@ -217,7 +217,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         }
     };
 
-    private void performCommit(PeerTransactionState<B> state) {
+    private void performCommit(PeerTransactionState state) {
         if (logger.isDebugEnabled()) {
             logger.debug("do COMMIT actions");
         }
@@ -225,7 +225,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         state.setStage(Stage.ENDED);
     }
 
-    private void performAbort(PeerTransactionState<B> state) {
+    private void performAbort(PeerTransactionState state) {
         if (logger.isDebugEnabled()) {
             logger.debug("do Abort actions");
         }
@@ -233,7 +233,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         state.setStage(Stage.ENDED);
     }
 
-    private void hangUpTransaction(PeerTransactionState<B> state) {
+    private void hangUpTransaction(PeerTransactionState state) {
         if (logger.isDebugEnabled()) {
             logger.debug("Transaction blocked " + state.getXid());
         }
@@ -247,19 +247,19 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         this.decisionQuerier = decisionQuerier;
     }
 
-    public DtLogger<B> getDtLogger() {
+    public DtLogger getDtLogger() {
         return dtLogger;
     }
 
-    public void setDtLogger(DtLogger<B> dtLogger) {
+    public void setDtLogger(DtLogger dtLogger) {
         this.dtLogger = dtLogger;
     }
 
-    public PeerBizStrategy<B> getBizStrategy() {
+    public PeerBizStrategy getBizStrategy() {
         return bizStrategy;
     }
 
-    public void setBizStrategy(PeerBizStrategy<B> bizStrategy) {
+    public void setBizStrategy(PeerBizStrategy bizStrategy) {
         this.bizStrategy = bizStrategy;
     }
 }

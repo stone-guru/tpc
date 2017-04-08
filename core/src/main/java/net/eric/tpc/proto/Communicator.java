@@ -9,10 +9,10 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 
-public interface Communicator<B> {
+public interface Communicator {
     ActionStatus connectPanticipants(List<InetSocketAddress> nodes);
 
-    Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);
+    <B> Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);
 
     Future<RoundResult> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes);
 

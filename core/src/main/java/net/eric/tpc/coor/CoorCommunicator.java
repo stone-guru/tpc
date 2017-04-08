@@ -1,4 +1,4 @@
-package net.eric.tpc.coor.stub;
+package net.eric.tpc.coor;
 
 import static net.eric.tpc.base.Pair.asPair;
 
@@ -16,7 +16,6 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.net.MinaCommunicator;
@@ -27,7 +26,7 @@ import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 
-public class CoorCommunicator extends MinaCommunicator implements Communicator<TransferBill> {
+public class CoorCommunicator extends MinaCommunicator implements Communicator {
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
 
     public CoorCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool) {
@@ -40,10 +39,10 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator<T
     }
 
     @Override
-    public Future<RoundResult> askBeginTrans(TransStartRec transStartRec,
-            List<Pair<InetSocketAddress, TransferBill>> tasks) {
+    public <B> Future<RoundResult> askBeginTrans(TransStartRec transStartRec,
+            List<Pair<InetSocketAddress, B>> tasks) {
         List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
-        for (Pair<InetSocketAddress, TransferBill> p : tasks) {
+        for (Pair<InetSocketAddress, B> p : tasks) {
             final DataPacket packet = new DataPacket(DataPacket.BEGIN_TRANS, transStartRec.getXid(), transStartRec,
                     p.snd());
             requests.add(asPair(p.fst(), (Object) packet));

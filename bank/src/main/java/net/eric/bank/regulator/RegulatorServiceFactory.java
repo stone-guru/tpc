@@ -1,20 +1,20 @@
-package net.eric.tpc.regulator;
+package net.eric.bank.regulator;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.base.Optional;
 
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.net.PeerIoHandler;
+import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.biz.Validator;
-import net.eric.tpc.entity.TransferBill;
-import net.eric.tpc.net.PeerIoHandler;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Panticipantor;
 import net.eric.tpc.proto.PeerTransactionManager;
-import net.eric.tpc.service.BillSaveStrategy;
 
 public class RegulatorServiceFactory extends UniFactory {
     private static final String MY_CLASSIFER = "REGULATOR";

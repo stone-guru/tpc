@@ -1,14 +1,14 @@
-package net.eric.tpc.coor;
+package net.eric.bank.coor;
 
 import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
+import net.eric.bank.service.CommonServiceFactory;
 import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
 import net.eric.tpc.persist.PersisterFactory;
-import net.eric.tpc.service.CommonServiceFactory;
 
 public class CoorServer extends MinaServer {
     private static final String DEFAULT_BANK_CODE = "ABC";

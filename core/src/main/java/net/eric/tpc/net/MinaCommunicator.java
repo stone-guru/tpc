@@ -22,7 +22,7 @@ import net.eric.tpc.base.Either;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
-import net.eric.tpc.coor.stub.CoorCommunicator;
+import net.eric.tpc.coor.CoorCommunicator;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.CommunicationRound.WaitType;
 import net.eric.tpc.proto.RoundResult;

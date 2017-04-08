@@ -1,4 +1,4 @@
-package net.eric.tpc.coor.stub;
+package net.eric.bank.coor;
 
 import static net.eric.tpc.base.Pair.asPair;
 
@@ -11,17 +11,17 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
+import net.eric.bank.biz.BizCode;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.entity.AccountIdentity;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.biz.BizCode;
-import net.eric.tpc.biz.Validator;
 import net.eric.tpc.common.Configuration;
-import net.eric.tpc.entity.AccountIdentity;
-import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.CoorBizStrategy;
-import net.eric.tpc.service.BillSaveStrategy;
 
 public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(AbcBizStrategy.class);

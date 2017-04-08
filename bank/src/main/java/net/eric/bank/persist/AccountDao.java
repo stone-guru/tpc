@@ -1,10 +1,10 @@
-package net.eric.tpc.persist;
+package net.eric.bank.persist;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import net.eric.bank.entity.Account;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.entity.Account;
 
 public interface AccountDao {
 
