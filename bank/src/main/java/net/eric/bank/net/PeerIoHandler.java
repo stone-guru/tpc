@@ -13,14 +13,15 @@ import com.google.common.collect.ImmutableList;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
+import net.eric.tpc.entity.TransferBill;
 import net.eric.tpc.proto.PeerTransactionManager;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 
-public class PeerIoHandler<B> extends AbstractIoHandler {
+public class PeerIoHandler extends AbstractIoHandler {
     private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
-    private PeerTransactionManager<B> transManager;
+    private PeerTransactionManager<TransferBill> transManager;
 
     @Override
     protected List<RequestHandler> requestHandlers() {
@@ -30,7 +31,7 @@ public class PeerIoHandler<B> extends AbstractIoHandler {
                 new PeerDecisonQueryHandler());
     }
 
-    public void setTransManager(PeerTransactionManager<B> transManager) {
+    public void setTransManager(PeerTransactionManager<TransferBill> transManager) {
         this.transManager = transManager;
     }
 
@@ -40,13 +41,13 @@ public class PeerIoHandler<B> extends AbstractIoHandler {
             return DataPacket.BEGIN_TRANS;
         }
 
-        private Maybe<Pair<TransStartRec, B>> peekBizEntities(DataPacket request) {
+        private Maybe<Pair<TransStartRec, TransferBill>> peekBizEntities(DataPacket request) {
             Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam2(), TransStartRec.class, //
                     ErrorCode.BAD_DATA_PACKET, "param2 should be a TransStartRec");
             if (!startRec.isRight()) {
                 return Maybe.fail(startRec.getLeft());
             }
-            Maybe<B> bill = Maybe.safeCast(request.getParam3(), null , //FIXME TransferBill.class, //
+            Maybe<TransferBill> bill = Maybe.safeCast(request.getParam3(), TransferBill.class, //
                     ErrorCode.BAD_DATA_PACKET, "param3 should be a TransStartRec");
             if (!bill.isRight()) {
                 return Maybe.fail(bill.getLeft());
@@ -59,12 +60,12 @@ public class PeerIoHandler<B> extends AbstractIoHandler {
             DataPacket response = null;
             ActionStatus r = null;
 
-            Maybe<Pair<TransStartRec, B>> bizEntities = this.peekBizEntities(request);
+            Maybe<Pair<TransStartRec, TransferBill>> bizEntities = this.peekBizEntities(request);
             if (!bizEntities.isRight()) {
                 r = bizEntities.getLeft();
             } else {
                 TransStartRec startRec = bizEntities.getRight().fst();
-                B bill = bizEntities.getRight().snd();
+                TransferBill bill = bizEntities.getRight().snd();
                 r = PeerIoHandler.this.transManager.beginTrans(startRec, bill);
             }
             if (r.isOK()) {
