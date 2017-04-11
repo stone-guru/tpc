@@ -15,14 +15,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.net.CommunicationRound.WaitType;
-import net.eric.tpc.net.MinaChannel;
-import net.eric.tpc.net.MinaCommunicator;
+import net.eric.tpc.net.CommunicationRound.RoundType;
+import net.eric.tpc.net.mina.MinaChannel;
+import net.eric.tpc.net.BasicCommunicator;
 import net.eric.tpc.net.PeerResult;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.Types.ErrorCode;
 
-public class MinaCommunicatorApp extends MinaCommunicator {
+public class MinaCommunicatorApp extends BasicCommunicator {
 
     public static void main(String[] args) throws Exception {
         ExecutorService commuTaskPool = Executors.newCachedThreadPool();
@@ -100,13 +100,13 @@ public class MinaCommunicatorApp extends MinaCommunicator {
                 InetSocketAddress.createUnresolved("221.236.12.130", 80), //
                 InetSocketAddress.createUnresolved("www.sina.com", 80), //
                 InetSocketAddress.createUnresolved("www.cnblogs.com", 80));
-        this.connectPeers(nodes, WaitType.WAIT_ALL);
+        this.connectPeers(nodes, RoundType.WAIT_ALL);
 
         List<Pair<InetSocketAddress, Object>> requests = this.generateHttpCommand(nodes);
         Future<RoundResult> resultFuture = sendRequest(requests, new HttpHeaderAssembler());
         try {
             RoundResult result = resultFuture.get();
-            for (String s : result.okResultAs(MinaCommunicator.OBJECT_AS_STRING)) {
+            for (String s : result.okResultAs(BasicCommunicator.OBJECT_AS_STRING)) {
                 System.out.println(s);
             }
         } catch (InterruptedException e) {

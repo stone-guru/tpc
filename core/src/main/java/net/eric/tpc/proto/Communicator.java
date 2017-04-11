@@ -8,15 +8,12 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 
 public interface Communicator {
-    ActionStatus connectPanticipants(List<InetSocketAddress> nodes);
+    <B> Future<RoundResult<Boolean>> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);
 
-    <B> Future<RoundResult> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);
+    Future<RoundResult<Boolean>> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes);
 
-    Future<RoundResult> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes);
-
-    Future<RoundResult> gatherVote(long xid, List<InetSocketAddress> nodes);
-
-    void close();
+    Future<RoundResult<Boolean>> gatherVote(long xid, List<InetSocketAddress> nodes);
 }

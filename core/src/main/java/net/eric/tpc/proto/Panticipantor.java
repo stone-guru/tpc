@@ -107,7 +107,7 @@ public class Panticipantor implements PeerTransactionManager {
         }
 
         synchronized (state) {
-            ActionStatus voteResult = ActionStatus.force(state.getVoteFuture());
+            ActionStatus voteResult = FutureTk.statusForce(state.getVoteFuture());
             Vote vote = (voteResult.isOK()) ? Vote.YES : Vote.NO;
 
             state.setStage(Stage.VOTED);

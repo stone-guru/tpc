@@ -71,8 +71,8 @@ public class PeerIoHandler extends IoHandlerAdapter{
         
         
         if (result.getResponse().isPresent()) {
-            this.replyMessage(session, result.getResponse().get(), result.closeAfterSend());
-        } else if (result.closeAfterSend()) {
+            this.replyMessage(session, result.getResponse().get(), result.isCloseAfterSend());
+        } else if (result.isCloseAfterSend()) {
             session.closeOnFlush();
         }
     }

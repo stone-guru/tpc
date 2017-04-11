@@ -1,6 +1,12 @@
 package net.eric.tpc.net.binary;
 
 import java.io.Serializable;
+import java.net.SocketAddress;
+
+import net.eric.tpc.base.ActionStatus;
+import net.eric.tpc.base.Maybe;
+import net.eric.tpc.net.CommandCodes;
+import net.eric.tpc.proto.Types.ErrorCode;
 
 public class Message implements Serializable {
 
@@ -14,25 +20,33 @@ public class Message implements Serializable {
         };
     }
 
-    public static Message fromRequest(Message request, short command, short answer){
+    public static Message fromRequest(Message request, short command, short answer) {
         return new Message(request.xid, request.round, command, answer);
     }
 
-    public static Message fromRequest(Message request, short command, short answer, Object param){
+    public static Message fromRequest(Message request, short command, short answer, Object param) {
         return new Message(request.xid, request.round, command, answer, param, null);
     }
 
+    public static Maybe<Boolean> checkYesOrNo(short answer) {
+        return Maybe.fromCondition(answer == CommandCodes.YES || answer == CommandCodes.NO, //
+                CommandCodes.YES == answer, //
+                ErrorCode.PEER_PRTC_ERROR,
+                "want " + CommandCodes.YES + " or " + CommandCodes.NO + ", but got " + answer);
+    }
+
     private short version = 1;
-    private long xid = 7878748;
-    private short round = 3;
-    private short commandCode = 1;
-    private short commandAnswer = 2;
+    private long xid;
+    private short round;
+    private short commandCode;
+    private short commandAnswer;
     private Object param;
     private Object content;
-
-    public Message(){
-    }
+    private SocketAddress sender;
     
+    public Message() {
+    }
+
     public Message(long xid, short round, short commandCode) {
         this(xid, round, commandCode, (short) 0, null, null);
     }
@@ -49,6 +63,16 @@ public class Message implements Serializable {
         this.commandAnswer = commandAnswer;
         this.param = param;
         this.content = content;
+    }
+
+    public ActionStatus assureCommand(long xid, short command) {
+        if (command != this.commandCode) {
+            return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want " + command + " but got " + this.commandCode);
+        }
+        if (xid != this.xid) {
+            return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want xid " + xid + " but got " + this.xid);
+        }
+        return ActionStatus.OK;
     }
 
     public short getVersion() {
@@ -105,6 +129,19 @@ public class Message implements Serializable {
 
     public void setContent(Object content) {
         this.content = content;
+    }
+
+    public ActionStatus paramAsActionStatus(){
+        return (ActionStatus)this.param;
+    }
+    
+    
+    public SocketAddress getSender() {
+        return sender;
+    }
+
+    public void setSender(SocketAddress sender) {
+        this.sender = sender;
     }
 
     @Override

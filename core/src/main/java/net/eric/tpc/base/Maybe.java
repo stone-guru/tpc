@@ -63,6 +63,15 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         }
     }
 
+    public static <T> Maybe<T> fromCondition(boolean condition, T v, short errorCode, String description){
+        if(condition){
+            return success(v);
+        }
+        else{
+            return fail(errorCode, description);
+        }
+    }
+    
     public abstract <B> Maybe<B> castLeft();
     
     final static class Success<T> extends Maybe<T> {

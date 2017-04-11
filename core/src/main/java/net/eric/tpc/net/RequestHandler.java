@@ -25,11 +25,11 @@ public interface RequestHandler {
             this.closeAfterSend = closeAfterSend;
         }
 
-        boolean closeAfterSend() {
+        public boolean isCloseAfterSend() {
             return this.closeAfterSend;
         }
 
-        Optional<Message> getResponse() {
+        public Optional<Message> getResponse() {
             return Optional.fromNullable(response);
         }
     };

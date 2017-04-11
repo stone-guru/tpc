@@ -167,7 +167,9 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             int contentLength = in.getInt();
             msg.setParam(this.decodeObject(paramType, paramLength, in));
             msg.setContent(this.decodeObject(contentType, contentLength, in));
-
+            
+            msg.setSender(session.getRemoteAddress());
+            
             out.write(msg);
 
             return true;

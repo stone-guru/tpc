@@ -3,90 +3,93 @@ package net.eric.tpc.coor;
 import static net.eric.tpc.base.Pair.asPair;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.net.CommunicationRound.WaitType;
-import net.eric.tpc.net.DataPacket;
-import net.eric.tpc.net.MinaCommunicator;
-import net.eric.tpc.net.PeerResult;
+import net.eric.tpc.net.BasicCommunicator;
+import net.eric.tpc.net.CommandCodes;
+import net.eric.tpc.net.CommunicationRound.RoundType;
+import net.eric.tpc.net.PeerChannel;
+import net.eric.tpc.net.TaskPoolProvider;
+import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 
-public class CoorCommunicator extends MinaCommunicator implements Communicator {
+public class CoorCommunicator extends BasicCommunicator<Message> implements Communicator {
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
 
-    public CoorCommunicator(ExecutorService commuTaskPool, ExecutorService sequenceTaskPool) {
-        super(commuTaskPool, sequenceTaskPool);
+    public CoorCommunicator(TaskPoolProvider poolProvider, List<PeerChannel<Message>> channels) {
+        super(poolProvider, channels);
     }
 
     @Override
-    public ActionStatus connectPanticipants(List<InetSocketAddress> nodes) {
-        return super.connectPeers(nodes, WaitType.WAIT_ALL);
-    }
-
-    @Override
-    public <B> Future<RoundResult> askBeginTrans(TransStartRec transStartRec,
+    public <B> Future<RoundResult<Boolean>> askBeginTrans(TransStartRec transStartRec,
             List<Pair<InetSocketAddress, B>> tasks) {
-        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
+        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
         for (Pair<InetSocketAddress, B> p : tasks) {
-            final DataPacket packet = new DataPacket(DataPacket.BEGIN_TRANS, transStartRec.getXid(), transStartRec,
-                    p.snd());
-            requests.add(asPair(p.fst(), (Object) packet));
+            final Message packet = new Message(transStartRec.getXid(), (short) 0, //
+                    CommandCodes.BEGIN_TRANS, (short) 0, transStartRec, p.snd());
+            requests.add(asPair(p.fst(), packet));
         }
 
-        return this.sendRequest(requests, //
-                new YesOrNoAssembler(DataPacket.BEGIN_TRANS_ANSWER, //
-                        ErrorCode.REFUSE_TRANS, transStartRec.getXid()));
+        @SuppressWarnings("unchecked")
+        final Future<RoundResult<Boolean>> result = super.communicate(requests, //
+                RoundType.WAIT_ALL, //
+                new YesOrNoAssembler(transStartRec.getXid(), //
+                        CommandCodes.BEGIN_TRANS_ANSWER, ErrorCode.REFUSE_TRANS));
+
+        return result;
     }
 
     @Override
-    public Future<RoundResult> gatherVote(long xid, List<InetSocketAddress> nodes) {
-        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
+    public Future<RoundResult<Boolean>> gatherVote(long xid, List<InetSocketAddress> nodes) {
+        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
         for (InetSocketAddress node : nodes) {
-            final DataPacket packet = new DataPacket(DataPacket.VOTE_REQ, xid, "");
-            requests.add(asPair(node, (Object) packet));
+            final Message packet = new Message(xid, (short) 1, CommandCodes.VOTE_REQ);
+            requests.add(asPair(node, packet));
         }
 
-        return this.sendRequest(requests, //
-                new YesOrNoAssembler(DataPacket.VOTE_ANSWER, ErrorCode.REFUSE_COMMIT, xid));
+        return super.communicate(requests, RoundType.WAIT_ALL,//
+                new YesOrNoAssembler(xid, CommandCodes.VOTE_ANSWER, ErrorCode.REFUSE_COMMIT));
     }
 
     @Override
-    public Future<RoundResult> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes) {
-        List<Pair<InetSocketAddress, Object>> requests = Lists.newArrayList();
+    public Future<RoundResult<Boolean>> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes) {
+        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
 
         for (InetSocketAddress node : nodes) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Send " + decision + " to " + node);
             }
-            String code = null;
+            short code = 0;
             if (decision == Decision.COMMIT) {
-                code = DataPacket.YES;
+                code = CommandCodes.YES;
             } else if (decision == Decision.ABORT) {
-                code = DataPacket.NO;
+                code = CommandCodes.NO;
             } else {
                 throw new UnImplementedException();
             }
 
-            final DataPacket packet = new DataPacket(DataPacket.TRANS_DECISION, xid, code);
-            requests.add(asPair(node, (Object) packet));
+            final Message packet = new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code);
+            requests.add(asPair(node, packet));
         }
 
-        return this.sendMessage(requests);
+        return this.notify(requests, RoundType.WAIT_ALL);
     }
 
     /**
@@ -99,28 +102,26 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator {
      * 若满足上述检查，就调用{@link DataPacketAssembler#processDataPacket}来进行进一步的处理，子类须实现此方法。
      *
      */
-    private static abstract class DataPacketAssembler extends PeerResult.OneItemAssembler {
-        private String code;
+    private static abstract class DataPacketAssembler<R> implements Function<Object, Maybe<R>> {
+        private short code;
         private long xid;
 
-        public DataPacketAssembler(String code, long xid) {
+        public DataPacketAssembler(long xid, short code) {
             this.code = code;
             this.xid = xid;
         }
 
         @Override
-        public PeerResult start(InetSocketAddress node, Object message) {
-            if (message == null || !(message instanceof DataPacket)) {
-                return PeerResult.fail(node,
-                        ActionStatus.create(ErrorCode.BAD_DATA_PACKET, "message is not DataPacket"));
+        public Maybe<R> apply(Object obj) {
+            if (obj == null || !(obj instanceof Message)) {
+                return Maybe.fail(ErrorCode.BAD_DATA_PACKET, "message is not DataPacket");
             }
-            DataPacket packet = (DataPacket) message;
-            ActionStatus status = packet.assureParam1(this.code, this.xid);
-            if (status.isOK()) {
-                return this.processDataPacket(node, packet);
-            } else {
-                return PeerResult.fail(node, status);
+            Message message = (Message) obj;
+            ActionStatus status = message.assureCommand(this.xid, this.code);
+            if (!status.isOK()) {
+                return Maybe.fail(status);
             }
+            return this.processDataPacket(message);
         }
 
         /**
@@ -130,33 +131,28 @@ public class CoorCommunicator extends MinaCommunicator implements Communicator {
          * @param packet 收到的dataPacket, 此DataPacket已满足前述要求。
          * @return PeerResult not null, 通讯结果
          */
-        abstract protected PeerResult processDataPacket(InetSocketAddress node, DataPacket packet);
+        abstract protected Maybe<R> processDataPacket(Message packet);
     }
 
-    private static final class YesOrNoAssembler extends DataPacketAssembler {
+    private static final class YesOrNoAssembler extends DataPacketAssembler<Boolean> {
         private short refuseCode;
 
-        public YesOrNoAssembler(String code, short refuseCode, long xid) {
-            super(code, xid);
+        public YesOrNoAssembler(long xid, short commandCode, short refuseCode) {
+            super(xid, commandCode);
             this.refuseCode = refuseCode;
         }
 
         @Override
-        protected PeerResult processDataPacket(InetSocketAddress node, DataPacket packet) {
-            Maybe<Boolean> maybe = DataPacket.checkYesOrNo(packet.getParam2());
-            if (!maybe.isRight()) {
-                return PeerResult.fail(node, maybe.getLeft());
+        protected Maybe<Boolean> processDataPacket(Message packet) {
+            Maybe<Boolean> maybe = Message.checkYesOrNo(packet.getCommandAnswer());
+            if (!maybe.isRight() || maybe.getRight() == true) {
+                return maybe;
             }
-            boolean accept = maybe.getRight();
-            if (accept) {
-                return PeerResult.approve(node, true);
-            } else {
-                return PeerResult.refuse(node, this.refuseCode, //
-                        this.formatReason(node, (ActionStatus) packet.getParam3()));
-            }
+            return Maybe.fail(this.refuseCode, //
+                    this.formatReason(packet.getSender(), packet.paramAsActionStatus()));
         }
 
-        private String formatReason(InetSocketAddress node, Object param3) {
+        private String formatReason(SocketAddress node, Object param3) {
             if (ActionStatus.class.isInstance(param3)) {
                 ActionStatus status = (ActionStatus) param3;
                 return String.format("%s, %s, %s", node.toString(), status.getCode(), status.getDescription());

@@ -43,7 +43,7 @@ public class RequestHandlers {
 
         private Maybe<Pair<TransStartRec, Object>> peekBizEntities(Message request) {
             Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam(), TransStartRec.class, //
-                    ErrorCode.BAD_DATA_PACKET, "param2 should be a TransStartRec");
+                    ErrorCode.BAD_DATA_PACKET, "param should be a TransStartRec");
             if (!startRec.isRight()) {
                 return Maybe.fail(startRec.getLeft());
             }

@@ -27,16 +27,7 @@ public class ActionStatus implements Serializable {
     public static final ActionStatus peerNoReplay(InetSocketAddress node){
         return new ActionStatus(Codes.PEER_NO_REPLY, node.toString());
     }
-    
-    public static ActionStatus force(Future<ActionStatus> future) {
-        try {
-            ActionStatus result = future.get();
-            return result;
-        } catch (Exception e) {
-            return ActionStatus.innerError(e.getMessage());
-        }
-    }
-    
+
     public static ActionStatus create(short code, String description) {
         return new ActionStatus(code, description);
     }

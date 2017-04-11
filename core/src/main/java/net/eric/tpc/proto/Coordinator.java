@@ -8,12 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Either;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
+import net.eric.tpc.proto.Types.Vote;
 
 public class Coordinator<B> implements TransactionManager<B> {
 
@@ -59,7 +59,7 @@ public class Coordinator<B> implements TransactionManager<B> {
             }
 
             this.dtLogger.recordDecision(xid, Decision.COMMIT);
-            Future<RoundResult> notifyFuture = communicator.notifyDecision(xid, Decision.COMMIT, peers);
+            Future<RoundResult<Boolean>> notifyFuture = communicator.notifyDecision(xid, Decision.COMMIT, peers);
 
             @SuppressWarnings("unused")
             Future<Void> canNotCare = this.getBizStrategy().commit(xid, this.finishTransListener);
@@ -91,12 +91,11 @@ public class Coordinator<B> implements TransactionManager<B> {
     private ActionStatus processVote(long xid, TaskPartition<B> task, Communicator communicator) {
         final List<InetSocketAddress> peers = task.getParticipants();
         Future<ActionStatus> selfVoteFuture = getBizStrategy().prepareCommit(xid, task.getCoorTask());
-        Future<RoundResult> peersVoteFuture = communicator.gatherVote(xid, peers);
+        Future<RoundResult<Boolean>> peersVoteFuture = communicator.gatherVote(xid, peers);
 
-        // this.dtLogger.recordStart2PC(xid);
 
-        ActionStatus voteResult = ActionStatus.force(selfVoteFuture);
-        ActionStatus peersVoteResult = RoundResult.force(peersVoteFuture);
+        ActionStatus voteResult = FutureTk.statusForce(selfVoteFuture);
+        ActionStatus peersVoteResult = FutureTk.resultForce(peersVoteFuture);
 
         if (voteResult.isOK() && peersVoteResult.isOK()) {
             return ActionStatus.OK;
@@ -106,7 +105,7 @@ public class Coordinator<B> implements TransactionManager<B> {
             throw new ShouldNotHappenException();
         }
 
-        RoundResult voteCommuResult = null;
+        RoundResult<Boolean> voteCommuResult = null;
         try {
             voteCommuResult = peersVoteFuture.get();
         } catch (Exception e) {
@@ -123,10 +122,10 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private ActionStatus askBeginTrans(long xid, TaskPartition<B> task, Communicator communicator) {
         TransStartRec transStart = new TransStartRec(xid, getSelf(), task.getParticipants());
-        Future<RoundResult> beginTransFuture = communicator.askBeginTrans(transStart, task.getPeerTasks());
+        Future<RoundResult<Boolean>> beginTransFuture = communicator.askBeginTrans(transStart, task.getPeerTasks());
         this.dtLogger.recordBeginTrans(transStart, task.getCoorTask(), true);
 
-        ActionStatus result = RoundResult.force(beginTransFuture);
+        ActionStatus result = FutureTk.resultForce(beginTransFuture);
         if (result.isOK()) {
             return result;
         }
