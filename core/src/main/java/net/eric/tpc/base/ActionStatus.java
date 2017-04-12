@@ -2,7 +2,6 @@ package net.eric.tpc.base;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Future;
 
 public class ActionStatus implements Serializable {
 

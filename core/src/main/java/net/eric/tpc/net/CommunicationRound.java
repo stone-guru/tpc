@@ -10,13 +10,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.function.BiFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.Futures;
 
@@ -91,6 +89,9 @@ public class CommunicationRound<R> implements RoundResult<R> {
     }
 
     public void regResult(InetSocketAddress node, Maybe<R> result) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("regResult " + node.toString() + ", " + result.toString());
+        }
         if (!this.isWithinRound()) {
             return;
         }
@@ -99,12 +100,13 @@ public class CommunicationRound<R> implements RoundResult<R> {
             throw new ShouldNotHappenException(node + "is not communication target");
         }
 
-        Optional<Maybe<R>> prev = null;
+        Optional<Maybe<R>> inserted = null;
+        Optional<Maybe<R>> myValue =  Optional.of(result);
         try {
-            prev = resultMap.merge(node, Optional.of(result), (p, v) -> p.isPresent() ? p : v);
+            inserted = resultMap.merge(node, myValue, (p, v) -> p.isPresent() ? p : v);
         } finally {
             // prev 代表了是从原来的空 到 现在的有，否则就是被放弃的结果了
-            if (prev.isPresent()) {
+            if (inserted != myValue) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("result for " + node + "has registered, abandom laters");
                 }
@@ -126,13 +128,13 @@ public class CommunicationRound<R> implements RoundResult<R> {
 
     @Override
     public boolean isAllDone() {
-        return resultMap.searchValues(1000, r -> !r.isPresent()) == null;
+        return resultMap.searchValues(1000, r -> !r.isPresent()? r : null ) == null;
     }
 
     @Override
     public boolean isAllOK() {
         return resultMap.searchValues(1000, //
-                r -> !r.isPresent() || !r.get().isRight()) == null;
+                r -> (!r.isPresent() || !r.get().isRight())? r : null) == null;
     }
 
     @Override
@@ -144,11 +146,11 @@ public class CommunicationRound<R> implements RoundResult<R> {
     @Override
     public ActionStatus getAnError() {
         ActionStatus err = resultMap.searchValues(1000, //
-                r -> r.isPresent() && !r.get().isRight() ? null : r.get().getLeft());
+                r -> r.isPresent() && !r.get().isRight() ? r.get().getLeft() : null);
         if (err != null) {
             return err;
         }
-        return ActionStatus.innerError("No any result");
+        return ActionStatus.innerError("No any error");
     }
 
     @Override

@@ -1,4 +1,4 @@
-package net.eric.tpc.net;
+package net.eric.tpc.net.mina;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,12 +14,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.eric.tpc.base.ShouldNotHappenException;
+import net.eric.tpc.net.RequestHandler;
+import net.eric.tpc.net.TransSession;
 import net.eric.tpc.net.RequestHandler.ProcessResult;
 import net.eric.tpc.net.binary.Message;
 
-public class PeerIoHandler extends IoHandlerAdapter{
+public class PeerIoHandler extends IoHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(PeerIoHandler.class);
-    
+
     private static final RequestHandler UnknownCommandHandler = new RequestHandler() {
         @Override
         public short getCorrespondingCode() {
@@ -35,19 +37,18 @@ public class PeerIoHandler extends IoHandlerAdapter{
     private Map<Short, RequestHandler> requestHandlerMap;;
     private ExecutorService taskPool;
     private TransSession transSession = new TransSession();
-    
-    
-    public PeerIoHandler(List<RequestHandler>  handlers){
+
+    public PeerIoHandler(List<RequestHandler> handlers) {
         this.initRequestHandlerMap(handlers);
     }
-    
-    private void initRequestHandlerMap(List<RequestHandler>  handlers) {
+
+    private void initRequestHandlerMap(List<RequestHandler> handlers) {
         requestHandlerMap = new HashMap<Short, RequestHandler>();
         for (RequestHandler h : handlers) {
             requestHandlerMap.put(h.getCorrespondingCode(), h);
         }
     }
-    
+
     protected RequestHandler getRequestHandler(short code) {
         RequestHandler handler = requestHandlerMap.get(code);
         if (handler == null) {
@@ -55,7 +56,7 @@ public class PeerIoHandler extends IoHandlerAdapter{
         }
         return handler;
     }
-    
+
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         if (logger.isDebugEnabled()) {
@@ -65,16 +66,13 @@ public class PeerIoHandler extends IoHandlerAdapter{
         Message request = (Message) message;
 
         RequestHandler handler = this.getRequestHandler(request.getCommandCode());
-        System.out.println("Got handler " + handler);
-        
+
         final ProcessResult result = handler.process(transSession, request);
-        
-        
-        if (result.getResponse().isPresent()) {
+
+        if (result.getResponse().isPresent())
             this.replyMessage(session, result.getResponse().get(), result.isCloseAfterSend());
-        } else if (result.isCloseAfterSend()) {
+        else if (result.isCloseAfterSend())
             session.closeOnFlush();
-        }
     }
 
     private void replyMessage(final IoSession session, final Message packet, boolean closeAfterSend) {

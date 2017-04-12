@@ -15,6 +15,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
 abstract public class UniFactory {
+    @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(UniFactory.class);
     private static List<UniFactory> factories = new ArrayList<UniFactory>();
     private static final int MAX_NEST_DEPTH = 100;

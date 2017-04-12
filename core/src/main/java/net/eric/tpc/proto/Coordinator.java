@@ -13,7 +13,6 @@ import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
-import net.eric.tpc.proto.Types.Vote;
 
 public class Coordinator<B> implements TransactionManager<B> {
 

@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
@@ -21,12 +22,13 @@ import net.eric.tpc.proto.Types.ErrorCode;
 
 public class BasicCommunicator<M> {
 
+    @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(BasicCommunicator.class);
-    
-    protected Map<InetSocketAddress, PeerChannel<M>> channelMap = Collections.emptyMap();
-    protected AtomicReference<CommunicationRound<?>> roundRef = new AtomicReference<CommunicationRound<?>>(null);
+
+    private Map<InetSocketAddress, PeerChannel<M>> channelMap = Collections.emptyMap();
+    private AtomicReference<CommunicationRound<?>> roundRef = new AtomicReference<CommunicationRound<?>>(null);
     private TaskPoolProvider poolProvider;
-    
+
     public BasicCommunicator(TaskPoolProvider poolProvider, List<PeerChannel<M>> channels) {
         this.poolProvider = poolProvider;
 
@@ -59,7 +61,8 @@ public class BasicCommunicator<M> {
 
     public <R> Future<RoundResult<R>> communicate(List<Pair<InetSocketAddress, M>> messages, final RoundType roundType,
             Function<Object, Maybe<R>> assembler) {
-        final CommunicationRound<R> round = new CommunicationRound<R>(Pair.projectFirst(messages), roundType, assembler);
+        final CommunicationRound<R> round = new CommunicationRound<R>(Pair.projectFirst(messages), roundType,
+                assembler);
 
         Runnable startAction = new Runnable() {
             @Override
@@ -72,15 +75,18 @@ public class BasicCommunicator<M> {
                         round.regResult(node, Maybe.fail(ErrorCode.PEER_NOT_CONNECTED, node.toString()));
                     } else {
                         @SuppressWarnings("unused")
-                        Future<Boolean> f = channel.request(p.snd(), round );
+                        Future<Boolean> f = channel.request(p.snd(), round);
                     }
-                    ;
                 }
             }
         };
 
         this.poolProvider.getSequenceTaskPool().submit(startAction);
         return round.getResult(poolProvider.getCommuTaskPool());
+    }
+
+    public List<PeerChannel<M>> getChannels() {
+        return ImmutableList.copyOf(channelMap.values());
     }
 
 }

@@ -4,11 +4,9 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
-import net.eric.tpc.proto.Types.Vote;
 
 public interface Communicator {
     <B> Future<RoundResult<Boolean>> askBeginTrans(TransStartRec transStartRec, List<Pair<InetSocketAddress, B>> tasks);

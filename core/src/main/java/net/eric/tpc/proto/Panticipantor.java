@@ -33,6 +33,7 @@ public class Panticipantor implements PeerTransactionManager {
 
     private static final Logger logger = LoggerFactory.getLogger(Panticipantor.class);
     
+    @SuppressWarnings("unused")
     private static Comparator<PeerTransactionState> activeTimeComparator = new Comparator<PeerTransactionState>(){
         @Override
         public int compare(PeerTransactionState o1, PeerTransactionState o2) {

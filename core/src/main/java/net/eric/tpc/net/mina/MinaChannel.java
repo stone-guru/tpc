@@ -13,8 +13,6 @@ import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
-
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.PeerChannel;
@@ -39,9 +37,12 @@ public class MinaChannel<T> implements PeerChannel<T> {
         return (MinaChannel<A>) session.getAttribute(channelKey);
     }
 
-    public MinaChannel(IoSession session, ExecutorService commuTaskPool) {
+    public MinaChannel(InetSocketAddress peer, IoSession session, ExecutorService commuTaskPool) {
         this.commuTaskPool = commuTaskPool;
         this.session = session;
+        this.peer = peer;
+        
+        putChannelToSession(this, session);
     }
 
     @Override
@@ -56,6 +57,7 @@ public class MinaChannel<T> implements PeerChannel<T> {
                 final WriteFuture writeFuture = session.write(message);
                 writeFuture.awaitUninterruptibly();
                 if (!writeFuture.isWritten()) {
+                    logger.error("MinaChannel request", writeFuture.getException());
                     String errMessage = (writeFuture.getException() != null) ? writeFuture.getException().getMessage()
                             : "";
                     round.regResult(MinaChannel.this.peer, Maybe.fail(ErrorCode.SEND_ERROR, errMessage));
@@ -91,8 +93,11 @@ public class MinaChannel<T> implements PeerChannel<T> {
         return commuTaskPool.submit(action);
     }
 
+    
     public CommunicationRound<T> getRound() {
-        return (CommunicationRound<T>) this.roundRef.get();
+        @SuppressWarnings("unchecked")
+        final CommunicationRound<T> round = (CommunicationRound<T>) this.roundRef.get(); 
+        return round;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package net.eric.tpc.coor;
+package net.eric.tpc.net;
 
 import static net.eric.tpc.base.Pair.asPair;
 
@@ -17,18 +17,13 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.net.BasicCommunicator;
-import net.eric.tpc.net.CommandCodes;
 import net.eric.tpc.net.CommunicationRound.RoundType;
-import net.eric.tpc.net.PeerChannel;
-import net.eric.tpc.net.TaskPoolProvider;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
-import net.eric.tpc.proto.Types.Vote;
 
 public class CoorCommunicator extends BasicCommunicator<Message> implements Communicator {
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicator.class);
@@ -47,7 +42,6 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
             requests.add(asPair(p.fst(), packet));
         }
 
-        @SuppressWarnings("unchecked")
         final Future<RoundResult<Boolean>> result = super.communicate(requests, //
                 RoundType.WAIT_ALL, //
                 new YesOrNoAssembler(transStartRec.getXid(), //

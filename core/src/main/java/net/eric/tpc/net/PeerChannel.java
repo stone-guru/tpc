@@ -3,10 +3,6 @@ package net.eric.tpc.net;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Future;
 
-import com.google.common.base.Function;
-
-import net.eric.tpc.base.Maybe;
-
 public interface PeerChannel<T> {
     InetSocketAddress getPeer();
 

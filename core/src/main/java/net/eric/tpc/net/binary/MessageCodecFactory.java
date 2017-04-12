@@ -19,7 +19,6 @@ import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 import org.apache.mina.filter.codec.ProtocolEncoder;
 import org.apache.mina.filter.codec.ProtocolEncoderOutput;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 
@@ -43,20 +42,26 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         this(Collections.emptyList());
     }
 
-    public MessageCodecFactory(List<ObjectCodec> objectCodecs) {
-        ImmutableList.Builder<ObjectCodec> listBuilder = ImmutableList.builder();
-        //listBuilder.add(new SerializeCodec(ActionStatus.class, Message.TypeCode.ACTION_STATUS));
-        //listBuilder.add(new SerializeCodec(TransStartRec.class, Message.TypeCode.TRANS_START_REC));
+    public MessageCodecFactory(List<ObjectCodec> extraCodecs) {
+        List<ObjectCodec> codecs= new ArrayList<ObjectCodec>(extraCodecs.size() + 4);
+        // listBuilder.add(new SerializeCodec(ActionStatus.class,
+        // Message.TypeCode.ACTION_STATUS));
+        // listBuilder.add(new SerializeCodec(TransStartRec.class,
+        // Message.TypeCode.TRANS_START_REC));
         // listBuilder.add(new SerializeCodec(TransferBill.class,
         // Message.TypeCode.TRANSFER_BILL));
-        listBuilder.add(new ActionStatusCodec());
-        listBuilder.add(new TransStartRecCodec());
-        //listBuilder.add(new TransferBillCodec());
+
+        codecs.add(new ActionStatusCodec());
+        codecs.add(new TransStartRecCodec());
+        for(ObjectCodec c: extraCodecs){
+            codecs.add(c);
+        }
+        // listBuilder.add(new TransferBillCodec());
 
         Builder<Short, ObjectCodec> codeMapBuilder = ImmutableMap.builder();
         Builder<Class<?>, ObjectCodec> classMapBuilder = ImmutableMap.builder();
 
-        for (ObjectCodec c : listBuilder.build()) {
+        for (ObjectCodec c : codecs) {
             codeMapBuilder.put(c.getTypeCode(), c);
             classMapBuilder.put(c.getObjectClass(), c);
         }
@@ -167,9 +172,9 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             int contentLength = in.getInt();
             msg.setParam(this.decodeObject(paramType, paramLength, in));
             msg.setContent(this.decodeObject(contentType, contentLength, in));
-            
+
             msg.setSender(session.getRemoteAddress());
-            
+
             out.write(msg);
 
             return true;

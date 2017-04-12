@@ -133,5 +133,10 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         public <B> Maybe<B> castLeft() {
             return (Maybe<B>)this;
         }
+        
+        @Override
+        public String toString(){
+            return "Fail " + this.status.toString();
+        }
     }
 }

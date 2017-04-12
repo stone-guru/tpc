@@ -42,7 +42,6 @@ public class DtLoggerTest {
         UniFactory.register(new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc"));
 
         TestUtil.clearTable("DT_RECORD", "org.h2.Driver", url, "sa", "");
-        @SuppressWarnings("unchecked")
         DtLogger dtLogger = UniFactory.getObject(DtLogger.class);
 
         for (int i = 0; i < 30; i++) {
