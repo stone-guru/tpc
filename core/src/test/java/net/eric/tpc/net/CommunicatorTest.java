@@ -180,13 +180,12 @@ public class CommunicatorTest {
         }
     }
     
-    private static class IntTransactionManager implements PeerTransactionManager{
+    private static class IntTransactionManager  implements PeerTransactionManager<Integer>{
 
         @Override
-        public <B> ActionStatus beginTrans(TransStartRec transNode, B b) {
-            logger.info("BeginTrans " + transNode + ", " + String.valueOf(b));
-            int x = (Integer)b;
-            if(x % 2 == 1)
+        public ActionStatus beginTrans(TransStartRec transNode, Integer i) {
+            logger.info("BeginTrans " + transNode + ", " + String.valueOf(i));
+            if(i.intValue() % 2 == 1)
                 return ActionStatus.OK;
             else
                 return new ActionStatus((short)2001, "I dislike even");

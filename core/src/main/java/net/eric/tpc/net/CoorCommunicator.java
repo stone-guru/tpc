@@ -33,14 +33,14 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
     }
 
     @Override
-    public <B> Future<RoundResult<Boolean>> askBeginTrans(TransStartRec transStartRec,
+    public <B> Future<RoundResult<Boolean>> askBeginTrans(//
+            TransStartRec transStartRec, //
             List<Pair<InetSocketAddress, B>> tasks) {
-        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
-        for (Pair<InetSocketAddress, B> p : tasks) {
-            final Message packet = new Message(transStartRec.getXid(), (short) 0, //
-                    CommandCodes.BEGIN_TRANS, (short) 0, transStartRec, p.snd());
-            requests.add(asPair(p.fst(), packet));
-        }
+        List<Pair<InetSocketAddress, Message>> requests = Pair.map2(tasks, //
+                (addr, b) -> {
+                    return new Message(transStartRec.getXid(), (short) 0, //
+                            CommandCodes.BEGIN_TRANS, (short) 0, transStartRec, b);
+                });
 
         final Future<RoundResult<Boolean>> result = super.communicate(requests, //
                 RoundType.WAIT_ALL, //
@@ -52,36 +52,32 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
 
     @Override
     public Future<RoundResult<Boolean>> gatherVote(long xid, List<InetSocketAddress> nodes) {
-        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
-        for (InetSocketAddress node : nodes) {
-            final Message packet = new Message(xid, (short) 1, CommandCodes.VOTE_REQ);
-            requests.add(asPair(node, packet));
-        }
+        List<Pair<InetSocketAddress, Message>> requests = Lists.transform(nodes, //
+                node -> asPair(node, new Message(xid, (short) 1, CommandCodes.VOTE_REQ)));
 
-        return super.communicate(requests, RoundType.WAIT_ALL,//
+        return super.communicate(requests, RoundType.WAIT_ALL, //
                 new YesOrNoAssembler(xid, CommandCodes.VOTE_ANSWER, ErrorCode.REFUSE_COMMIT));
     }
 
     @Override
     public Future<RoundResult<Boolean>> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes) {
-        List<Pair<InetSocketAddress, Message>> requests = Lists.newArrayList();
+        List<Pair<InetSocketAddress, Message>> requests = Lists.transform(nodes, //
+                node -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Send " + decision + " to " + node);
+                    }
+                    short code = 0;
+                    if (decision == Decision.COMMIT) {
+                        code = CommandCodes.YES;
+                    } else if (decision == Decision.ABORT) {
+                        code = CommandCodes.NO;
+                    } else {
+                        throw new UnImplementedException();
+                    }
 
-        for (InetSocketAddress node : nodes) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Send " + decision + " to " + node);
-            }
-            short code = 0;
-            if (decision == Decision.COMMIT) {
-                code = CommandCodes.YES;
-            } else if (decision == Decision.ABORT) {
-                code = CommandCodes.NO;
-            } else {
-                throw new UnImplementedException();
-            }
-
-            final Message packet = new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code);
-            requests.add(asPair(node, packet));
-        }
+                    return asPair(node, //
+                            new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code));
+                });
 
         return this.notify(requests, RoundType.WAIT_ALL);
     }

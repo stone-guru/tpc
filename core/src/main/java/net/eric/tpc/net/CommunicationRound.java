@@ -4,12 +4,16 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +29,7 @@ import net.eric.tpc.proto.RoundResult;
 
 public class CommunicationRound<R> implements RoundResult<R> {
     private static final Logger logger = LoggerFactory.getLogger(CommunicationRound.class);
+    private static Timer timer = new Timer("Latch_cleaner");
 
     public static enum RoundType {
         WAIT_ALL, WAIT_ONE
@@ -38,6 +43,8 @@ public class CommunicationRound<R> implements RoundResult<R> {
     private CountDownHolder latch;
     private Function<Object, Maybe<R>> assembler;
 
+    private static LatchCleaner cleaner = new LatchCleaner(100);
+    
     public CommunicationRound(List<InetSocketAddress> peers, RoundType waitType) {
         this(peers, waitType, o -> {
             throw new IllegalStateException("This round is not for message receiving");
@@ -63,21 +70,38 @@ public class CommunicationRound<R> implements RoundResult<R> {
         return this.wantedCount;
     }
 
-    public Future<RoundResult<R>> getResult(ExecutorService pool) {
+    public Future<RoundResult<R>> getResult(ExecutorService pool, long delay) {
         if (!this.isWithinRound()) {
             return Futures.immediateFuture(this);
         }
         Callable<RoundResult<R>> task = new Callable<RoundResult<R>>() {
             public RoundResult<R> call() throws Exception {
+                CommunicationRound.this.latch.setWaitMillis(delay);
+                CommunicationRound.cleaner.addLatch(CommunicationRound.this.latch);
                 CommunicationRound.this.latch.await();
                 return CommunicationRound.this;
             }
         };
+
         return pool.submit(task);
+    }
+
+    public Future<RoundResult<R>> getResult(ExecutorService pool) {
+        return this.getResult(pool, 2000);
     }
 
     public void clearLatch() {
         this.latch.clear();
+    }
+
+    public void startLatchCleaner(long delay) {
+        final TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                CommunicationRound.this.clearLatch();
+            }
+        };
+        timer.schedule(task, delay);
     }
 
     public boolean isWithinRound() {
@@ -101,7 +125,7 @@ public class CommunicationRound<R> implements RoundResult<R> {
         }
 
         Optional<Maybe<R>> inserted = null;
-        Optional<Maybe<R>> myValue =  Optional.of(result);
+        Optional<Maybe<R>> myValue = Optional.of(result);
         try {
             inserted = resultMap.merge(node, myValue, (p, v) -> p.isPresent() ? p : v);
         } finally {
@@ -128,13 +152,13 @@ public class CommunicationRound<R> implements RoundResult<R> {
 
     @Override
     public boolean isAllDone() {
-        return resultMap.searchValues(1000, r -> !r.isPresent()? r : null ) == null;
+        return resultMap.searchValues(1000, r -> !r.isPresent() ? r : null) == null;
     }
 
     @Override
     public boolean isAllOK() {
         return resultMap.searchValues(1000, //
-                r -> (!r.isPresent() || !r.get().isRight())? r : null) == null;
+                r -> (!r.isPresent() || !r.get().isRight()) ? r : null) == null;
     }
 
     @Override
@@ -176,19 +200,60 @@ public class CommunicationRound<R> implements RoundResult<R> {
         return list;
     }
 
+    private static class LatchCleaner {
+        private Timer timer;
+        private ArrayList<CountDownHolder> holders = new ArrayList<CountDownHolder>();
+        private long interval;
+        
+        public LatchCleaner(long interval) {
+            timer = new Timer(LatchCleaner.class.getCanonicalName(), true);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    cleanOutDated();
+                }
+
+            }, 1, interval);
+            this.interval = interval;
+        }
+
+        private void cleanOutDated() {
+            synchronized (holders) {
+                ListIterator<CountDownHolder> it = holders.listIterator();
+                while(it.hasNext()){
+                    CountDownHolder holder = it.next();
+                    boolean keep = holder.decWaitMillis(this.interval);
+                    if(!keep)
+                        it.remove();
+                }
+            }
+        }
+
+        public void addLatch(CountDownHolder holder) {
+            synchronized (holders) {
+                holders.add(holder);
+            }
+        }
+
+    }
+
     private static class CountDownHolder {
         private CountDownLatch countDown;
         private Set<InetSocketAddress> callerSet;
+        private AtomicLong waitMillis;
 
         public CountDownHolder(int n) {
             countDown = new CountDownLatch(n);
             callerSet = new HashSet<InetSocketAddress>();
+            waitMillis = new AtomicLong(0);
         }
 
-        synchronized public void countDown(InetSocketAddress node) {
-            if (!this.callerSet.contains(node)) {
-                this.callerSet.add(node);
-                this.countDown.countDown();
+        public void countDown(InetSocketAddress node) {
+            synchronized (callerSet) {
+                if (!this.callerSet.contains(node)) {
+                    this.callerSet.add(node);
+                    this.countDown.countDown();
+                }
             }
         }
 
@@ -197,13 +262,28 @@ public class CommunicationRound<R> implements RoundResult<R> {
         }
 
         public boolean isAllDone() {
-            return this.countDown.getCount() <= 0;
+            return this.countDown.getCount() == 0;
         }
 
         public void clear() {
             while (this.countDown.getCount() > 0) {
                 this.countDown.countDown();
             }
+        }
+
+        public void setWaitMillis(long d) {
+            this.waitMillis.set(d);
+        }
+
+        public boolean decWaitMillis(long d) {
+            if (this.waitMillis.get() > 0) {
+                long v = this.waitMillis.addAndGet(-d);
+                if (v <= 0){
+                    this.clear();
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

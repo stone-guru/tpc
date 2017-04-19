@@ -2,6 +2,8 @@ package net.eric.tpc.base;
 
 import java.util.concurrent.Future;
 
+import com.google.common.base.Function;
+
 public abstract class Maybe<T> extends Either<ActionStatus, T> {
     public static <T> Maybe<T> success(T t) {
         if (t == null) {
@@ -72,6 +74,12 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         }
     }
     
+    public static <A, B> Maybe<B> map(Maybe<A> ma, Function<A, B> f){
+        if(!ma.isRight())
+            return ma.castLeft();
+        return success(f.apply(ma.getRight()));
+    }
+    
     public abstract <B> Maybe<B> castLeft();
     
     final static class Success<T> extends Maybe<T> {
@@ -101,6 +109,11 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         @Override
         public <B> Maybe<B> castLeft() {
             throw new IllegalStateException("Not fail, no left value");
+        }
+
+        @Override
+        public String toString() {
+            return "Success [" + value + "]";
         }
     }
 
@@ -136,7 +149,7 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         
         @Override
         public String toString(){
-            return "Fail " + this.status.toString();
+            return "Fail [" + this.status.toString() + "]";
         }
     }
 }

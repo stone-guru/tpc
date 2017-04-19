@@ -27,7 +27,7 @@ public class MinaTransService extends AbstractIdleService {
     private int port;
     private ProtocolCodecFactory codecFactory;
     
-    public MinaTransService(int port, PeerTransactionManager transManager, List<ObjectCodec> extraObjectCodecs){
+    public MinaTransService(int port, PeerTransactionManager<?> transManager, List<ObjectCodec> extraObjectCodecs){
         this.port = port;
         this.ioHandler = new PeerIoHandler(RequestHandlers.getBasicHandlers(transManager));
         this.codecFactory = new MessageCodecFactory(extraObjectCodecs);

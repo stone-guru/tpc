@@ -29,7 +29,7 @@ import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
-public class Panticipantor implements PeerTransactionManager {
+public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     private static final Logger logger = LoggerFactory.getLogger(Panticipantor.class);
     
@@ -71,7 +71,7 @@ public class Panticipantor implements PeerTransactionManager {
     }
     
     @Override
-    public <B> ActionStatus beginTrans(TransStartRec startRec, B bill) {
+    public ActionStatus beginTrans(TransStartRec startRec, B bill) {
         assert (startRec != null);
         assert (bill != null);
 
@@ -108,7 +108,7 @@ public class Panticipantor implements PeerTransactionManager {
         }
 
         synchronized (state) {
-            ActionStatus voteResult = FutureTk.statusForce(state.getVoteFuture());
+            ActionStatus voteResult = FutureTk.force(state.getVoteFuture());
             Vote vote = (voteResult.isOK()) ? Vote.YES : Vote.NO;
 
             state.setStage(Stage.VOTED);

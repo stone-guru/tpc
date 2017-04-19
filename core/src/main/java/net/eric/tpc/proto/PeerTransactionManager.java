@@ -6,8 +6,8 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 
-public interface PeerTransactionManager {
-    <B> ActionStatus beginTrans(TransStartRec transNode, B b);
+public interface PeerTransactionManager<B>  {
+    ActionStatus beginTrans(TransStartRec transNode, B b);
 
     ActionStatus processVoteReq(long xid);
 
