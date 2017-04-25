@@ -1,11 +1,13 @@
 package net.eric.bank.bod;
 
+import static net.eric.tpc.base.Pair.asPair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -17,7 +19,7 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.ShouldNotHappenException;
 
 public class AccountLocker {
-    private ConcurrentHashMap<String, Long> keyMap = new ConcurrentHashMap<String, Long>();
+    private Map<String, Long> keyMap = new HashMap<String, Long>();
     private int tryTimes;
     private int sleepMilis;
     private AccountDao accountDao;
@@ -62,8 +64,10 @@ public class AccountLocker {
         }
         keyMap.remove(key1);
         keyMap.remove(key2);
-        accountDao.updateLock(Pair.asPair(key1, null));
-        accountDao.updateLock(Pair.asPair(key2, null));
+        
+        final Long nullXid = null;
+        accountDao.updateLock(asPair(key1, nullXid));
+        accountDao.updateLock(asPair(key2, nullXid));
     }
 
     public boolean areBothLockedCorrectlly(String key1, String key2, long xid) {
@@ -109,7 +113,6 @@ public class AccountLocker {
 
     public void setLockedKey(List<Pair<String, Long>> keys) {
         Preconditions.checkNotNull(keys, "Given keyset is null");
-        
         assureKeyRule(keys);
         synchronized (this) {
             keyMap.clear();
@@ -120,18 +123,19 @@ public class AccountLocker {
     }
 
     private void assureKeyRule(List<Pair< String, Long>> keys) {
-         @SuppressWarnings("unchecked")
-        Pair<String, String>[] sortedKeys =  keys.toArray(new Pair[keys.size()]);
-        Arrays.sort(sortedKeys, Pair.newComparator());
+        @SuppressWarnings("unchecked")
+        Pair<String, Long>[] sortedKeys =  keys.toArray(new Pair[keys.size()]);
+        final Comparator<Pair<String, Long>> c  = Pair.newComparator();
+        Arrays.sort(sortedKeys, c);
 
-        Map<String, Integer> xidMap = new HashMap<String, Integer>();
+        Map<Long, Integer> xidMap = new HashMap<Long, Integer>();
         String prevKey = "";
-        for (Pair<String, String> p : sortedKeys) {
+        for (Pair<String, Long> p : sortedKeys) {
             //排序过后相同的key将排在一起
             if (p.fst().equals(prevKey)) {
                 throw new IllegalArgumentException(prevKey + "occurs more than once");
             }
-            String xid = p.snd();
+            Long xid = p.snd();
             int v = 0;
             if (xidMap.containsKey(xid)) {
                 v = xidMap.get(xid);
@@ -144,7 +148,7 @@ public class AccountLocker {
             prevKey = p.fst();
         }
         
-        for(String xid : xidMap.keySet()){
+        for(Long xid : xidMap.keySet()){
             int v = xidMap.get(xid);
             if(v < 2){
                 throw new IllegalArgumentException("xid " + xid + " locked by only 1 key");

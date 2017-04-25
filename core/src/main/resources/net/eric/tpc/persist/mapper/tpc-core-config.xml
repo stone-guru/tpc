@@ -39,7 +39,7 @@
   </environments>
 
   <mappers>
-    <mapper resource="net/eric/tpc/persist/mapper/DatabaseInitMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/CoreDbInitMapper.xml"/>
     <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>
     <mapper resource="net/eric/tpc/persist/mapper/KeyStoreMapper.xml"/>
   </mappers>

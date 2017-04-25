@@ -46,7 +46,7 @@ public class TransProtoTest {
     public static final InetSocketAddress SELF = new InetSocketAddress("localhost", 10);
     public static final List<InetSocketAddress> PEERS = ImmutableList.of(PEER1, PEER2, PEER3);
 
-    private Coordinator<Integer> coor;
+    private Coordinator coor;
     private KeyGenerator keyGenerator = new OneKeyGenerator();
     private List<IntPeerTransactionManager> peerManagers;
     private DummyDtLogger dtLogger;
@@ -56,7 +56,7 @@ public class TransProtoTest {
         this.peerManagers = ImmutableList.copyOf(transform(PEERS, n -> new IntPeerTransactionManager(n)));
         this.dtLogger = new DummyDtLogger();
         
-        coor = new Coordinator<Integer>();
+        coor = new Coordinator();
         coor.setBizStrategy(new IntCoorStrategy());
         coor.setCommunicatorFactory(new LocalCommunicatorFactory(ImmutableList.copyOf(this.peerManagers)));
         coor.setDtLogger(this.dtLogger);
@@ -147,11 +147,10 @@ public class TransProtoTest {
     
     
     static class LocalCommunicator implements Communicator {
-        private List<PeerTransactionManager<Integer>> transManagers;
+        private List<PeerTransactionManager> transManagers;
         private List<InetSocketAddress> notifiedNodes; 
 
-
-        public LocalCommunicator(List<PeerTransactionManager<Integer>> managers) {
+        public LocalCommunicator(List<PeerTransactionManager> managers) {
             this.transManagers = ImmutableList.copyOf(managers);
         }
 
@@ -255,7 +254,7 @@ public class TransProtoTest {
         }
     }
 
-    static class IntPeerTransactionManager implements PeerTransactionManager<Integer> {
+    static class IntPeerTransactionManager implements PeerTransactionManager{
         private boolean allowBeginTrans = true;
         private boolean allowVoteYes = true;
         private InetSocketAddress self;
@@ -265,7 +264,7 @@ public class TransProtoTest {
         }
         
         @Override
-        public ActionStatus beginTrans(TransStartRec transNode, Integer i) {
+        public ActionStatus beginTrans(TransStartRec transNode, Object i) {
             logger.info(self + " BeginTrans " + transNode + ", " + String.valueOf(i));
             if (allowBeginTrans)
                 return ActionStatus.OK;
@@ -315,18 +314,25 @@ public class TransProtoTest {
             this.allowVoteYes = allowVoteYes;
         }
 
+        @Override
+        public void close() throws IOException {
+            // TODO Auto-generated method stub
+            
+        }
+
     }
 
-    static class IntCoorStrategy implements CoorBizStrategy<Integer> {
+    static class IntCoorStrategy implements CoorBizStrategy{
 
         @Override
-        public Maybe<TaskPartition<Integer>> splitTask(long xid, Integer b) {
+        public Maybe<TaskPartition<Integer>> splitTask(long xid, Object obj) {
+            int b = (Integer)obj;
             List<Pair<InetSocketAddress, Integer>> tasks = ImmutableList.copyOf(transform(PEERS, n -> asPair(n, b + n.getPort())));
             return Maybe.success(new TaskPartition<Integer>(b, tasks));
         }
 
         @Override
-        public ActionStatus prepareCommit(long xid, Integer b) {
+        public ActionStatus prepareCommit(long xid, Object b) {
             return ActionStatus.OK;
         }
 
@@ -349,34 +355,25 @@ public class TransProtoTest {
         }
 
         @Override
-        public <B> Future<ActionStatus> checkAndPrepare(long xid, B b) {
+        public ActionStatus checkAndPrepare(long xid, Object b) {
 
             int i = ((Integer) b).intValue();
             logger.info("BeginTrans " + xid + ", " + String.valueOf(i));
             ActionStatus r = (i % delta == 1) ? //
                     new ActionStatus((short) 2001, "I dislike even") : ActionStatus.OK;
-            return Futures.immediateFuture(r);
+            return r;
         }
 
         @Override
-        public Future<Void> commit(long xid, BizActionListener listener) {
-            if (xid % delta == 1)
-                listener.onFailure(xid);
-            else
-                listener.onSuccess(xid);
+        public boolean commit(long xid) {
             lastDecision = asPair(xid, Decision.COMMIT);
-            return Futures.immediateFuture(null);
+            return true;
         }
 
         @Override
-        public Future<Void> abort(long xid, BizActionListener listener) {
-            if (xid % delta == 1)
-                listener.onFailure(xid);
-            else
-                listener.onSuccess(xid);
+        public boolean abort(long xid) {
             lastDecision = asPair(xid, Decision.ABORT);
-
-            return Futures.immediateFuture(null);
+            return true;
         }
 
         public Pair<Long, Decision> getLastDecision() {
@@ -387,9 +384,9 @@ public class TransProtoTest {
     }
 
     static class LocalCommunicatorFactory implements CommunicatorFactory {
-        private List<PeerTransactionManager<Integer>> peerManagers;
+        private List<PeerTransactionManager> peerManagers;
 
-        public LocalCommunicatorFactory(List<PeerTransactionManager<Integer>> peerManagers) {
+        public LocalCommunicatorFactory(List<PeerTransactionManager> peerManagers) {
             super();
             this.peerManagers = peerManagers;
         }
@@ -499,16 +496,24 @@ public class TransProtoTest {
             return decision;
         }
 
-        synchronized public boolean awaitGetFinished() {
-            try {
-                this.wait();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+         public boolean awaitGetFinished() {
+            Runnable r = new Runnable(){
+                @Override
+                public void run() {
+                    synchronized(DummyDtLogger.this){
+                        try {
+                            DummyDtLogger.this.wait();
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }
+                    
+                }
+            };
+            Thread t = new Thread(r);
+            t.start();
             return finished;
         }
-        
-        
     }
 }

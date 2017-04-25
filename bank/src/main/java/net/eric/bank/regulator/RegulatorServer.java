@@ -4,12 +4,8 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
-import net.eric.bank.net.PeerIoHandler;
-import net.eric.bank.service.CommonServiceFactory;
-import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.persist.PersisterFactory;
 
 public class RegulatorServer extends MinaServer {
 
@@ -28,9 +24,9 @@ public class RegulatorServer extends MinaServer {
     }
 
     private static void initFactory(ServerConfig config) {
-        UniFactory.register(new PersisterFactory(config.getDbUrl()));
-        UniFactory.register(new CommonServiceFactory());
-        UniFactory.register(new RegulatorServiceFactory());
+        //FIXME UniFactory.register(new PersisterFactory(config.getDbUrl()));
+        //FIXME UniFactory.register(new CommonServiceFactory());
+        //FIXME UniFactory.register(new RegulatorServiceFactory());
     }
 
     public RegulatorServer(ServerConfig config) {
@@ -39,7 +35,7 @@ public class RegulatorServer extends MinaServer {
 
     @Override
     protected IoHandler getIoHandler() {
-        return UniFactory.getObject(PeerIoHandler.class, "REGULATOR");
+        return null;//FIXME UniFactory.getObject(PeerIoHandler.class, "REGULATOR");
     }
 
     @Override

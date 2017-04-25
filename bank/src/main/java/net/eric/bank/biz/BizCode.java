@@ -16,13 +16,13 @@ public class BizCode {
     public static final short BEYOND_OVERDRAFT_LIMIT = 2012;
     public static final short FIELD_TOO_LONG = 2013;
     public static final short AMOUNT_PRECISION_ERROR = 2014;
-    
-    public static final short BEYOND_TRANS_AMOUNT_LIMIT = 2015;
 
+    public static final short BEYOND_TRANS_AMOUNT_LIMIT = 2015;
 
     public static final short COMMAND_SYNTAX_ERROR = 2018;
     public static final short ACCOUNT_SYNTAX_ERROR = 2019;
     public static final short AMOUNT_NOT_INT = 2020;
-    
-    private BizCode(){}
+
+    private BizCode() {
+    }
 }

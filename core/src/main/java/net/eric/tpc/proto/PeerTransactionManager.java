@@ -1,12 +1,15 @@
 package net.eric.tpc.proto;
 
+import java.io.Closeable;
+
 import com.google.common.base.Optional;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 
-public interface PeerTransactionManager<B>  {
+public interface PeerTransactionManager<B> extends Closeable {
+    
     ActionStatus beginTrans(TransStartRec transNode, B b);
 
     ActionStatus processVoteReq(long xid);

@@ -10,6 +10,9 @@ import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.binary.Message;
@@ -17,22 +20,25 @@ import net.eric.tpc.net.binary.ObjectCodec;
 import net.eric.tpc.net.mina.MinaChannelFactory;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.CommunicatorFactory;
+import net.eric.tpc.proto.FutureTk;
 
 public class CoorCommunicatorFactory implements CommunicatorFactory, TaskPoolProvider {
     private static final Logger logger = LoggerFactory.getLogger(CoorCommunicatorFactory.class);
-    
-    private ExecutorService commuTaskPool = Executors.newCachedThreadPool();
-    private ExecutorService sequenceTaskPool = Executors.newSingleThreadExecutor();
-    private ChannelFactory channelFactory;
 
-    public CoorCommunicatorFactory(){
+    private ChannelFactory channelFactory;
+    private ExecutorService commuTaskPool = FutureTk.newCachedThreadPool();
+    private ExecutorService sequenceTaskPool = Executors.newSingleThreadExecutor();
+
+    public CoorCommunicatorFactory() {
         this(Collections.emptyList());
     }
-    
-    public CoorCommunicatorFactory(List<ObjectCodec> objectCodecs){
-        channelFactory =  new MinaChannelFactory(objectCodecs);
+
+    @Inject
+    public CoorCommunicatorFactory(@Named("Extra Object Codecs") List<ObjectCodec> objectCodecs) {
+        channelFactory = new MinaChannelFactory(objectCodecs);
+        logger.debug("CoorCommunicatorFactory created " + this.toString());
     }
-    
+
     @Override
     public Maybe<Communicator> getCommunicator(List<InetSocketAddress> peers) {
         Maybe<List<PeerChannel<Message>>> maybe = channelFactory.getChannel(Message.class, peers, RoundType.WAIT_ALL);
@@ -49,15 +55,12 @@ public class CoorCommunicatorFactory implements CommunicatorFactory, TaskPoolPro
     }
 
     @Override
-    public void close() {
-        this.sequenceTaskPool.submit(new Runnable() {
-            @Override
-            public void run() {
-                CoorCommunicatorFactory.this.sequenceTaskPool.shutdown();
-                CoorCommunicatorFactory.this.commuTaskPool.shutdown();
-            }
+    public void close() throws IOException {
+        this.sequenceTaskPool.submit(() -> {
+            CoorCommunicatorFactory.this.commuTaskPool.shutdown();
+            CoorCommunicatorFactory.this.sequenceTaskPool.shutdown();
         });
-        
+
         try {
             this.channelFactory.close();
         } catch (IOException e) {

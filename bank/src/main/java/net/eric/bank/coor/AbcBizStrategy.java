@@ -4,7 +4,6 @@ import static net.eric.tpc.base.Pair.asPair;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,6 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.common.Configuration;
-import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.CoorBizStrategy;
 
 public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
@@ -130,21 +128,21 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     }
 
     @Override
-    public Future<ActionStatus> prepareCommit(long xid, TransferBill bill) {
+    public ActionStatus prepareCommit(long xid, TransferBill bill ) {
         logger.info("prepareCommit" + xid);
-        return this.billSaver.prepareCommit(xid, bill);
+        return this.billSaver.checkAndPrepare(xid, bill);
     }
 
     @Override
-    public Future<Void> commit(long xid, BizActionListener commitListener) {
+    public boolean commit(long xid){
         logger.info("commit" + xid);
-        return this.billSaver.commit(xid, commitListener);
+        return this.billSaver.commit(xid);
     }
 
     @Override
-    public Future<Void> abort(long xid, BizActionListener abortListener) {
+    public boolean abort(long xid){
         logger.info("abort" + xid);
-        return this.billSaver.abort(xid, abortListener);
+        return this.billSaver.abort(xid);
     }
 
     
@@ -155,6 +153,4 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     public void setBillValidator(Validator<TransferBill> billValidator) {
         this.billValidator = billValidator;
     }
-    
-    
 }

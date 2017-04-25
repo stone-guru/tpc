@@ -17,9 +17,6 @@ import net.eric.bank.entity.AccountIdentity;
 import net.eric.bank.entity.AccountType;
 import net.eric.bank.entity.TransferBill;
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.persist.PersisterFactory;
-import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
 
 public class AccountRepositoryTest {
@@ -40,9 +37,9 @@ public class AccountRepositoryTest {
         return msg;
     }
 
-    public static void prepareCommit(long xid, PeerBizStrategy<TransferBill> bizStrategy) {
+    public static void prepareCommit(long xid, PeerBizStrategy bizStrategy) {
         TransferBill bill = genTransferMessage("SN", xid);
-        ActionStatus result = ActionStatus.force(bizStrategy.checkAndPrepare(xid, bill));
+        ActionStatus result = null;//FIXME ActionStatus.force(bizStrategy.checkAndPrepare(xid, bill));
         System.out.println(result);
     }
 
@@ -78,24 +75,13 @@ public class AccountRepositoryTest {
 //        return st;
 //    }
 
-    private static BizActionListener bizActionListener = new BizActionListener() {
-        @Override
-        public void onSuccess(long xid) {
-            System.out.println("success on " + xid);
-        }
-
-        @Override
-        public void onFailure(long xid) {
-            System.out.println("fail on " + xid);
-        }
-    };
 
     public static void main(String[] args) {
         //final String url = "jdbc:h2:tcp://localhost:9100/bank";
 
-        UniFactory.register(new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc") );
+        //FIXME UniFactory.register(null);//FIXME new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc") );
        
-        AccountRepositoryImpl acctRepo = (AccountRepositoryImpl) UniFactory.getObject(AccountRepositoryImpl.class);
+        AccountRepositoryImpl acctRepo = null;//FIXME (AccountRepositoryImpl) UniFactory.getObject(AccountRepositoryImpl.class);
 
         // TestUtil.clearTable("ACCOUNT", "org.h2.Driver", url, "sa", "");
         // TestUtil.clearTable("TRANSFER_BILL", "org.h2.Driver", url, "sa", "");
@@ -105,6 +91,6 @@ public class AccountRepositoryTest {
         // asPair("rose", "XID2")));
         // acctRepo.commit("XID2", bizActionListener);
         acctRepo.resetLockedKey(ImmutableList.of(asPair("mike", 10086L), asPair("rose", 10086L)));
-        acctRepo.abort(10086L, bizActionListener);
+        acctRepo.abort(10086L);
     }
 }

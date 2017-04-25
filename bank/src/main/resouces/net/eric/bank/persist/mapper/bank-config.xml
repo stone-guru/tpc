@@ -12,8 +12,8 @@
     <typeAlias alias="Decision" type="net.eric.tpc.proto.Types$Decision"/>  
     <typeAlias alias="Vote" type="net.eric.tpc.proto.Types$Vote"/>  
     <typeAlias alias="DtRecord" type="net.eric.tpc.entity.DtRecord"/>
-    <typeAlias alias="Account" type="net.eric.tpc.entity.Account"/>
-    <typeAlias alias="TransferBill" type="net.eric.tpc.entity.TransferBill"/>
+    <typeAlias alias="Account" type="net.eric.bank.entity.Account"/>
+    <typeAlias alias="TransferBill" type="net.eric.bank.entity.TransferBill"/>
     <typeAlias alias="KeyRecord" type="net.eric.tpc.persist.KeyRecord"/>
   </typeAliases>
 
@@ -24,8 +24,8 @@
     <typeHandler handler="net.eric.tpc.persist.DecisionTypeHandler" 
                 javaType="net.eric.tpc.proto.Types$Decision"
                 jdbcType="CHAR"/>                
-    <typeHandler handler="net.eric.tpc.persist.AccountTypeHandler" 
-                javaType="net.eric.tpc.entity.AccountType"
+    <typeHandler handler="net.eric.bank.persist.AccountTypeHandler" 
+                javaType="net.eric.bank.entity.AccountType"
                 jdbcType="CHAR"/>
   </typeHandlers>
   
@@ -44,11 +44,12 @@
   </environments>
 
   <mappers>
-    <mapper resource="net/eric/tpc/persist/mapper/DatabaseInitMapper.xml"/>
-    <mapper resource="net/eric/tpc/persist/mapper/AccountMapper.xml"/>
-    <mapper resource="net/eric/tpc/persist/mapper/TransferBillMapper.xml"/>
-    <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/CoreDbInitMapper.xml"/>
     <mapper resource="net/eric/tpc/persist/mapper/KeyStoreMapper.xml"/>
+    <mapper resource="net/eric/tpc/persist/mapper/DtRecordMapper.xml"/>  
+    <mapper resource="net/eric/bank/persist/mapper/AccountMapper.xml"/>
+    <mapper resource="net/eric/bank/persist/mapper/TransferBillMapper.xml"/>
+    <mapper resource="net/eric/bank/persist/mapper/BankDbInitMapper.xml"/>
   </mappers>
   
 </configuration>

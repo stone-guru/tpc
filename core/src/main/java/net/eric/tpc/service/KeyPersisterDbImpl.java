@@ -1,18 +1,20 @@
 package net.eric.tpc.service;
 
+import static net.eric.tpc.base.Pair.asPair;
+
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+import com.google.inject.Inject;
 
 import net.eric.tpc.base.Pair;
-import static net.eric.tpc.base.Pair.asPair;
-
 import net.eric.tpc.persist.KeyRecord;
 import net.eric.tpc.persist.KeyStoreDao;
 
-public class KeyPersisterDbImpl implements KeyGenerators.KeyPersister{
+public class KeyPersisterDbImpl implements KeyPersister{
     
+    @Inject
     private KeyStoreDao keyStoreDao;
 
     @Override

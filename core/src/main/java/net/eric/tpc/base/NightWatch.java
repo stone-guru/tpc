@@ -1,5 +1,7 @@
 package net.eric.tpc.base;
 
+import static net.eric.tpc.base.Pair.asPair;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,51 +14,57 @@ import org.slf4j.LoggerFactory;
 public class NightWatch {
     private static final Logger logger = LoggerFactory.getLogger(NightWatch.class);
     private static final NightWatch instance = new NightWatch();
-    
-    public static void regCloseable(Closeable closeable){
-        instance.addCloseAction(new Runnable(){
-            @Override
-            public void run(){
-                try {
-                    closeable.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+
+    public static void regCloseable(Closeable closeable) {
+        regCloseable("No name", closeable);
+    }
+
+    public static void regCloseable(String actionName, Closeable closeable) {
+        instance.addCloseAction(actionName, () -> {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                logger.error("exception when close ", e);
             }
         });
     }
-    
-    public static void regCloseAction(Runnable action){
-        instance.addCloseAction(action);
+
+    public static void regCloseAction(Runnable action) {
+        instance.addCloseAction("No name", action);
     }
-    
-    public static void executeCloseActions(){
+
+    public static void regCloseAction(String actionName, Runnable action) {
+        instance.addCloseAction(actionName, action);
+    }
+
+    public static void executeCloseActions() {
         instance.execute();
     }
-    
-    private List<Runnable> closeActions = new ArrayList<Runnable>();
+
+    private List<Pair<String, Runnable>> closeActions = new ArrayList<Pair<String, Runnable>>();
 
     private NightWatch() {
     }
 
-    private void addCloseAction(Runnable action) {
+    private void addCloseAction(String actionName, Runnable action) {
         synchronized (closeActions) {
-            closeActions.add(action);
+            closeActions.add(asPair(actionName, action));
         }
     }
 
-    private void execute(){
+    private void execute() {
         this.execute(this.closeActions.iterator());
     }
-    
-    private void execute(Iterator<Runnable> it) {
+
+    private void execute(Iterator<Pair<String, Runnable>> it) {
         if (!it.hasNext()) {
             return;
         }
-        final Runnable action = it.next();
+        final Pair<String, Runnable> p = it.next();
         execute(it);// 递归执行后面的先
         try {
-            action.run();
+            logger.info("close backend service " + p.fst());
+            p.snd().run();
         } catch (Exception e) {
             logger.error("Terminator execute close action", e);
         }

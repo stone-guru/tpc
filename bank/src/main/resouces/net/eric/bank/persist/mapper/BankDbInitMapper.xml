@@ -2,27 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.eric.tpc.persist.DatabaseInit">
-
-  <update id="dropDtTable">
-    DROP TABLE IF EXISTS DT_RECORD
-  </update>
-
-  <update id="createDtTable">
-      CREATE TABLE DT_RECORD(
-      XID          BIGINT,
-      START_TIME   TIMESTAMP NOT NULL,
-      COORDINATOR  VARCHAR(24) NOT NULL, 
-      PARTICIPANTS VARCHAR(256) NOT NULL,
-      START_2PC    BOOL NOT NULL,
-      VOTE         VARCHAR(8),
-      VOTE_TIME    TIMESTAMP,
-      DECISION     VARCHAR(8),
-      DECISION_TIME TIMESTAMP,
-      FINISH_TIME  TIMESTAMP,
-      BIZ_MESSSGE  BINARY(4096),
-      PRIMARY KEY (XID))
-  </update>
+<mapper namespace="net.eric.bank.persist.BankDbInit">
 
   <update id="dropAccountTable">
     DROP TABLE IF EXISTS ACCOUNT
@@ -60,18 +40,6 @@
       VOUCHER_NUMBER VARCHAR(36) NOT NULL,
       LOCKING_TRANS BIGINT,
       PRIMARY KEY(TRANS_SN))
-  </update>
-
-  <update id="dropKeyTable">
-    DROP TABLE IF EXISTS KEY_STORE
-  </update>
-    
-  <update id="createKeyTable">
-    CREATE TABLE KEY_STORE(
-      PREFIX VARCHAR(48) NOT NULL,
-      DATE_DIGIT INT NOT NULL,
-      SERIAL_NUMBER INT NOT NULL,
-      PRIMARY KEY(PREFIX))
   </update>
 
 </mapper>

@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
@@ -29,7 +28,6 @@ import net.eric.bank.entity.TransferBill;
 import net.eric.bank.service.BillBasicValidator;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
-import net.eric.tpc.net.DataPacket;
 import net.eric.tpc.proto.Types.ErrorCode;
 
 public class Main {
@@ -241,20 +239,21 @@ public class Main {
         }
 
         public ActionStatus sendBillRequest(TransferBill bill) {
-
-            session.write(new DataPacket(DataPacket.TRANS_BILL, bill));
-            ReadFuture readFuture = session.read();
-            if (!readFuture.awaitUninterruptibly(3000)) {
-                return ActionStatus.PEER_NO_REPLY;
-            }
-            DataPacket dataPacket = (DataPacket) readFuture.getMessage();
-            if (!DataPacket.TRANS_BILL_ANSWER.equals(dataPacket.getCode())) {
-                return ActionStatus.create(ErrorCode.PEER_PRTC_ERROR, "server reply error");
-            }
-            if (DataPacket.YES.equals(dataPacket.getParam1())) {
-                return ActionStatus.OK;
-            }
-            return (ActionStatus) dataPacket.getParam2();
+//FIXME
+//            session.write(new DataPacket(DataPacket.TRANS_BILL, bill));
+//            ReadFuture readFuture = session.read();
+//            if (!readFuture.awaitUninterruptibly(3000)) {
+//                return ActionStatus.PEER_NO_REPLY;
+//            }
+//            DataPacket dataPacket = (DataPacket) readFuture.getMessage();
+//            if (!DataPacket.TRANS_BILL_ANSWER.equals(dataPacket.getCode())) {
+//                return ActionStatus.create(ErrorCode.PEER_PRTC_ERROR, "server reply error");
+//            }
+//            if (DataPacket.YES.equals(dataPacket.getParam1())) {
+//                return ActionStatus.OK;
+//            }
+//            return (ActionStatus) dataPacket.getParam2();
+            return null;
         }
 
         public void close() {

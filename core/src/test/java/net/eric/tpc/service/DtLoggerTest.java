@@ -4,8 +4,6 @@ import java.net.InetSocketAddress;
 
 import com.google.common.collect.ImmutableList;
 
-import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.persist.PersisterFactory;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
@@ -30,7 +28,7 @@ public class DtLoggerTest {
 //    }
 
     private static TransStartRec genTransRec(String prefix) {
-        long xid = KeyGenerators.nextValue(prefix);
+        long xid = 0;//DefaultKeyGenerator.nextValue(prefix);
         TransStartRec st = new TransStartRec(xid, //
                 InetSocketAddress.createUnresolved("localhost", 9001), //
                 ImmutableList.of(boc, bbc));
@@ -39,10 +37,10 @@ public class DtLoggerTest {
 
     public static void main(String[] args) {
         final String url = "jdbc:h2:tcp://localhost:9100/bank";
-        UniFactory.register(new PersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc"));
+        //FIXME UniFactory.register(new CorePersisterFactory("jdbc:h2:tcp://localhost:9100/data_abc"));
 
         TestUtil.clearTable("DT_RECORD", "org.h2.Driver", url, "sa", "");
-        DtLogger dtLogger = UniFactory.getObject(DtLogger.class);
+        DtLogger dtLogger = null;//FIXME UniFactory.getObject(DtLogger.class);
 
         for (int i = 0; i < 30; i++) {
             TransStartRec rec = genTransRec("A");

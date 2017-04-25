@@ -22,11 +22,10 @@ import net.eric.tpc.proto.Types.ErrorCode;
 
 public class BasicCommunicator<M> {
 
-    @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(BasicCommunicator.class);
 
     private Map<InetSocketAddress, PeerChannel<M>> channelMap = Collections.emptyMap();
-    private AtomicReference<CommunicationRound<?>> roundRef = new AtomicReference<CommunicationRound<?>>(null);
+    //private AtomicReference<CommunicationRound<?>> roundRef = new AtomicReference<CommunicationRound<?>>(null);
     private TaskPoolProvider poolProvider;
 
     public BasicCommunicator(TaskPoolProvider poolProvider, List<PeerChannel<M>> channels) {
@@ -67,7 +66,6 @@ public class BasicCommunicator<M> {
         Runnable startAction = new Runnable() {
             @Override
             public void run() {
-                roundRef.set(round);
                 for (final Pair<InetSocketAddress, M> p : messages) {
                     final PeerChannel<M> channel = channelMap.get(p.fst());
                     if (channel == null) {
@@ -76,6 +74,9 @@ public class BasicCommunicator<M> {
                     } else {
                         @SuppressWarnings("unused")
                         Future<Boolean> f = channel.request(p.snd(), round);
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("communicate.send message " + p);
+                        }
                     }
                 }
             }

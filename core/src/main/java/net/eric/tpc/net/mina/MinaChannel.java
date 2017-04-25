@@ -13,6 +13,7 @@ import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.PeerChannel;
@@ -33,36 +34,47 @@ public class MinaChannel<T> implements PeerChannel<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <A> MinaChannel<A> getRoundFromSession(IoSession session) {
+    public static <A> MinaChannel<A> getChannelFromSession(IoSession session) {
         return (MinaChannel<A>) session.getAttribute(channelKey);
+    }
+
+    public static void removeChannelFromSession(IoSession session) {
+        session.removeAttribute(channelKey);
     }
 
     public MinaChannel(InetSocketAddress peer, IoSession session, ExecutorService commuTaskPool) {
         this.commuTaskPool = commuTaskPool;
         this.session = session;
         this.peer = peer;
-        
+
         putChannelToSession(this, session);
     }
 
     @Override
-    public <R> Future<Boolean> request(T message, CommunicationRound<R> round ) {
-        if (!roundRef.compareAndSet(null, round)) {
-            throw new IllegalStateException("another round is waiting");
-        }
-
+    public <R> Future<Boolean> request(T message, CommunicationRound<R> round) {
         Callable<Boolean> action = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
+                if (!roundRef.compareAndSet(null, round)) {
+                    logger.error("another round exists");
+                    round.regResult(MinaChannel.this.peer, Maybe.fail(ActionStatus.innerError("another round exists")));
+                    return false;
+                }
+
                 final WriteFuture writeFuture = session.write(message);
                 writeFuture.awaitUninterruptibly();
                 if (!writeFuture.isWritten()) {
                     logger.error("MinaChannel request", writeFuture.getException());
-                    String errMessage = (writeFuture.getException() != null) ? writeFuture.getException().getMessage()
-                            : "";
+                    final String errMessage = (writeFuture.getException() != null)
+                            ? writeFuture.getException().getMessage() : "";
+
                     round.regResult(MinaChannel.this.peer, Maybe.fail(ErrorCode.SEND_ERROR, errMessage));
                     return false;
                 }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("MinaChannel.request sended " + message);
+                }
+
                 return true;
             }
         };
@@ -76,27 +88,35 @@ public class MinaChannel<T> implements PeerChannel<T> {
         Callable<Boolean> action = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                final WriteFuture writeFuture = session.write(message);
-                writeFuture.awaitUninterruptibly();
-                if (!writeFuture.isWritten()) {
-                    String errMessage = (writeFuture.getException() != null) ? writeFuture.getException().getMessage()
-                            : "";
-                    round.regResult(MinaChannel.this.peer, Maybe.fail(ErrorCode.SEND_ERROR, errMessage));
+                if (!roundRef.compareAndSet(null, round)) {
+                    logger.error("another round exists");
+                    round.regResult(MinaChannel.this.peer, Maybe.fail(ActionStatus.innerError("another round exists")));
                     return false;
-                } else {
-                    round.regResult(MinaChannel.this.peer, Maybe.success(true));
                 }
-                return true;
+                try {
+                    final WriteFuture writeFuture = session.write(message);
+                    writeFuture.awaitUninterruptibly();
+                    if (!writeFuture.isWritten()) {
+                        String errMessage = (writeFuture.getException() != null)
+                                ? writeFuture.getException().getMessage() : "";
+                        round.regResult(MinaChannel.this.peer, Maybe.fail(ErrorCode.SEND_ERROR, errMessage));
+                        return false;
+                    } else {
+                        round.regResult(MinaChannel.this.peer, Maybe.success(true));
+                        return true;
+                    }
+                } finally {
+                    roundRef.set(null);
+                }
             }
         };
 
         return commuTaskPool.submit(action);
     }
 
-    
     public CommunicationRound<T> getRound() {
         @SuppressWarnings("unchecked")
-        final CommunicationRound<T> round = (CommunicationRound<T>) this.roundRef.get(); 
+        final CommunicationRound<T> round = (CommunicationRound<T>) this.roundRef.get();
         return round;
     }
 
@@ -114,25 +134,51 @@ public class MinaChannel<T> implements PeerChannel<T> {
         return this.peer;
     }
 
+    
+    @Override
+    public String toString() {
+        return "MinaChannel [" + peer + "]";
+    }
+
     public static class SocketHandler<T> extends IoHandlerAdapter {
         @Override
-        public void messageReceived(IoSession session, Object message) throws Exception {
-            MinaChannel<T> channel = MinaChannel.getRoundFromSession(session);
+        public void sessionClosed(IoSession session) throws Exception {
+            MinaChannel<T> channel = MinaChannel.getChannelFromSession(session);
+            if (channel == null) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Channel session(not bind) closed " + session.getRemoteAddress());
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Channel session(binded) closed " + channel.peer.toString());
+                }
 
-            if (channel == null || channel.getRound() == null) {
+                if (channel.getRound() != null) {
+                    channel.getRound().regResult(channel.peer, //
+                            Maybe.fail(ErrorCode.CONNECTION_CLOSED, channel.peer.toString()));
+                }
+            }
+
+            super.sessionClosed(session);
+        }
+
+        @Override
+        public void messageReceived(IoSession session, Object message) throws Exception {
+            if (logger.isDebugEnabled()) {
+                logger.debug("MinaChannel.SocketHandler.getMessage " + message);
+            }
+
+            MinaChannel<T> channel = MinaChannel.getChannelFromSession(session);
+
+            if (channel == null || channel.getRound() == null || !channel.getRound().isWithinRound()) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("not bind with round, abandom message," + message.toString());
                 }
                 return;
             }
-
+            
             CommunicationRound<T> round = channel.getRound();
-            if (!round.isWithinRound()) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("not in round, abandom message," + message.toString());
-                }
-            }
-
+            channel.roundRef.set(null);
             round.regMessage(channel.peer, message);
         }
     }

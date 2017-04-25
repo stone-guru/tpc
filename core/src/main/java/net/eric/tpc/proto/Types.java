@@ -17,7 +17,7 @@ public final class Types {
         public static final short REFUSE_TRANS = 1008;
         public static final short REFUSE_COMMIT = 1009;
         public static final short PEER_NO_REPLY = 1010;
-
+        public static final short CONNECTION_CLOSED = 1011;
         private ErrorCode() {
         }
     }

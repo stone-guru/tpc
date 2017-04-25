@@ -13,26 +13,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 import net.eric.tpc.net.RequestHandlers;
 import net.eric.tpc.net.binary.MessageCodecFactory;
 import net.eric.tpc.net.binary.ObjectCodec;
 import net.eric.tpc.proto.PeerTransactionManager;
 
-public class MinaTransService extends AbstractIdleService {
+public class MinaTransService<B> extends AbstractIdleService {
     private static final Logger logger = LoggerFactory.getLogger(MinaTransService.class);
-    
+
     private NioSocketAcceptor acceptor;
     private IoHandler ioHandler;
     private int port;
     private ProtocolCodecFactory codecFactory;
+    private PeerTransactionManager<?> transManager;
     
-    public MinaTransService(int port, PeerTransactionManager<?> transManager, List<ObjectCodec> extraObjectCodecs){
+    @Inject
+    public MinaTransService(@Named("Service Port") int port, //
+            @Named("Peer Trans Manager") PeerTransactionManager<B> transManager, //
+            @Named("Extra Object Codecs") List<ObjectCodec> extraObjectCodecs) {
         this.port = port;
         this.ioHandler = new PeerIoHandler(RequestHandlers.getBasicHandlers(transManager));
         this.codecFactory = new MessageCodecFactory(extraObjectCodecs);
+        this.transManager = transManager;
     }
-    
+
     @Override
     protected void startUp() throws Exception {
         acceptor = new NioSocketAcceptor();
@@ -44,18 +51,19 @@ public class MinaTransService extends AbstractIdleService {
 
         acceptor.getSessionConfig().setReadBufferSize(2048);
         acceptor.getSessionConfig().setIdleTime(IdleStatus.READER_IDLE, 2);
-
         acceptor.bind(new InetSocketAddress(port));
-        
+
         logger.info("Transaction service startUp");
     }
 
     @Override
     protected void shutDown() throws Exception {
-        if(!acceptor.isDisposing()){
+        if (!acceptor.isDisposing()) {
+            acceptor.unbind();
             acceptor.dispose();
             logger.info("Transaction service is shuting down");
         }
+        this.transManager.close();
     }
 
 }

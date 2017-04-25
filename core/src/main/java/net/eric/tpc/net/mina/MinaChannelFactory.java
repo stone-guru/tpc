@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
 import org.apache.mina.core.future.ConnectFuture;
@@ -26,6 +29,7 @@ import net.eric.tpc.net.PeerChannel;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.net.binary.MessageCodecFactory;
 import net.eric.tpc.net.binary.ObjectCodec;
+import net.eric.tpc.proto.FutureTk;
 import net.eric.tpc.proto.RoundResult;
 import net.eric.tpc.proto.Types.ErrorCode;
 
@@ -33,7 +37,7 @@ public class MinaChannelFactory implements ChannelFactory {
     private static final Logger logger = LoggerFactory.getLogger(MinaChannelFactory.class);
 
     private SocketConnector connector;
-    private ExecutorService commuTaskPool = Executors.newCachedThreadPool();
+    private ExecutorService commuTaskPool = FutureTk.newCachedThreadPool();
 
     public MinaChannelFactory() {
         this(Collections.emptyList());
@@ -58,14 +62,14 @@ public class MinaChannelFactory implements ChannelFactory {
             return Maybe.fail(ActionStatus.innerError(e.getMessage()));
         }
 
-        // 一个都没连上 
+        // 一个都没连上
         if (r.okResultCount() == 0) {
             if (logger.isDebugEnabled()) {
                 logger.debug("No any connection");
             }
             return Maybe.fail(r.getAnError());
         }
-        
+
         if (!r.isAllOK() && roundType == RoundType.WAIT_ALL) {
             List<PeerChannel<T>> channels = r.okResults();
             this.releaseChannel(channels);
@@ -79,6 +83,9 @@ public class MinaChannelFactory implements ChannelFactory {
     public <T> void releaseChannel(List<PeerChannel<T>> channels) {
         channels.forEach(c -> {
             MinaChannel<T> channel = (MinaChannel<T>) c;
+            if (logger.isDebugEnabled()) {
+                logger.debug("MinaChannelFactory.releaseChannel " + c.getPeer());
+            }
             channel.getSession().closeNow();
         });
     }
@@ -123,8 +130,34 @@ public class MinaChannelFactory implements ChannelFactory {
 
     @Override
     public void close() throws IOException {
-        if (!this.connector.isDisposing())
+        if (logger.isDebugEnabled()) {
+            logger.debug("MinaChannelFactory.close");
+        }
+        if (!this.commuTaskPool.isShutdown()) {
+            this.commuTaskPool.shutdown();
+            try {
+                boolean terminated = false;
+                while (!terminated)
+                    terminated = this.commuTaskPool.awaitTermination(1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                logger.error("MinaChannelFactory.awaitTermination commuTaskPool", e);
+            }
+        }
+        if (!this.connector.isDisposing()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("To dispose MinaConnector");
+            }
             this.connector.dispose();
+            while (!this.connector.isDisposed()) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    return;
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("MinaChannelFactory dispose connector, wait disposed");
+                }
+            }
+        }
     }
-
 }

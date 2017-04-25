@@ -8,14 +8,18 @@ import java.util.Set;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Module;
 
 import net.eric.bank.entity.Account;
 import net.eric.bank.entity.AccountType;
 import net.eric.bank.persist.AccountDao;
+import net.eric.bank.persist.BankDbInit;
+import net.eric.bank.persist.BankPersistModule;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.persist.DatabaseInit;
-import net.eric.tpc.persist.PersisterFactory;
+import net.eric.tpc.persist.CoreDbInit;
 
 public class DbTool {
     private static final String USAGE = "Usage: net.eric.tpc.tool.DbInit code directory\n" //
@@ -24,6 +28,10 @@ public class DbTool {
 
     private static Set<String> codeSet = ImmutableSet.of("BOC", "CCB", "CBRC", "ABC");
 
+    @Inject CoreDbInit coreDbInit;
+    @Inject BankDbInit bankDbInit;
+    @Inject AccountDao accountDao;
+    
     public static void main(String[] args) {
 
         DbTool tool = new DbTool();
@@ -32,8 +40,14 @@ public class DbTool {
             System.out.println(USAGE);
             return;
         }
-
-        tool.initDatabase(opt.get().fst(), opt.get().snd());
+        
+        final String bankCode = opt.get().fst();
+        final String jdbcUrl = "jdbc:h2:" + opt.get().snd() + "/data_" + bankCode.toLowerCase();
+        Module module = new BankPersistModule(jdbcUrl);
+        Injector in = Guice.createInjector(module);
+        in.injectMembers(tool);
+        
+        tool.initDatabase(bankCode);
     }
 
     private Optional<Pair<String, String>> parseArgument(String[] args) {
@@ -51,27 +65,22 @@ public class DbTool {
         return Optional.of(asPair(code, args[1]));
     }
 
-    private void initDatabase(String bankCode, String dirname) {
-        final String jdbcUrl = "jdbc:h2:" + dirname + "/data_" + bankCode.toLowerCase();
-        UniFactory.register(new PersisterFactory(jdbcUrl));
-
-        DatabaseInit dbInit = UniFactory.getObject(DatabaseInit.class);
-        AccountDao accountDao = UniFactory.getObject(AccountDao.class);
+    private void initDatabase(String bankCode) {
 
         if (bankCode.equals("BOC") || bankCode.equals("CCB")) {
-            dbInit.dropAccountTable();
-            dbInit.createAccountTable();
+            bankDbInit.dropAccountTable();
+            bankDbInit.createAccountTable();
             this.insertAccounts(bankCode, accountDao);
         }
 
-        dbInit.dropTransferBillTable();
-        dbInit.createTransferBillTable();
+        bankDbInit.dropTransferBillTable();
+        bankDbInit.createTransferBillTable();
 
-        dbInit.dropDtTable();
-        dbInit.createDtTable();
+        coreDbInit.dropDtTable();
+        coreDbInit.createDtTable();
 
-        dbInit.dropKeyTable();
-        dbInit.createKeyTable();
+        coreDbInit.dropKeyTable();
+        coreDbInit.createKeyTable();
     }
 
     private void insertAccounts(String bankCode, AccountDao accountDao) {

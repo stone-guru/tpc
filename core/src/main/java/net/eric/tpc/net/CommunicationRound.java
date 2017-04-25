@@ -24,12 +24,12 @@ import com.google.common.util.concurrent.Futures;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.RoundResult;
 
 public class CommunicationRound<R> implements RoundResult<R> {
     private static final Logger logger = LoggerFactory.getLogger(CommunicationRound.class);
-    private static Timer timer = new Timer("Latch_cleaner");
 
     public static enum RoundType {
         WAIT_ALL, WAIT_ONE
@@ -43,8 +43,8 @@ public class CommunicationRound<R> implements RoundResult<R> {
     private CountDownHolder latch;
     private Function<Object, Maybe<R>> assembler;
 
-    private static LatchCleaner cleaner = new LatchCleaner(100);
-    
+    private static LatchCleaner cleaner = new LatchCleaner(2000);
+
     public CommunicationRound(List<InetSocketAddress> peers, RoundType waitType) {
         this(peers, waitType, o -> {
             throw new IllegalStateException("This round is not for message receiving");
@@ -78,7 +78,11 @@ public class CommunicationRound<R> implements RoundResult<R> {
             public RoundResult<R> call() throws Exception {
                 CommunicationRound.this.latch.setWaitMillis(delay);
                 CommunicationRound.cleaner.addLatch(CommunicationRound.this.latch);
-                CommunicationRound.this.latch.await();
+                try {
+                    CommunicationRound.this.latch.await();
+                } finally {
+                    CommunicationRound.cleaner.removeLatch(CommunicationRound.this.latch);
+                }
                 return CommunicationRound.this;
             }
         };
@@ -94,16 +98,6 @@ public class CommunicationRound<R> implements RoundResult<R> {
         this.latch.clear();
     }
 
-    public void startLatchCleaner(long delay) {
-        final TimerTask task = new TimerTask() {
-            @Override
-            public void run() {
-                CommunicationRound.this.clearLatch();
-            }
-        };
-        timer.schedule(task, delay);
-    }
-
     public boolean isWithinRound() {
         return !this.latch.isAllDone();
     }
@@ -117,6 +111,9 @@ public class CommunicationRound<R> implements RoundResult<R> {
             logger.debug("regResult " + node.toString() + ", " + result.toString());
         }
         if (!this.isWithinRound()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("regResult not within round, abandom result");
+            }
             return;
         }
 
@@ -132,7 +129,7 @@ public class CommunicationRound<R> implements RoundResult<R> {
             // prev 代表了是从原来的空 到 现在的有，否则就是被放弃的结果了
             if (inserted != myValue) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("result for " + node + "has registered, abandom laters");
+                    logger.debug("result for " + node + "has registered, abandom later");
                 }
                 return;
             }
@@ -203,28 +200,39 @@ public class CommunicationRound<R> implements RoundResult<R> {
     private static class LatchCleaner {
         private Timer timer;
         private ArrayList<CountDownHolder> holders = new ArrayList<CountDownHolder>();
-        private long interval;
-        
+        private long lastProcessTime;
+
         public LatchCleaner(long interval) {
             timer = new Timer(LatchCleaner.class.getCanonicalName(), true);
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    cleanOutDated();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("LatchCleaner timer process");
+                    }
+                    processHolders();
                 }
+            }, 100, interval);
+            this.lastProcessTime = System.currentTimeMillis();
 
-            }, 1, interval);
-            this.interval = interval;
+            NightWatch.regCloseAction("LatchCleaner", () -> timer.cancel());
         }
 
-        private void cleanOutDated() {
+        private void processHolders() {
             synchronized (holders) {
+                long currentTime = System.currentTimeMillis();
+                long interval = currentTime - lastProcessTime;
+                this.lastProcessTime = currentTime;
                 ListIterator<CountDownHolder> it = holders.listIterator();
-                while(it.hasNext()){
+                while (it.hasNext()) {
                     CountDownHolder holder = it.next();
-                    boolean keep = holder.decWaitMillis(this.interval);
-                    if(!keep)
+                    boolean keep = holder.decWaitMillis(interval);
+                    if (!keep) {
                         it.remove();
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("an item expired, removed");
+                        }
+                    }
                 }
             }
         }
@@ -235,6 +243,11 @@ public class CommunicationRound<R> implements RoundResult<R> {
             }
         }
 
+        public void removeLatch(CountDownHolder holder) {
+            synchronized (holders) {
+                holders.remove(holder);
+            }
+        }
     }
 
     private static class CountDownHolder {
@@ -278,7 +291,7 @@ public class CommunicationRound<R> implements RoundResult<R> {
         public boolean decWaitMillis(long d) {
             if (this.waitMillis.get() > 0) {
                 long v = this.waitMillis.addAndGet(-d);
-                if (v <= 0){
+                if (v <= 0) {
                     this.clear();
                     return false;
                 }

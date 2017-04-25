@@ -7,13 +7,9 @@ import org.apache.mina.core.service.IoHandler;
 
 import net.eric.bank.biz.AccountRepository;
 import net.eric.bank.entity.Account;
-import net.eric.bank.net.PeerIoHandler;
-import net.eric.bank.service.CommonServiceFactory;
 import net.eric.bank.util.Util;
-import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.common.MinaServer;
 import net.eric.tpc.common.ServerConfig;
-import net.eric.tpc.persist.PersisterFactory;
 
 public class BankServer extends MinaServer {
 
@@ -34,9 +30,9 @@ public class BankServer extends MinaServer {
     }
 
     private static void initFactory(ServerConfig config) {
-        UniFactory.register(new PersisterFactory(config.getDbUrl()));
-        UniFactory.register(new CommonServiceFactory());
-        UniFactory.register(new BankServiceFactory());
+        //FIXME UniFactory.register(new PersisterFactory(config.getDbUrl()));
+        //FIXME UniFactory.register(new CommonServiceFactory());
+        //FIXME UniFactory.register(new BankServiceFactory());
     }
 
     public BankServer(ServerConfig config) {
@@ -45,7 +41,7 @@ public class BankServer extends MinaServer {
 
     @Override
     protected IoHandler getIoHandler() {
-        return UniFactory.getObject(PeerIoHandler.class, "BANK");
+        return null;//FIXME UniFactory.getObject(PeerIoHandler.class, "BANK");
     }
 
     @Override
@@ -75,7 +71,7 @@ public class BankServer extends MinaServer {
     }
 
     private void displayAllAccount() {
-        AccountRepository accountRepo = UniFactory.getObject(AccountRepositoryImpl.class);
+        AccountRepository accountRepo = null;//FIXME UniFactory.getObject(AccountRepositoryImpl.class);
         List<Account> accounts = accountRepo.getAllAccount();
         Util.displayAccounts(accounts);
     }

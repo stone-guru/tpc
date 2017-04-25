@@ -3,21 +3,18 @@ package net.eric.tpc.net;
 import static net.eric.tpc.base.Pair.asPair;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
-import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.net.CommunicationRound.RoundType;
+import net.eric.tpc.net.MessageAssemblers.YesOrNoAssembler;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.proto.Communicator;
 import net.eric.tpc.proto.RoundResult;
@@ -61,7 +58,10 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
 
     @Override
     public Future<RoundResult<Boolean>> notifyDecision(long xid, Decision decision, List<InetSocketAddress> nodes) {
-        List<Pair<InetSocketAddress, Message>> requests = Lists.transform(nodes, //
+        if (logger.isDebugEnabled()) {
+            logger.debug("notifyDecision " + xid + decision + nodes);
+        }
+        List<Pair<InetSocketAddress, Message>> requests = Pair.map1(nodes, //
                 node -> {
                     if (logger.isDebugEnabled()) {
                         logger.debug("Send " + decision + " to " + node);
@@ -75,80 +75,9 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
                         throw new UnImplementedException();
                     }
 
-                    return asPair(node, //
-                            new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code));
+                    return new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code);
                 });
 
         return this.notify(requests, RoundType.WAIT_ALL);
     }
-
-    /**
-     * TPC 事务中的通讯结果解码类。执行如下基本检查
-     * <ul>
-     * <li>底层传递上来的是否是DataPacket类型</li>
-     * <li>此DataPacket的code是否为希望的code, (code在构造函数中指定)</li>
-     * <li>此DataPacket的param1是否为希望的事务号xid(xid在构造函数中指定</li>
-     * </ul>
-     * 若满足上述检查，就调用{@link DataPacketAssembler#processDataPacket}来进行进一步的处理，子类须实现此方法。
-     *
-     */
-    private static abstract class DataPacketAssembler<R> implements Function<Object, Maybe<R>> {
-        private short code;
-        private long xid;
-
-        public DataPacketAssembler(long xid, short code) {
-            this.code = code;
-            this.xid = xid;
-        }
-
-        @Override
-        public Maybe<R> apply(Object obj) {
-            if (obj == null || !(obj instanceof Message)) {
-                return Maybe.fail(ErrorCode.BAD_DATA_PACKET, "message is not DataPacket");
-            }
-            Message message = (Message) obj;
-            ActionStatus status = message.assureCommand(this.xid, this.code);
-            if (!status.isOK()) {
-                return Maybe.fail(status);
-            }
-            return this.processDataPacket(message);
-        }
-
-        /**
-         * 处理收到的DataPacket，
-         * 
-         * @param node 送回此packet的节点
-         * @param packet 收到的dataPacket, 此DataPacket已满足前述要求。
-         * @return PeerResult not null, 通讯结果
-         */
-        abstract protected Maybe<R> processDataPacket(Message packet);
-    }
-
-    private static final class YesOrNoAssembler extends DataPacketAssembler<Boolean> {
-        private short refuseCode;
-
-        public YesOrNoAssembler(long xid, short commandCode, short refuseCode) {
-            super(xid, commandCode);
-            this.refuseCode = refuseCode;
-        }
-
-        @Override
-        protected Maybe<Boolean> processDataPacket(Message packet) {
-            Maybe<Boolean> maybe = Message.checkYesOrNo(packet.getCommandAnswer());
-            if (!maybe.isRight() || maybe.getRight() == true) {
-                return maybe;
-            }
-            return Maybe.fail(this.refuseCode, //
-                    this.formatReason(packet.getSender(), packet.paramAsActionStatus()));
-        }
-
-        private String formatReason(SocketAddress node, Object param3) {
-            if (ActionStatus.class.isInstance(param3)) {
-                ActionStatus status = (ActionStatus) param3;
-                return String.format("%s, %s, %s", node.toString(), status.getCode(), status.getDescription());
-            }
-            return String.valueOf(param3);
-        }
-    }
-
 }

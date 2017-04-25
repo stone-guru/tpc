@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.eric.tpc.persist.DatabaseInit">
+<mapper namespace="net.eric.tpc.persist.CoreDbInit">
 
   <update id="dropDtTable">
     DROP TABLE IF EXISTS DT_RECORD
@@ -12,7 +12,7 @@
       CREATE TABLE DT_RECORD(
       XID          BIGINT,
       START_TIME   TIMESTAMP NOT NULL,
-      COORDINATOR  VARCHAR(24) NOT NULL, 
+      COORDINATOR  VARCHAR(48) NOT NULL, 
       PARTICIPANTS VARCHAR(256) NOT NULL,
       START_2PC    BOOL NOT NULL,
       VOTE         VARCHAR(8),
@@ -22,10 +22,6 @@
       FINISH_TIME  TIMESTAMP,
       BIZ_MESSSGE  BINARY(4096),
       PRIMARY KEY (XID))
-  </update>
-
-  <update id="dropAccountTable">
-    DROP TABLE IF EXISTS ACCOUNT
   </update>
 
   <update id="dropKeyTable">

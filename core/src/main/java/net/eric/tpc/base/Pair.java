@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
@@ -65,6 +66,14 @@ public class Pair<T1, T2> implements Serializable {
         return ax;
     }
 
+    public static <A, B> List<Pair<A, B>> map1(List<A> ax, Function<A, B> f){
+        List<Pair<A, B>> px = new ArrayList<Pair<A, B>>(ax.size());
+        for(A a : ax){
+            px.add(asPair(a, f.apply(a)));
+        }
+        return px;
+    }
+    
     public static enum FieldTag{FIRST, SECOND};
     
     public static <A, B> boolean hasDuplicatedElement(List<Pair<A, B>> list, FieldTag field){
@@ -87,6 +96,7 @@ public class Pair<T1, T2> implements Serializable {
         }
         return false;
     }
+    
     
     public static <A extends Comparable<? super A>, B extends Comparable<? super B>> Comparator<Pair<A, B>> newComparator() {
         return new Comparator<Pair<A, B>>() {

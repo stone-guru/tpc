@@ -15,11 +15,7 @@ import org.testng.annotations.Test;
 
 import net.eric.bank.entity.AccountIdentity;
 import net.eric.bank.entity.TransferBill;
-import net.eric.bank.persist.TransferBillDao;
 import net.eric.tpc.base.NightWatch;
-import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.persist.DatabaseInit;
-import net.eric.tpc.persist.PersisterFactory;
 
 @Test(singleThreaded=true)
 public class TransferBillDaoTest {
@@ -30,7 +26,7 @@ public class TransferBillDaoTest {
     @BeforeSuite
     public static void init() {
         final String dbUrl = "jdbc:h2:/tmp/account_test";
-        UniFactory.registerMaybe(new PersisterFactory(dbUrl));
+        //FIXME UniFactory.registerMaybe(null);//FIXME new PersisterFactory(dbUrl));
     }
 
     @AfterSuite
@@ -40,11 +36,11 @@ public class TransferBillDaoTest {
 
     @BeforeMethod
     public void beforeTest() {
-        DatabaseInit initor = UniFactory.getObject(DatabaseInit.class);
+        BankDbInit initor = null;//FIXME UniFactory.getObject(BankDbInit.class);
         initor.dropTransferBillTable();
         initor.createTransferBillTable();
 
-        this.transferBillDao = UniFactory.getObject(TransferBillDao.class);
+        this.transferBillDao = null;//FIXME UniFactory.getObject(TransferBillDao.class);
         this.transferBillDao.insert(newBill());
     }
 

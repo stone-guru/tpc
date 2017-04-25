@@ -4,16 +4,11 @@ import static net.eric.tpc.base.Pair.asPair;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.Futures;
 
 import net.eric.bank.biz.AccountRepository;
 import net.eric.bank.biz.BizCode;
@@ -27,33 +22,27 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
 import net.eric.tpc.base.UnImplementedException;
-import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
 import net.eric.tpc.proto.Types.Decision;
 
-public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy<TransferBill> {
+public class AccountRepositoryImpl implements PeerBizStrategy, AccountRepository{
     private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
 
     private AccountLocker accountLocker = new AccountLocker(3, 500);
-    private ExecutorService pool = Executors.newCachedThreadPool();
     private AccountDao accountDao;
     private TransferBillDao transferBillDao;
     private Validator<TransferBill> billValidator;
-    @Override
-    public Future<ActionStatus> checkAndPrepare(long xid, TransferBill bill) {
-        Preconditions.checkNotNull(bill, "bill");
 
+    @Override
+    public ActionStatus checkAndPrepare(long xid, Object b) {
+        Preconditions.checkNotNull(b, "bill");
+        Preconditions.checkArgument(b instanceof TransferBill);
+
+        final TransferBill bill = (TransferBill) b;
         ActionStatus status = billValidator.check(bill);
-        if (status.isOK()) {
-            Callable<ActionStatus> prepareTask = new Callable<ActionStatus>() {
-                @Override
-                public ActionStatus call() throws Exception {
-                    return AccountRepositoryImpl.this.innerPrepareCommint(xid, bill);
-                }
-            };
-            return pool.submit(prepareTask);
-        }
-        return Futures.immediateFuture(status);
+        if (status.isOK())
+            return AccountRepositoryImpl.this.innerPrepareCommint(xid, bill);
+        return status;
     }
 
     private ActionStatus innerPrepareCommint(long xid, TransferBill bill) {
@@ -127,11 +116,11 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
      * 对转出方进行余额检查
      */
     private ActionStatus balanceCheck(Account account, BigDecimal amount) {
-        
-        if(amount.compareTo(BigDecimal.ZERO) <= 0){
-            return ActionStatus.create(BizCode.AMOUNT_LE_ZERO,  amount.toPlainString() + " <= 0");
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return ActionStatus.create(BizCode.AMOUNT_LE_ZERO, amount.toPlainString() + " <= 0");
         }
-        
+
         final int cmpZero = account.getOverdraftLimit().compareTo(BigDecimal.ZERO);
         if (cmpZero == 0) {// 不可透支账户
             if (account.getBalance().compareTo(amount) < 0) {
@@ -146,68 +135,44 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
             }
             return ActionStatus.OK;
         }
-        //可透支金额居然为负
+        // 可透支金额居然为负
         return ActionStatus.create(BizCode.INNER_EXCEPTION, "account data is not correct");
     }
 
     @Override
-    public Future<Void> commit(long xid, BizActionListener listener) {
-        return doDecision(xid, Decision.COMMIT, listener);
+    public boolean commit(long xid) {
+        return doDecision(xid, Decision.COMMIT);
     }
 
     @Override
-    public Future<Void> abort(long xid, BizActionListener listener) {
-        return doDecision(xid, Decision.ABORT, listener);
+    public boolean abort(long xid) {
+        return doDecision(xid, Decision.ABORT);
     }
 
-    private Future<Void> doDecision(long xid, Decision decision, final BizActionListener listener) {
+    private boolean doDecision(long xid, Decision decision) {
         Maybe<Pair<String, String>> maybe = this.accountLocker.getLockedKeyByXid(xid);
         if (!maybe.isRight()) {
             logger.error("when " + decision + ", " + maybe.getLeft().toString());
-            this.callBizActionListener(xid, decision, false, listener);
-            return Futures.immediateFuture(null);
+            return false;
         }
 
-        Callable<Void> commitTask = new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                boolean success = false;
-                try {
-                    if (decision == Decision.COMMIT) {
-                        AccountRepositoryImpl.this.innerCommit(xid);
-                    } else if (decision == Decision.ABORT) {
-                        AccountRepositoryImpl.this.innerAbort(xid);
-                    } else {
-                        throw new UnImplementedException("Decision Enum got more");
-                    }
-                    success = true;
-                } catch (Exception e) {
-                    logger.error("AccountRepositoryImpl.innerCommit", e);
-                }
-                AccountRepositoryImpl.this.callBizActionListener(xid, decision, success, listener);
-
-                // 显示本次事务处理后的账户情况
-                AccountRepositoryImpl.this.displayAllAccount();
-                return null;
-            }
-        };
-        return this.pool.submit(commitTask);
-    }
-
-    private void callBizActionListener(long xid, Decision decision, boolean success, BizActionListener listener) {
-        if (listener == null) {
-            return;
-        }
+        boolean success = false;
         try {
-            if (success) {
-                listener.onSuccess(xid);
+            if (decision == Decision.COMMIT) {
+                AccountRepositoryImpl.this.innerCommit(xid);
+            } else if (decision == Decision.ABORT) {
+                AccountRepositoryImpl.this.innerAbort(xid);
             } else {
-                listener.onFailure(xid);
+                throw new UnImplementedException("Decision Enum got more");
             }
+            success = true;
         } catch (Exception e) {
-            logger.error("AccountRepositoryImpl.executeListener when " + decision + " and exec result is " + success,
-                    e);
+            logger.error("AccountRepositoryImpl.innerCommit", e);
         }
+
+        // 显示本次事务处理后的账户情况
+        AccountRepositoryImpl.this.displayAllAccount();
+        return success;
     }
 
     private void innerCommit(long xid) {
@@ -220,7 +185,7 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
 
         this.accountDao.modifyBalance(asPair(accountNumber, amount.negate()));
         this.accountDao.modifyBalance(asPair(oppositeAccountNumber, amount));
-        this.transferBillDao.updateLock(asPair(bill.getTransSN(), null));
+        this.transferBillDao.updateLock(asPair(bill.getTransSN(), (Long)null));
 
         // 若上述过程出现异常，解锁操作不会发生，保护账户不再执行其它操作，也利于其它诊断
         this.accountLocker.releaseByXid(xid);
@@ -283,6 +248,4 @@ public class AccountRepositoryImpl implements AccountRepository, PeerBizStrategy
     public void setBillValidator(Validator<TransferBill> billValidator) {
         this.billValidator = billValidator;
     }
-
-    
 }

@@ -1,50 +1,46 @@
 package net.eric.bank.regulator;
 
 import java.math.BigDecimal;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.Futures;
 
 import net.eric.bank.biz.BizCode;
 import net.eric.bank.biz.Validator;
 import net.eric.bank.entity.TransferBill;
 import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.ActionStatus;
-import net.eric.tpc.proto.BizActionListener;
 import net.eric.tpc.proto.PeerBizStrategy;
 
-public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill> {
+public class RegulatorBizStrategy implements PeerBizStrategy<TransferBill>{
     private static final Logger logger = LoggerFactory.getLogger(RegulatorBizStrategy.class);
 
     private BillSaveStrategy billSaver;
     private Validator<TransferBill> billValidator;
     
     @Override
-    public Future<ActionStatus> checkAndPrepare(long xid, TransferBill bill) {
+    public ActionStatus checkAndPrepare(long xid, TransferBill bill) {
         logger.info("checkAndPrepare trans " + xid);
         ActionStatus status = billValidator.check(bill);
         if (status.isOK()) {
             status = this.ruleCheck(bill);
             if (status.isOK()) {
-                return this.billSaver.prepareCommit(xid, bill);
+                return this.billSaver.checkAndPrepare(xid, bill);
             }
         }
-        return Futures.immediateFuture(status);
+        return status;
     }
 
     @Override
-    public Future<Void> commit(long xid, BizActionListener commitListener) {
+    public boolean commit(long xid){
         logger.info("commit trans " + xid);
-        return this.billSaver.commit(xid, commitListener);
+        return this.billSaver.commit(xid);
     }
 
     @Override
-    public Future<Void> abort(long xid, BizActionListener abortListener) {
+    public boolean abort(long xid){
         logger.info("abort trans " + xid);
-        return this.billSaver.abort(xid, abortListener);
+        return this.billSaver.abort(xid);
     }
 
     private ActionStatus ruleCheck(TransferBill bill) {

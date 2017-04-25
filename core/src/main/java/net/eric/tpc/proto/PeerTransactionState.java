@@ -43,7 +43,7 @@ public class PeerTransactionState {
     public boolean isTimedout(long currentMillis, long limit) {
         Date at = this.activeTime();
         if(at != null){
-            System.out.println(String.format("%d %d %d", currentMillis, at.getTime(), limit));
+            //System.out.println(String.format("%d %d %d", currentMillis, at.getTime(), limit));
             return  currentMillis - at.getTime() >= limit;
         }
         return false;

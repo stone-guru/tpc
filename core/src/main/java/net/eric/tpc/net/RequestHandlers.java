@@ -22,18 +22,18 @@ import net.eric.tpc.proto.Types.TransStartRec;
 public class RequestHandlers {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandlers.class);
 
-    public static <B> List<RequestHandler> getBasicHandlers(PeerTransactionManager<B> transManager) {
-        return ImmutableList.of(new BeginTransRequestHandler<B>(transManager), //
+    public static List<RequestHandler> getBasicHandlers(PeerTransactionManager<?> transManager) {
+        return ImmutableList.of(new BeginTransRequestHandler(transManager), //
                 new VoteRequestHandler(transManager), //
                 new TransDecisionHandler(transManager), //
                 new PeerDecisonQueryHandler(transManager));
     }
 
-    static class BeginTransRequestHandler<B> implements RequestHandler {
+    static class BeginTransRequestHandler implements RequestHandler {
         
-        private PeerTransactionManager<B> transManager;
+        private PeerTransactionManager transManager;
 
-        public BeginTransRequestHandler(PeerTransactionManager<B> transManager) {
+        public BeginTransRequestHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
 
@@ -42,14 +42,13 @@ public class RequestHandlers {
             return CommandCodes.BEGIN_TRANS;
         }
 
-        private Maybe<Pair<TransStartRec, B>> peekBizEntities(Message request) {
+        private Maybe<Pair<TransStartRec, Object>> peekBizEntities(Message request) {
             Maybe<TransStartRec> startRec = Maybe.safeCast(request.getParam(), TransStartRec.class, //
                     ErrorCode.BAD_DATA_PACKET, "param should be a TransStartRec");
             if (!startRec.isRight()) {
                 return Maybe.fail(startRec.getLeft());
             }
-            @SuppressWarnings("unchecked")
-            Maybe<B> bill = (Maybe<B>) Maybe.fromNullable(request.getContent(), ErrorCode.BAD_DATA_PACKET,
+            Maybe<Object> bill =  Maybe.fromNullable(request.getContent(), ErrorCode.BAD_DATA_PACKET,
                     "business entity is null");
             if (!bill.isRight()) {
                 return bill.castLeft();
@@ -62,7 +61,7 @@ public class RequestHandlers {
         public ProcessResult process(TransSession session, Message request) {
             ActionStatus r = null;
 
-            Maybe<Pair<TransStartRec, B>> bizEntities = this.peekBizEntities(request);
+            Maybe<Pair<TransStartRec, Object>> bizEntities = this.peekBizEntities(request);
             if (!bizEntities.isRight()) {
                 r = bizEntities.getLeft();
             } else {
@@ -78,9 +77,9 @@ public class RequestHandlers {
 
     public static class VoteRequestHandler implements RequestHandler {
 
-        private PeerTransactionManager<?> transManager;
+        private PeerTransactionManager transManager;
 
-        public VoteRequestHandler(PeerTransactionManager<?> transManager) {
+        public VoteRequestHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
 
@@ -101,9 +100,9 @@ public class RequestHandlers {
 
     public static class TransDecisionHandler implements RequestHandler {
 
-        private PeerTransactionManager<?>  transManager;
+        private PeerTransactionManager transManager;
 
-        public TransDecisionHandler(PeerTransactionManager<?>  transManager) {
+        public TransDecisionHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
 
@@ -133,9 +132,9 @@ public class RequestHandlers {
 
     public static class PeerDecisonQueryHandler extends DecisionQueryHandler {
 
-        private PeerTransactionManager<?>  transManager;
+        private PeerTransactionManager transManager;
 
-        public PeerDecisonQueryHandler(PeerTransactionManager<?>  transManager) {
+        public PeerDecisonQueryHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
 

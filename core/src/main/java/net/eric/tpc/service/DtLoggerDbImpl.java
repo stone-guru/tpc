@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.inject.Inject;
 
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.entity.DtRecord;
@@ -23,6 +24,7 @@ import net.eric.tpc.proto.Types.Vote;
 
 public class DtLoggerDbImpl implements DtLogger{
     private static final Logger logger = LoggerFactory.getLogger(DtLoggerDbImpl.class);
+    @Inject
     private DtRecordDao dtLoggerDao;
     
     public static byte[] ObjectToBytes(Object obj) {

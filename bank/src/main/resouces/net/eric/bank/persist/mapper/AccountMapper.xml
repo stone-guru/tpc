@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.eric.tpc.persist.AccountDao">
+<mapper namespace="net.eric.bank.persist.AccountDao">
   
   <resultMap type="Account" id="accountMap">
     <id column="ACCT_NUMBER" property="acctNumber"/>

@@ -11,7 +11,6 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import net.eric.tpc.base.NightWatch;
-import net.eric.tpc.base.UniFactory;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.Vote;
@@ -22,7 +21,7 @@ public class DtLRecordDaoTest {
     @BeforeSuite
     public static void init() {
         final String dbUrl = "jdbc:h2:/tmp/account_test";
-        UniFactory.registerMaybe(new PersisterFactory(dbUrl));
+        //FIXME UniFactory.registerMaybe(new CorePersisterFactory(dbUrl));
     }
 
     @AfterSuite
@@ -32,11 +31,11 @@ public class DtLRecordDaoTest {
 
     @BeforeTest
     public void beforeTest() {
-        DatabaseInit initor = UniFactory.getObject(DatabaseInit.class);
+        CoreDbInit initor = null;//FIXME UniFactory.getObject(CoreDbInit.class);
         initor.dropDtTable();
         initor.createDtTable();
 
-        this.dtRecordDao = UniFactory.getObject(DtRecordDao.class);
+        this.dtRecordDao = null;//FIXME UniFactory.getObject(DtRecordDao.class);
         this.dtRecordDao.insert(this.dtRecord());
     }
 

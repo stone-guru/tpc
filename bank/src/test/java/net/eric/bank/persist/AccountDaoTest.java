@@ -15,11 +15,7 @@ import org.testng.annotations.Test;
 
 import net.eric.bank.entity.Account;
 import net.eric.bank.entity.AccountType;
-import net.eric.bank.persist.AccountDao;
 import net.eric.tpc.base.NightWatch;
-import net.eric.tpc.base.UniFactory;
-import net.eric.tpc.persist.DatabaseInit;
-import net.eric.tpc.persist.PersisterFactory;
 
 public class AccountDaoTest {
     private AccountDao accountDao;
@@ -28,7 +24,7 @@ public class AccountDaoTest {
     @BeforeSuite
     public static void init(){
         final String dbUrl = "jdbc:h2:/tmp/account_test";
-        UniFactory.registerMaybe(new PersisterFactory(dbUrl));
+        //FIXME UniFactory.registerMaybe(null);//FIXME new PersisterFactory(dbUrl));
     }
     
     @AfterSuite
@@ -38,11 +34,11 @@ public class AccountDaoTest {
     
     @BeforeTest
     public void beforeTest(){
-        DatabaseInit initor = UniFactory.getObject(DatabaseInit.class);
+        BankDbInit initor = null;//FIXME UniFactory.getObject(BankDbInit.class);
         initor.dropAccountTable();
         initor.createAccountTable();
         
-        this.accountDao = UniFactory.getObject(AccountDao.class);
+        this.accountDao = null;//FIXME UniFactory.getObject(AccountDao.class);
         accountDao.insert(ryan());
         
     }
