@@ -17,11 +17,11 @@ public class CommandCodes {
 
     public static final short BAD_COMMNAD = 1000;
 
-    public static final short ERROR = 1000;
+    public static final short SERVER_ERROR = 119;
 
     public static final short YES = 1;
     public static final short NO = 2;
-    public static final short UNKNOWN = 1000;
+    public static final short UNKNOWN = 10000;
 
     private CommandCodes() {
     }

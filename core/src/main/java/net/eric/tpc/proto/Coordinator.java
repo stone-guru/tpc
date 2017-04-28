@@ -3,12 +3,10 @@ package net.eric.tpc.proto;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +17,13 @@ import com.google.inject.name.Named;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.proto.CoorBizStrategy.TaskPartition;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
+
+import static net.eric.tpc.proto.FutureTk.*;
 
 public class Coordinator<B> implements TransactionManager<B> {
 
@@ -48,10 +49,13 @@ public class Coordinator<B> implements TransactionManager<B> {
 
     private ExecutorService bizActionPool = Executors.newFixedThreadPool(2);
 
+    public Coordinator() {
+        NightWatch.regCloseable("Coordinator", this);
+    }
+
     @Override
     public ActionStatus transaction(B biz) {
 
-        
         long xid = keyGenerator.nextKey(XID_PREFIX);
 
         Maybe<TaskPartition<B>> taskEither = bizStrategy.splitTask(xid, biz);
@@ -63,8 +67,6 @@ public class Coordinator<B> implements TransactionManager<B> {
         TaskPartition<B> task = taskEither.getRight();
         List<InetSocketAddress> peers = task.getParticipants();
 
-
-        
         Maybe<Communicator> communicatorEither = this.communicatorFactory.getCommunicator(peers);
         if (!communicatorEither.isRight()) {
             return communicatorEither.getLeft();
@@ -82,11 +84,11 @@ public class Coordinator<B> implements TransactionManager<B> {
             }
 
             this.dtLogger.recordDecision(xid, Decision.COMMIT);
-            
-            Future<RoundResult<Boolean>> notifyf= communicator.notifyDecision(xid, Decision.COMMIT, peers);
+
+            Future<RoundResult<Boolean>> notifyf = communicator.notifyDecision(xid, Decision.COMMIT, peers);
 
             this.execFinishAction(xid, this.bizStrategy::commit);
-            
+
             try {
                 notifyf.get();
             } catch (InterruptedException | ExecutionException e) {
@@ -119,7 +121,7 @@ public class Coordinator<B> implements TransactionManager<B> {
     }
 
     private Future<ActionStatus> startLocalPrepare(long xid, B b) {
-        return bizActionPool.submit(() -> bizStrategy.prepareCommit(xid, b));
+        return bizActionPool.submit(tryFunction(() -> bizStrategy.prepareCommit(xid, b)));
     }
 
     private ActionStatus processVote(long xid, TaskPartition<B> task, Communicator communicator) {
@@ -128,7 +130,7 @@ public class Coordinator<B> implements TransactionManager<B> {
         Future<RoundResult<Boolean>> peersVoteFuture = communicator.gatherVote(xid, peers);
 
         ActionStatus voteResult = FutureTk.force(selfVoteFuture);
-        ActionStatus peersVoteResult = FutureTk.waiting(peersVoteFuture, 2000);
+        ActionStatus peersVoteResult = FutureTk.waiting(peersVoteFuture, 20000);
 
         if (voteResult.isOK() && peersVoteResult.isOK()) {
             return ActionStatus.OK;
@@ -154,7 +156,7 @@ public class Coordinator<B> implements TransactionManager<B> {
     }
 
     private ActionStatus askBeginTrans(long xid, TaskPartition<?> task, Communicator communicator) {
-        TransStartRec transStart = new TransStartRec(xid, getSelf(), task.getParticipants());
+        TransStartRec transStart = new TransStartRec(xid, this.self, task.getParticipants());
         Future<RoundResult<Boolean>> beginTransFuture = communicator.askBeginTrans(transStart, task.getPeerTasks());
         this.dtLogger.recordBeginTrans(transStart, task.getCoorTask(), true);
 
@@ -184,45 +186,31 @@ public class Coordinator<B> implements TransactionManager<B> {
         communicator.notifyDecision(xid, Decision.ABORT, nodes);
 
         this.execFinishAction(xid, bizStrategy::abort);
+    }
 
-        this.communicatorFactory.releaseCommunicator(communicator);
+    @Override
+    public void close() throws IOException {
+        if (this.bizActionPool != null)
+            this.bizActionPool.shutdown();
     }
 
     public void setDtLogger(DtLogger dtLogger) {
         this.dtLogger = dtLogger;
     }
 
-    public CoorBizStrategy<B> getBizStrategy() {
-        return bizStrategy;
+    public void setBizStrategy(CoorBizStrategy<B> bizStrategy) {
+        this.bizStrategy = bizStrategy;
     }
 
     public void setCommunicatorFactory(CommunicatorFactory communicatorFactory) {
         this.communicatorFactory = communicatorFactory;
     }
 
-    public InetSocketAddress getSelf() {
-        return self;
-    }
-
-    public void setSelf(InetSocketAddress self) {
-        this.self = self;
-    }
-
-    public KeyGenerator getKeyGenerator() {
-        return keyGenerator;
-    }
-
     public void setKeyGenerator(KeyGenerator keyGenerator) {
         this.keyGenerator = keyGenerator;
     }
 
-    public void setBizStrategy(CoorBizStrategy<B> bizStrategy) {
-        this.bizStrategy = bizStrategy;
-    }
-
-    @Override
-    public void close() throws IOException {
-        if(this.bizActionPool != null)
-            this.bizActionPool.shutdown();
+    public void setSelf(InetSocketAddress self) {
+        this.self = self;
     }
 }

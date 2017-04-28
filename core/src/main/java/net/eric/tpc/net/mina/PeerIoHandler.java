@@ -13,6 +13,8 @@ import org.apache.mina.core.session.IoSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+
 import net.eric.tpc.base.ShouldNotHappenException;
 import net.eric.tpc.net.RequestHandler;
 import net.eric.tpc.net.TransSession;
@@ -67,7 +69,13 @@ public class PeerIoHandler extends IoHandlerAdapter {
 
         RequestHandler handler = this.getRequestHandler(request.getCommandCode());
 
-        final ProcessResult result = handler.process(transSession, request);
+        ProcessResult result = null;
+        try {
+            result = handler.process(transSession, request);
+        } catch (Exception e) {
+            logger.error("Process Message Error, can not generate response", e);
+            return;
+        }
 
         if (result.getResponse().isPresent())
             this.replyMessage(session, result.getResponse().get(), result.isCloseAfterSend());

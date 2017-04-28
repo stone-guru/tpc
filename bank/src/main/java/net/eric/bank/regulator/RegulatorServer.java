@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import org.apache.mina.core.service.IoHandler;
 
-import net.eric.tpc.common.MinaServer;
-import net.eric.tpc.common.ServerConfig;
+import net.eric.bank.common.MinaServer;
+import net.eric.bank.common.ServerConfig;
 
 public class RegulatorServer extends MinaServer {
 
@@ -14,7 +14,7 @@ public class RegulatorServer extends MinaServer {
     private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/data_cbrc";
 
     public static void main(String[] args) throws IOException {
-        ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
+        ServerConfig config = new ServerConfig(args);
 
         initFactory(config);
 

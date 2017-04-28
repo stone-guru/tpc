@@ -14,6 +14,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.net.CommunicationRound.RoundType;
 import net.eric.tpc.net.binary.Message;
 import net.eric.tpc.net.binary.ObjectCodec;
@@ -37,6 +38,8 @@ public class CoorCommunicatorFactory implements CommunicatorFactory, TaskPoolPro
     public CoorCommunicatorFactory(@Named("Extra Object Codecs") List<ObjectCodec> objectCodecs) {
         channelFactory = new MinaChannelFactory(objectCodecs);
         logger.debug("CoorCommunicatorFactory created " + this.toString());
+        
+        NightWatch.regCloseable("CoorCommunicatorFactory", this);
     }
 
     @Override
@@ -60,12 +63,6 @@ public class CoorCommunicatorFactory implements CommunicatorFactory, TaskPoolPro
             CoorCommunicatorFactory.this.commuTaskPool.shutdown();
             CoorCommunicatorFactory.this.sequenceTaskPool.shutdown();
         });
-
-        try {
-            this.channelFactory.close();
-        } catch (IOException e) {
-            logger.error("close channelFactory", e);
-        }
     }
 
     @Override

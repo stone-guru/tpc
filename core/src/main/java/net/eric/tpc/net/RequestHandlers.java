@@ -31,8 +31,10 @@ public class RequestHandlers {
 
     static class BeginTransRequestHandler implements RequestHandler {
         
+        @SuppressWarnings("rawtypes")
         private PeerTransactionManager transManager;
 
+        @SuppressWarnings("rawtypes")
         public BeginTransRequestHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
@@ -57,6 +59,7 @@ public class RequestHandlers {
             return Maybe.success(asPair(startRec.getRight(), bill.getRight()));
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public ProcessResult process(TransSession session, Message request) {
             ActionStatus r = null;
@@ -75,11 +78,12 @@ public class RequestHandlers {
         }
     }
 
+
     public static class VoteRequestHandler implements RequestHandler {
+        
+        private PeerTransactionManager<?> transManager;
 
-        private PeerTransactionManager transManager;
-
-        public VoteRequestHandler(PeerTransactionManager transManager) {
+        public VoteRequestHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 
@@ -100,9 +104,9 @@ public class RequestHandlers {
 
     public static class TransDecisionHandler implements RequestHandler {
 
-        private PeerTransactionManager transManager;
+        private PeerTransactionManager<?> transManager;
 
-        public TransDecisionHandler(PeerTransactionManager transManager) {
+        public TransDecisionHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 
@@ -132,9 +136,10 @@ public class RequestHandlers {
 
     public static class PeerDecisonQueryHandler extends DecisionQueryHandler {
 
-        private PeerTransactionManager transManager;
 
-        public PeerDecisonQueryHandler(PeerTransactionManager transManager) {
+        private PeerTransactionManager<?> transManager;
+
+        public PeerDecisonQueryHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 

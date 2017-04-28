@@ -29,6 +29,9 @@ public class Message implements Serializable {
     }
 
     public static Maybe<Boolean> checkYesOrNo(short answer) {
+        if(answer == CommandCodes.SERVER_ERROR){
+            return Maybe.fail(ErrorCode.PEER_INNER_ERROR, "Peer inner error");
+        }
         return Maybe.fromCondition(answer == CommandCodes.YES || answer == CommandCodes.NO, //
                 CommandCodes.YES == answer, //
                 ErrorCode.PEER_PRTC_ERROR,

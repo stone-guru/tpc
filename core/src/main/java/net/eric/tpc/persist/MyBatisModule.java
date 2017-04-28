@@ -15,9 +15,6 @@ import com.google.inject.Module;
 import com.google.inject.Provider;
 
 import net.eric.tpc.base.NightWatch;
-import net.eric.tpc.persist.CoreDbInit;
-import net.eric.tpc.persist.DtRecordDao;
-import net.eric.tpc.persist.KeyStoreDao;
 
 public class MyBatisModule implements Module {
 

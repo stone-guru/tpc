@@ -28,7 +28,11 @@ public class TransProtoPeerServer {
 
         @Override
         public ActionStatus checkAndPrepare(long xid, Integer b) {
+            int a = 100;
             logger.debug("PeerBizStrategy.checkAndPrepare " + xid + ", " + b);
+            if( a!= 1){
+                throw new IllegalStateException("planed exception ");
+            }
             return ActionStatus.OK;
         }
 

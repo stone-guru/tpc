@@ -12,13 +12,13 @@ import com.google.common.collect.ImmutableList;
 
 import net.eric.bank.biz.BizCode;
 import net.eric.bank.biz.Validator;
+import net.eric.bank.common.Configuration;
 import net.eric.bank.entity.AccountIdentity;
 import net.eric.bank.entity.TransferBill;
 import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.common.Configuration;
 import net.eric.tpc.proto.CoorBizStrategy;
 
 public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {

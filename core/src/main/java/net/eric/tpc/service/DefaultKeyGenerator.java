@@ -38,6 +38,7 @@ public class DefaultKeyGenerator implements KeyGenerator {
     }
     
     private ConcurrentHashMap<String, KeyHolder> generatorMap;
+
     private KeyPersister keyPersister;
 
     @Inject
@@ -88,6 +89,7 @@ public class DefaultKeyGenerator implements KeyGenerator {
         final int nextSerial = holder.serial.incrementAndGet();
         
         this.keyPersister.storeKey(holder.prefix, currentDateDigit, nextSerial);
+        
         return nextSerial * 100000000 + currentDateDigit;
     }
     

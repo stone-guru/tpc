@@ -1,7 +1,6 @@
 package net.eric.tpc;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.List;
 
 import com.google.inject.Binder;
@@ -9,7 +8,6 @@ import com.google.inject.EricTypeLiteral;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
@@ -20,7 +18,6 @@ import net.eric.tpc.proto.CoorBizStrategy;
 import net.eric.tpc.proto.Coordinator;
 import net.eric.tpc.proto.DtLogger;
 import net.eric.tpc.proto.KeyGenerator;
-import net.eric.tpc.proto.PeerBizStrategy;
 import net.eric.tpc.proto.TransactionManager;
 import net.eric.tpc.service.DefaultKeyGenerator;
 import net.eric.tpc.service.DtLoggerDbImpl;

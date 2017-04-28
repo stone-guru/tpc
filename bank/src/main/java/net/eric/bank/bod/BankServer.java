@@ -1,79 +1,37 @@
 package net.eric.bank.bod;
 
-import java.io.IOException;
-import java.util.List;
+import com.google.common.base.Optional;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 
-import org.apache.mina.core.service.IoHandler;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.common.PeerServer;
+import net.eric.bank.common.ServerConfig;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.BillBasicValidator;
+import net.eric.tpc.proto.PeerBizStrategy;
 
-import net.eric.bank.biz.AccountRepository;
-import net.eric.bank.entity.Account;
-import net.eric.bank.util.Util;
-import net.eric.tpc.common.MinaServer;
-import net.eric.tpc.common.ServerConfig;
-
-public class BankServer extends MinaServer {
-
-    private static final String DEFAULT_BANK_CODE = "BOC";
-    private static final int DEFAULT_PORT = 10021;
-    private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/data_boc";
-
-    public static void main(String[] args) throws IOException {
-        ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
-
-        initFactory(config);
-
-        BankServer server = new BankServer(config);
-
-        server.start();
-
-        server.displayAllAccount();
-    }
-
-    private static void initFactory(ServerConfig config) {
-        //FIXME UniFactory.register(new PersisterFactory(config.getDbUrl()));
-        //FIXME UniFactory.register(new CommonServiceFactory());
-        //FIXME UniFactory.register(new BankServiceFactory());
-    }
-
-    public BankServer(ServerConfig config) {
-        super(config);
-    }
-
-    @Override
-    protected IoHandler getIoHandler() {
-        return null;//FIXME UniFactory.getObject(PeerIoHandler.class, "BANK");
-    }
-
-    @Override
-    protected String getSplashText(String bankCode) {
-        if (bankCode.equalsIgnoreCase("CCB")) {
-            return "          /$$$$$$   /$$$$$$  /$$$$$$$ \n"//
-                    + "         /$$__  $$ /$$__  $$| $$__  $$\n"//
-                    + "        | $$  \\__/| $$  \\__/| $$  \\ $$\n"//
-                    + "        | $$      | $$      | $$$$$$$ \n"//
-                    + "        | $$      | $$      | $$__  $$\n"//
-                    + "        | $$    $$| $$    $$| $$  \\ $$\n"//
-                    + "        |  $$$$$$/|  $$$$$$/| $$$$$$$/\n"//
-                    + "        \\______/  \\______/ |_______/  ";
-
+public class BankServer {
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        ServerConfig config = new ServerConfig(args);
+        if (!config.getBankCode().equalsIgnoreCase("BOC") && !config.getBankCode().equalsIgnoreCase("CCB")) {
+            System.out.println("BankCode must be BOC or CCB");
+            return;
         }
-        if (bankCode.equalsIgnoreCase("BOC")) {
-            return "         /$$$$$$$   /$$$$$$   /$$$$$$ \n"//
-                    + "        | $$__  $$ /$$__  $$ /$$__  $$\n"//
-                    + "        | $$  \\ $$| $$  \\ $$| $$  \\__/\n"//
-                    + "        | $$$$$$$ | $$  | $$| $$      \n"//
-                    + "        | $$__  $$| $$  | $$| $$      \n"//
-                    + "        | $$  \\ $$| $$  | $$| $$    $$\n"//
-                    + "        | $$$$$$$/|  $$$$$$/|  $$$$$$/\n"//
-                    + "        |_______/  \\______/  \\______/ ";
-        }
-        return null;
+        Class<?> c = AccountRepositoryImpl.class;
+        
+        Module m3 = new Module() {
+            @Override
+            public void configure(Binder binder) {
+                binder.bind(new TypeLiteral<Validator<TransferBill>>() {
+                }).to(BillBasicValidator.class);
+                
+                binder.bind(AccountLocker.class);
+            }
+        };
+        
+        PeerServer.runServer(config, (Class<PeerBizStrategy<TransferBill>>) c, Optional.of(m3));
     }
-
-    private void displayAllAccount() {
-        AccountRepository accountRepo = null;//FIXME UniFactory.getObject(AccountRepositoryImpl.class);
-        List<Account> accounts = accountRepo.getAllAccount();
-        Util.displayAccounts(accounts);
-    }
-
 }

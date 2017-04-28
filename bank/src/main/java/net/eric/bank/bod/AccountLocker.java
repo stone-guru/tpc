@@ -11,6 +11,7 @@ import java.util.Map;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.inject.Inject;
 
 import net.eric.bank.persist.AccountDao;
 import net.eric.tpc.base.ActionStatus;
@@ -22,7 +23,12 @@ public class AccountLocker {
     private Map<String, Long> keyMap = new HashMap<String, Long>();
     private int tryTimes;
     private int sleepMilis;
+    @Inject
     private AccountDao accountDao;
+
+    public AccountLocker() {
+        this(3, 500);
+    }
 
     public AccountLocker(int tryTimes, int sleepMilis) {
         this.tryTimes = tryTimes;
@@ -64,7 +70,7 @@ public class AccountLocker {
         }
         keyMap.remove(key1);
         keyMap.remove(key2);
-        
+
         final Long nullXid = null;
         accountDao.updateLock(asPair(key1, nullXid));
         accountDao.updateLock(asPair(key2, nullXid));
@@ -89,7 +95,7 @@ public class AccountLocker {
             return maybe.getLeft();
         }
         Pair<String, String> doubleKey = maybe.getRight();
-        
+
         this.releaseLock(doubleKey.fst(), doubleKey.snd(), xid);
         return ActionStatus.OK;
     }
@@ -122,16 +128,16 @@ public class AccountLocker {
         }
     }
 
-    private void assureKeyRule(List<Pair< String, Long>> keys) {
+    private void assureKeyRule(List<Pair<String, Long>> keys) {
         @SuppressWarnings("unchecked")
-        Pair<String, Long>[] sortedKeys =  keys.toArray(new Pair[keys.size()]);
-        final Comparator<Pair<String, Long>> c  = Pair.newComparator();
+        Pair<String, Long>[] sortedKeys = keys.toArray(new Pair[keys.size()]);
+        final Comparator<Pair<String, Long>> c = Pair.newComparator();
         Arrays.sort(sortedKeys, c);
 
         Map<Long, Integer> xidMap = new HashMap<Long, Integer>();
         String prevKey = "";
         for (Pair<String, Long> p : sortedKeys) {
-            //排序过后相同的key将排在一起
+            // 排序过后相同的key将排在一起
             if (p.fst().equals(prevKey)) {
                 throw new IllegalArgumentException(prevKey + "occurs more than once");
             }
@@ -144,13 +150,13 @@ public class AccountLocker {
                 throw new IllegalArgumentException("xid " + xid + " locked by more than 2 key");
             }
             xidMap.put(xid, v + 1);
-            
+
             prevKey = p.fst();
         }
-        
-        for(Long xid : xidMap.keySet()){
+
+        for (Long xid : xidMap.keySet()) {
             int v = xidMap.get(xid);
-            if(v < 2){
+            if (v < 2) {
                 throw new IllegalArgumentException("xid " + xid + " locked by only 1 key");
             }
         }

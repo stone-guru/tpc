@@ -63,7 +63,7 @@ public class MinaTransService<B> extends AbstractIdleService {
             acceptor.dispose();
             logger.info("Transaction service is shuting down");
         }
-        this.transManager.close();
+        //this.transManager.close();
     }
 
 }
