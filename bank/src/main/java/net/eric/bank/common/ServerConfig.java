@@ -1,40 +1,34 @@
-package net.eric.tpc.common;
+package net.eric.bank.common;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+
+import net.eric.bank.entity.TransferBill;
+import net.eric.tpc.proto.PeerTransactionManager;
 
 public class ServerConfig {
     private String bankCode;
     private int port;
     private String dbUrl;
     private InetSocketAddress mySelf;
-    
+
     public ServerConfig(String bankCode, int port, String dbUrl) {
         this.bankCode = bankCode;
         this.port = port;
         this.dbUrl = dbUrl;
-        this.mySelf = this.getMySelf(port, bankCode);
+        this.mySelf = this.getMySelf(port);
     }
 
-    public ServerConfig(String[] args, String defaultBankCode, int defaultPort, String defaultDbUrl) {
-        this.bankCode = defaultBankCode;
-        this.port = defaultPort;
-        this.dbUrl = defaultDbUrl;
-        
-        if (!(args == null)) {
-            if (args.length >= 1) {
-                this.bankCode = args[0].toUpperCase();
-            }
-            if (args.length >= 2) {
-                this.port = Integer.parseInt(args[1]);
-            }
-            if (args.length >= 3) {
-                this.dbUrl = args[2];
-            }
+    public ServerConfig(String[] args) {
+        if (args == null || args.length != 3) {
+            throw new IllegalArgumentException("");
         }
-        
-        this.mySelf = this.getMySelf(this.port, bankCode);
+
+        this.bankCode = args[0].toUpperCase();
+        this.port = Integer.parseInt(args[1]);
+        this.dbUrl = args[2];
+        this.mySelf = this.getMySelf(this.port);
     }
 
     public String getBankCode() {
@@ -48,13 +42,12 @@ public class ServerConfig {
     public String getDbUrl() {
         return dbUrl;
     }
-    
-    public InetSocketAddress getWorkingNode()
-    {
+
+    public InetSocketAddress getWorkingNode() {
         return this.mySelf;
     }
-    
-    private InetSocketAddress getMySelf(int port, String bankCode){
+
+    private InetSocketAddress getMySelf(int port) {
         InetAddress address;
         try {
             address = InetAddress.getLocalHost();

@@ -3,6 +3,7 @@ package net.eric.tpc.net.mina;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import net.eric.tpc.net.RequestHandler;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
@@ -28,16 +29,14 @@ public class MinaTransService<B> extends AbstractIdleService {
     private IoHandler ioHandler;
     private int port;
     private ProtocolCodecFactory codecFactory;
-    private PeerTransactionManager<?> transManager;
-    
+
     @Inject
     public MinaTransService(@Named("Service Port") int port, //
-            @Named("Peer Trans Manager") PeerTransactionManager<B> transManager, //
-            @Named("Extra Object Codecs") List<ObjectCodec> extraObjectCodecs) {
+                            @Named("RequestHandlers") List<RequestHandler> requestHandlers,//
+                            @Named("Extra Object Codecs") List<ObjectCodec> extraObjectCodecs) {
         this.port = port;
-        this.ioHandler = new PeerIoHandler(RequestHandlers.getBasicHandlers(transManager));
+        this.ioHandler = new PeerIoHandler(requestHandlers);
         this.codecFactory = new MessageCodecFactory(extraObjectCodecs);
-        this.transManager = transManager;
     }
 
     @Override
@@ -63,7 +62,6 @@ public class MinaTransService<B> extends AbstractIdleService {
             acceptor.dispose();
             logger.info("Transaction service is shuting down");
         }
-        this.transManager.close();
     }
 
 }

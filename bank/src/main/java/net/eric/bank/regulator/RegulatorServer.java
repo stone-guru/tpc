@@ -1,55 +1,33 @@
 package net.eric.bank.regulator;
 
-import java.io.IOException;
+import com.google.common.base.Optional;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
+import net.eric.bank.biz.Validator;
+import net.eric.bank.bod.AccountLocker;
+import net.eric.bank.common.PeerServer;
+import net.eric.bank.common.ServerConfig;
+import net.eric.bank.entity.TransferBill;
+import net.eric.bank.service.BillBasicValidator;
+import net.eric.tpc.proto.PeerBizStrategy;
 
-import org.apache.mina.core.service.IoHandler;
-
-import net.eric.tpc.common.MinaServer;
-import net.eric.tpc.common.ServerConfig;
-
-public class RegulatorServer extends MinaServer {
-
-    private static final String DEFAULT_BANK_CODE = "CBRC";
-    private static final int DEFAULT_PORT = 10023;
-    private static final String DEFAULT_DB_URL = "jdbc:h2:tcp://localhost:9100/data_cbrc";
-
-    public static void main(String[] args) throws IOException {
-        ServerConfig config = new ServerConfig(args, DEFAULT_BANK_CODE, DEFAULT_PORT, DEFAULT_DB_URL);
-
-        initFactory(config);
-
-        RegulatorServer server = new RegulatorServer(config);
-
-        server.start();
-    }
-
-    private static void initFactory(ServerConfig config) {
-        //FIXME UniFactory.register(new PersisterFactory(config.getDbUrl()));
-        //FIXME UniFactory.register(new CommonServiceFactory());
-        //FIXME UniFactory.register(new RegulatorServiceFactory());
-    }
-
-    public RegulatorServer(ServerConfig config) {
-        super(config);
-    }
-
-    @Override
-    protected IoHandler getIoHandler() {
-        return null;//FIXME UniFactory.getObject(PeerIoHandler.class, "REGULATOR");
-    }
-
-    @Override
-    protected String getSplashText(String bankCode) {
-        if (bankCode.equalsIgnoreCase("CBRC")) {
-            return "          /$$$$$$  /$$$$$$$  /$$$$$$$   /$$$$$$ \n"//
-                    + "         /$$__  $$| $$__  $$| $$__  $$ /$$__  $$\n"//
-                    + "        | $$  \\__/| $$  \\ $$| $$  \\ $$| $$  \\__/\n"//
-                    + "        | $$      | $$$$$$$ | $$$$$$$/| $$      \n"//
-                    + "        | $$      | $$__  $$| $$__  $$| $$      \n"//
-                    + "        | $$    $$| $$  \\ $$| $$  \\ $$| $$    $$\n"//
-                    + "        |  $$$$$$/| $$$$$$$/| $$  | $$|  $$$$$$/\n"//
-                    + "         \\______/ |_______/ |__/  |__/ \\______/ ";
+public class RegulatorServer {
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        ServerConfig config = new ServerConfig(args);
+        if (!config.getBankCode().equalsIgnoreCase("CBRC")) {
+            System.out.println("BankCode must be CBRC");
+            return;
         }
-        return null;
+        Class<?> c = RegulatorBizStrategy.class;
+
+        Module m3 = (Binder binder) -> {
+            binder.bind(new TypeLiteral<Validator<TransferBill>>() {
+            }).to(BillBasicValidator.class);
+            binder.bind(AccountLocker.class);
+        };
+
+        PeerServer.runServer(config, (Class<PeerBizStrategy<TransferBill>>) c, m3);
     }
 }

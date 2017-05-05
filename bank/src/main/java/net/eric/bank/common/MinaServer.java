@@ -1,4 +1,4 @@
-package net.eric.tpc.common;
+package net.eric.bank.common;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

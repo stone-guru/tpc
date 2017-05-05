@@ -15,7 +15,6 @@ import net.eric.tpc.net.binary.ObjectCodec;
 public class TransferBillCodec implements ObjectCodec{
     public static final short BILL_TYPE_CODE = 2001;
     
-
     private static CharsetEncoder utf8Encoder = Charset.forName("UTF-8").newEncoder();
     private static CharsetDecoder utf8Decoder = Charset.forName("UTF-8").newDecoder();
     

@@ -6,13 +6,18 @@ import net.eric.tpc.net.binary.Message;
 
 public interface RequestHandler {
 
-    short getCorrespondingCode();
+    short[] getCorrespondingCodes();
 
     ProcessResult process(TransSession session, Message request);
 
     class ProcessResult {
         public static ProcessResult NO_RESPONSE_AND_CLOSE = new ProcessResult(true);
-        
+
+        public static ProcessResult errorAndClose(long xid, short round){
+            final Message message = new Message(xid, round, CommandCodes.SERVER_ERROR);
+            return new ProcessResult(message, true);
+        }
+
         private Message response;
         private boolean closeAfterSend;
 

@@ -19,6 +19,8 @@ import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 
+import static net.eric.tpc.net.binary.Message.fromRequest;
+
 public class RequestHandlers {
     private static final Logger logger = LoggerFactory.getLogger(RequestHandlers.class);
 
@@ -26,20 +28,22 @@ public class RequestHandlers {
         return ImmutableList.of(new BeginTransRequestHandler(transManager), //
                 new VoteRequestHandler(transManager), //
                 new TransDecisionHandler(transManager), //
-                new PeerDecisonQueryHandler(transManager));
+                new PeerDecisionQueryHandler(transManager));
     }
 
     static class BeginTransRequestHandler implements RequestHandler {
         
+        @SuppressWarnings("rawtypes")
         private PeerTransactionManager transManager;
 
+        @SuppressWarnings("rawtypes")
         public BeginTransRequestHandler(PeerTransactionManager transManager) {
             this.transManager = transManager;
         }
 
         @Override
-        public short getCorrespondingCode() {
-            return CommandCodes.BEGIN_TRANS;
+        public short[] getCorrespondingCodes() {
+            return new short[]{CommandCodes.BEGIN_TRANS};
         }
 
         private Maybe<Pair<TransStartRec, Object>> peekBizEntities(Message request) {
@@ -57,6 +61,7 @@ public class RequestHandlers {
             return Maybe.success(asPair(startRec.getRight(), bill.getRight()));
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public ProcessResult process(TransSession session, Message request) {
             ActionStatus r = null;
@@ -68,73 +73,69 @@ public class RequestHandlers {
                 r = this.transManager.beginTrans(bizEntities.getRight().fst(), bizEntities.getRight().snd());
             }
 
-            Message response = r.isOK() ? //
-                    Message.fromRequest(request, CommandCodes.BEGIN_TRANS_ANSWER, CommandCodes.YES) : //
-                    Message.fromRequest(request, CommandCodes.BEGIN_TRANS_ANSWER, CommandCodes.NO, r);
+            Message response = r.isOK() ? fromRequest(request, CommandCodes.YES) : fromRequest(request,  CommandCodes.NO, r);
             return new ProcessResult(response, !r.isOK());
         }
     }
 
+
     public static class VoteRequestHandler implements RequestHandler {
+        
+        private PeerTransactionManager<?> transManager;
 
-        private PeerTransactionManager transManager;
-
-        public VoteRequestHandler(PeerTransactionManager transManager) {
+        public VoteRequestHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 
         @Override
-        public short getCorrespondingCode() {
-            return CommandCodes.VOTE_REQ;
+        public short[] getCorrespondingCodes() {
+            return new short[]{CommandCodes.VOTE_REQ};
         }
 
         @Override
         public ProcessResult process(TransSession transSession, Message request) {
             ActionStatus r = this.transManager.processVoteReq(request.getXid());
             Message response = r.isOK() ? //
-                    Message.fromRequest(request, CommandCodes.VOTE_ANSWER, CommandCodes.YES) : //
-                    Message.fromRequest(request, CommandCodes.VOTE_ANSWER, CommandCodes.NO, r);
+                    Message.fromRequest(request, CommandCodes.YES) : //
+                    Message.fromRequest(request, CommandCodes.NO, r);
             return new ProcessResult(response, !r.isOK());
         }
     }
 
     public static class TransDecisionHandler implements RequestHandler {
 
-        private PeerTransactionManager transManager;
+        private PeerTransactionManager<?> transManager;
 
-        public TransDecisionHandler(PeerTransactionManager transManager) {
+        public TransDecisionHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 
         @Override
-        public short getCorrespondingCode() {
-            return CommandCodes.TRANS_DECISION;
+        public short[] getCorrespondingCodes() {
+            return new short[]{CommandCodes.ABORT_TRANS, CommandCodes.COMMIT_TRANS};
         }
 
         @Override
         public ProcessResult process(TransSession session, Message message) {
-            switch (message.getCommandAnswer()) {
-            case CommandCodes.YES:
+            switch (message.getCode()) {
+            case CommandCodes.COMMIT_TRANS:
                 this.transManager.processTransDecision(message.getXid(), Decision.COMMIT);
                 break;
-            case CommandCodes.NO:
+            case CommandCodes.ABORT_TRANS:
                 this.transManager.processTransDecision(message.getXid(), Decision.ABORT);
                 break;
-            case CommandCodes.UNKNOWN:
-                logger.info("unknown decison from this peer");
-                break;
             default:
-                logger.error("Unknown commit decision " + message.getCommandAnswer());
+                logger.error("Unknown commit decision " + message.getCode());
             }
             return ProcessResult.NO_RESPONSE_AND_CLOSE;
         }
     }
 
-    public static class PeerDecisonQueryHandler extends DecisionQueryHandler {
+    public static class PeerDecisionQueryHandler extends DecisionQueryHandler {
 
-        private PeerTransactionManager transManager;
+        private PeerTransactionManager<?> transManager;
 
-        public PeerDecisonQueryHandler(PeerTransactionManager transManager) {
+        public PeerDecisionQueryHandler(PeerTransactionManager<?> transManager) {
             this.transManager = transManager;
         }
 

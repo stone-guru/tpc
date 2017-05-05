@@ -1,13 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
 bin=`which $0`
 bin=`dirname ${bin}`
-bin=`cd "$bin"; pwd`
 
-PORT=10022
-BANK_CODE=ccb
+INST_DIR=`cd "$bin/.."; pwd`
+MC="net.eric.bank.bod.BankServer"
 
-. $bin/config-param.sh
+echo $INST_DIR $MC
 
-java -cp $CLASS_PATH net.eric.tpc.bank.BankServer $BANK_CODE $PORT $DB_URL
+. $INST_DIR/bin/config-param.sh
+
+start_server "$INST_DIR" "$MC" "ccb" "10022"
+
 

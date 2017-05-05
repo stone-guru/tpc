@@ -1,16 +1,18 @@
 #!/bin/sh
 bin=`which $0`
 bin=`dirname ${bin}`
-bin=`cd "$bin"; pwd`
 
+INST_DIR=`cd "$bin/.."; pwd`
+DB_DIR="$INST_DIR/database"
 
-. $bin/config-param.sh
+CLASS_PATH=~/Workspace/tpc/core/target/classes:~/Workspace/tpc/bank/target/classes
+for f in `ls $INST_DIR/lib/*.jar`
+do
+    CLASS_PATH="$CLASS_PATH:$f"
+done
 
-DB_DIR="$bin/../database"
-echo $CLASS_PATH
-
-java -cp $CLASS_PATH net.eric.tpc.tool.DbTool BOC $DB_DIR
-java -cp $CLASS_PATH net.eric.tpc.tool.DbTool CCB $DB_DIR
-java -cp $CLASS_PATH net.eric.tpc.tool.DbTool ABC $DB_DIR
-java -cp $CLASS_PATH net.eric.tpc.tool.DbTool CBRC $DB_DIR
+java -cp $CLASS_PATH net.eric.bank.tool.DbTool BOC $DB_DIR
+java -cp $CLASS_PATH net.eric.bank.tool.DbTool CCB $DB_DIR
+java -cp $CLASS_PATH net.eric.bank.tool.DbTool ABC $DB_DIR
+java -cp $CLASS_PATH net.eric.bank.tool.DbTool CBRC $DB_DIR
 

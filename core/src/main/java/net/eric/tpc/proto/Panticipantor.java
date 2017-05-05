@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +29,8 @@ import net.eric.tpc.proto.Types.ErrorCode;
 import net.eric.tpc.proto.Types.TransStartRec;
 import net.eric.tpc.proto.Types.Vote;
 
+import static net.eric.tpc.proto.FutureTk.tryFunction;
+
 public class Panticipantor<B> implements PeerTransactionManager<B> {
 
     private static final Logger logger = LoggerFactory.getLogger(Panticipantor.class);
@@ -51,13 +52,13 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     private ExecutorService taskPool = Executors.newFixedThreadPool(3);
 
     public Panticipantor() {
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                Panticipantor.this.timerTask();
-            }
-        }, 1000, 3000);
-        
+        // timer.scheduleAtFixedRate(new TimerTask() {
+        // @Override
+        // public void run() {
+        // Panticipantor.this.timerTask();
+        // }
+        // }, 1000, 3000);
+
         NightWatch.regCloseable("Panticipantor", this);
     }
 
@@ -88,7 +89,7 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
             logger.debug("Begin Transaction : " + startRec.toString() + " " + bill.toString() + " " + state.toString());
         }
 
-        Future<ActionStatus> future = this.taskPool.submit(() -> bizStrategy.checkAndPrepare(startRec.getXid(), bill));
+        Future<ActionStatus> future = this.taskPool.submit(tryFunction( () -> bizStrategy.checkAndPrepare(startRec.getXid(), bill)));
 
         state.setVoteFuture(future);
 
@@ -112,6 +113,9 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
             state.setStage(Stage.VOTED);
             state.setVote(vote);
 
+            if (vote != Vote.YES) {
+                this.transactionMap.remove(xid);
+            }
             return voteResult;
         }
     }
@@ -147,33 +151,33 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
     }
 
     private void timerTask() {
-        final List<PeerTransactionState> outdatedTrans = Lists.newArrayList();
+        final List<PeerTransactionState> expiredTrans = Lists.newArrayList();
         final long now = new Date().getTime();
 
-//        if (logger.isDebugEnabled()) {
-//            logger.debug("Panticipanter timer task");
-//        }
+        // if (logger.isDebugEnabled()) {
+        // logger.debug("Panticipanter timer task");
+        // }
         for (long xid : this.transactionMap.keySet()) {
             PeerTransactionState state = this.transactionMap.get(xid);
             synchronized (state) {
                 if (state.isTimedout(now, 3000)) {
                     logger.debug(xid + " timed out!");
                     this.transactionMap.remove(xid);
-                    outdatedTrans.add(state);
+                    expiredTrans.add(state);
                 }
             }
         }
 
-        if (!outdatedTrans.isEmpty()) {
-            processOutdatedTrans(outdatedTrans);
+        if (!expiredTrans.isEmpty()) {
+            processExpiredTrans(expiredTrans);
         }
     }
 
-    private Future<Void> processOutdatedTrans(List<PeerTransactionState> outdatedTrans) {
+    private Future<Void> processExpiredTrans(List<PeerTransactionState> expiredTrans) {
         Callable<Void> task = new Callable<Void>() {
             @Override
             public Void call() {
-                for (PeerTransactionState state : outdatedTrans) {
+                for (PeerTransactionState state : expiredTrans) {
                     if (state.getStage() == Stage.BEGIN) { // WANT VOTE_REQ
                         Panticipantor.this.performAbort(state);// 直接放弃
                     } else if (state.getStage() == Stage.VOTED && state.getVote() == Vote.YES) {
@@ -210,10 +214,10 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         }
         this.taskPool.submit(() -> {
             boolean finished = false;
-            try{
+            try {
                 finished = this.bizStrategy.commit(state.getXid());
-            }finally{
-                if(finished)
+            } finally {
+                if (finished)
                     Panticipantor.this.dtLogger.markTransFinished(state.getXid());
             }
         });
@@ -226,10 +230,10 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         }
         this.taskPool.submit(() -> {
             boolean finished = false;
-            try{
+            try {
                 finished = this.bizStrategy.abort(state.getXid());
-            }finally{
-                if(finished)
+            } finally {
+                if (finished)
                     Panticipantor.this.dtLogger.markTransFinished(state.getXid());
             }
         });
@@ -240,29 +244,5 @@ public class Panticipantor<B> implements PeerTransactionManager<B> {
         if (logger.isDebugEnabled()) {
             logger.debug("Transaction blocked " + state.getXid());
         }
-    }
-
-    public DecisionQuerier getDecisionQuerier() {
-        return decisionQuerier;
-    }
-
-    public void setDecisionQuerier(DecisionQuerier decisionQuerier) {
-        this.decisionQuerier = decisionQuerier;
-    }
-
-    public DtLogger getDtLogger() {
-        return dtLogger;
-    }
-
-    public void setDtLogger(DtLogger dtLogger) {
-        this.dtLogger = dtLogger;
-    }
-
-    public PeerBizStrategy getBizStrategy() {
-        return bizStrategy;
-    }
-
-    public void setBizStrategy(PeerBizStrategy bizStrategy) {
-        this.bizStrategy = bizStrategy;
     }
 }

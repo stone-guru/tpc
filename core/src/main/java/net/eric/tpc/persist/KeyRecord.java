@@ -33,6 +33,13 @@ public class KeyRecord {
     public void setSerialNumber(int serial) {
         this.serial = serial;
     }
-    
-    
+
+    @Override
+    public String toString() {
+        return "KeyRecord{" +
+                "prefix='" + prefix + '\'' +
+                ", dateDigit=" + dateDigit +
+                ", serial=" + serial +
+                '}';
+    }
 }

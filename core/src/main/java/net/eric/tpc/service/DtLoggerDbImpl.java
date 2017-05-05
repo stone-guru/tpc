@@ -47,7 +47,8 @@ public class DtLoggerDbImpl implements DtLogger{
     
     @Override
     public void recordBeginTrans(TransStartRec transStartRec, Object bill, boolean isInitiator) {
-        logger.info("CoorDtLoggerDbImpl.recordBeginTrans", transStartRec.toString());
+        logger.info("DtLoggerDbImpl.recordBeginTrans", transStartRec.toString());
+        
         DtRecord record = new DtRecord();
         record.setXid(transStartRec.getXid());
         record.setCoordinator(transStartRec.getCoordinator().toString());
@@ -64,6 +65,8 @@ public class DtLoggerDbImpl implements DtLogger{
         record.setBizMessage(ObjectToBytes(bill));
         
         this.dtLoggerDao.insert(record);
+        
+        logger.info("inserted");
     }
 
     

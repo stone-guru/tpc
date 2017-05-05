@@ -12,20 +12,24 @@ import com.google.common.collect.ImmutableList;
 
 import net.eric.bank.biz.BizCode;
 import net.eric.bank.biz.Validator;
+import net.eric.bank.common.Configuration;
 import net.eric.bank.entity.AccountIdentity;
 import net.eric.bank.entity.TransferBill;
 import net.eric.bank.service.BillSaveStrategy;
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
 import net.eric.tpc.base.Pair;
-import net.eric.tpc.common.Configuration;
 import net.eric.tpc.proto.CoorBizStrategy;
+
+import javax.inject.Inject;
 
 public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(AbcBizStrategy.class);
 
     private Configuration config = new Configuration();
+    @Inject
     private BillSaveStrategy billSaver;
+    @Inject
     private Validator<TransferBill> billValidator ;
     
     @Override
@@ -143,14 +147,5 @@ public class AbcBizStrategy implements CoorBizStrategy<TransferBill> {
     public boolean abort(long xid){
         logger.info("abort" + xid);
         return this.billSaver.abort(xid);
-    }
-
-    
-    public void setBillSaver(BillSaveStrategy billSaver) {
-        this.billSaver = billSaver;
-    }
-
-    public void setBillValidator(Validator<TransferBill> billValidator) {
-        this.billValidator = billValidator;
     }
 }

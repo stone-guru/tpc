@@ -1,4 +1,4 @@
-package net.eric.tpc.common;
+package net.eric.bank.common;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;

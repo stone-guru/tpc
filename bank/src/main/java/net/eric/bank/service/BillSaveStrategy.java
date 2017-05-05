@@ -1,10 +1,6 @@
 package net.eric.bank.service;
 
-import static net.eric.tpc.base.Pair.asPair;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.google.inject.Inject;
 import net.eric.bank.biz.Validator;
 import net.eric.bank.entity.TransferBill;
 import net.eric.bank.persist.TransferBillDao;
@@ -12,11 +8,17 @@ import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.proto.PeerBizStrategy;
 import net.eric.tpc.proto.Types.Decision;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static net.eric.tpc.base.Pair.asPair;
 
 public class BillSaveStrategy implements PeerBizStrategy<TransferBill> {
     private static final Logger logger = LoggerFactory.getLogger(BillSaveStrategy.class);
 
+    @Inject
     private Validator<TransferBill> billValidator;
+    @Inject
     private TransferBillDao transferBillDao;
 
     @Override
@@ -64,21 +66,5 @@ public class BillSaveStrategy implements PeerBizStrategy<TransferBill> {
             logger.error("doDecison", e);
         }
         return success;
-    }
-
-    public Validator<TransferBill> getBillValidator() {
-        return billValidator;
-    }
-
-    public void setBillValidator(Validator<TransferBill> billValidator) {
-        this.billValidator = billValidator;
-    }
-
-    public TransferBillDao getTransferBillDao() {
-        return transferBillDao;
-    }
-
-    public void setTransferBillDao(TransferBillDao transferBillDao) {
-        this.transferBillDao = transferBillDao;
     }
 }

@@ -3,15 +3,14 @@ package net.eric.tpc;
 import java.util.List;
 
 import com.google.common.util.concurrent.Service;
-import com.google.inject.Binder;
-import com.google.inject.EricTypeLiteral;
-import com.google.inject.Module;
-import com.google.inject.Provides;
+import com.google.inject.*;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 
 import net.eric.tpc.net.ChannelFactory;
 import net.eric.tpc.net.PeerCommunicator;
+import net.eric.tpc.net.RequestHandler;
+import net.eric.tpc.net.RequestHandlers;
 import net.eric.tpc.net.binary.ObjectCodec;
 import net.eric.tpc.net.mina.MinaChannelFactory;
 import net.eric.tpc.net.mina.MinaTransService;
@@ -47,6 +46,13 @@ public abstract class PeerModule<B> implements Module {
 
         binder.bind(Service.class)//
                 .to(new EricTypeLiteral(MinaTransService.class, entityClass));
+    }
+
+    @Provides
+    @Inject
+    @Named("RequestHandlers")
+    public List<RequestHandler> provideRequestHandlers(@Named("Peer Trans Manager") PeerTransactionManager<B> transManager){
+        return RequestHandlers.getBasicHandlers(transManager);
     }
 
     @Provides

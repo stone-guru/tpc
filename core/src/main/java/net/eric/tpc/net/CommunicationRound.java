@@ -43,7 +43,7 @@ public class CommunicationRound<R> implements RoundResult<R> {
     private CountDownHolder latch;
     private Function<Object, Maybe<R>> assembler;
 
-    private static LatchCleaner cleaner = new LatchCleaner(2000);
+    private static LatchCleaner cleaner = new LatchCleaner(1500);
 
     public CommunicationRound(List<InetSocketAddress> peers, RoundType waitType) {
         this(peers, waitType, o -> {

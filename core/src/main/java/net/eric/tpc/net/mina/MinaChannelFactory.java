@@ -5,10 +5,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder;
@@ -22,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import net.eric.tpc.base.ActionStatus;
 import net.eric.tpc.base.Maybe;
+import net.eric.tpc.base.NightWatch;
 import net.eric.tpc.net.ChannelFactory;
 import net.eric.tpc.net.CommunicationRound;
 import net.eric.tpc.net.CommunicationRound.RoundType;
@@ -49,6 +47,8 @@ public class MinaChannelFactory implements ChannelFactory {
         DefaultIoFilterChainBuilder filterChain = connector.getFilterChain();
         filterChain.addLast("codec", new ProtocolCodecFilter(new MessageCodecFactory(objectCodecs)));
         connector.setHandler(new MinaChannel.SocketHandler<Message>());
+        
+        NightWatch.regCloseable("MinaChannelFactory", this);
     }
 
     @Override

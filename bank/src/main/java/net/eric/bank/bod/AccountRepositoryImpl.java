@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.inject.Inject;
 
 import net.eric.bank.biz.AccountRepository;
 import net.eric.bank.biz.BizCode;
@@ -25,23 +26,25 @@ import net.eric.tpc.base.UnImplementedException;
 import net.eric.tpc.proto.PeerBizStrategy;
 import net.eric.tpc.proto.Types.Decision;
 
-public class AccountRepositoryImpl implements PeerBizStrategy, AccountRepository{
+public class AccountRepositoryImpl implements PeerBizStrategy<TransferBill>, AccountRepository{
     private static final Logger logger = LoggerFactory.getLogger(AccountRepositoryImpl.class);
 
-    private AccountLocker accountLocker = new AccountLocker(3, 500);
+    @Inject
+    private AccountLocker accountLocker;
+    @Inject
     private AccountDao accountDao;
+    @Inject
     private TransferBillDao transferBillDao;
+    @Inject
     private Validator<TransferBill> billValidator;
 
     @Override
-    public ActionStatus checkAndPrepare(long xid, Object b) {
-        Preconditions.checkNotNull(b, "bill");
-        Preconditions.checkArgument(b instanceof TransferBill);
+    public ActionStatus checkAndPrepare(long xid, TransferBill bill) {
+        Preconditions.checkNotNull(bill, "bill");
 
-        final TransferBill bill = (TransferBill) b;
         ActionStatus status = billValidator.check(bill);
         if (status.isOK())
-            return AccountRepositoryImpl.this.innerPrepareCommint(xid, bill);
+            return this.innerPrepareCommint(xid, bill);
         return status;
     }
 
@@ -70,6 +73,7 @@ public class AccountRepositoryImpl implements PeerBizStrategy, AccountRepository
             success = true;
             return ActionStatus.OK;
         } catch (Exception e) {
+            logger.error("innerPrepareCommint", e);
             return ActionStatus.innerError(e.getMessage());
         } finally {
             if (locked && !success) {

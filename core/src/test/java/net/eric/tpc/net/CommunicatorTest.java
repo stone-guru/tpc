@@ -40,7 +40,7 @@ import net.eric.tpc.proto.Types.TransStartRec;
 
 public class CommunicatorTest {
     private static final Logger logger = LoggerFactory.getLogger(CommunicatorTest.class);
-    
+
     public static final InetSocketAddress PEER1 = new InetSocketAddress("localhost", 10021);
     public static final InetSocketAddress PEER2 = new InetSocketAddress("localhost", 10022);
     public static final InetSocketAddress SELF = new InetSocketAddress("localhost", 10024);
@@ -50,7 +50,7 @@ public class CommunicatorTest {
     private Communicator c;
     private Service transService1, transService2;
     private IntTransactionManager peerTransManager = new IntTransactionManager();
-    
+
     public static void main(String[] args) throws Exception {
         CommunicatorTest app = new CommunicatorTest();
         app.startServer();
@@ -59,14 +59,16 @@ public class CommunicatorTest {
 //        app.releaseCommunicator();
 //        app.stopServer();
     }
-    
-    
+
+
     //@BeforeTest
     public void startServer() throws InterruptedException {
-        transService1 = new MinaTransService<Integer>(10021, this.peerTransManager, ImmutableList.of(new IntCodec()));
+        transService1 = new MinaTransService<Integer>(10021, //
+                RequestHandlers.getBasicHandlers(this.peerTransManager), ImmutableList.of(new IntCodec()));
         transService1.startAsync();
-        
-        transService2 = new MinaTransService<Integer>(10022, this.peerTransManager, ImmutableList.of(new IntCodec()));
+
+        transService2 = new MinaTransService<Integer>(10022, //
+                RequestHandlers.getBasicHandlers(this.peerTransManager), ImmutableList.of(new IntCodec()));
         transService2.startAsync();
 
         transService1.awaitRunning();
@@ -74,30 +76,30 @@ public class CommunicatorTest {
     }
 
     @BeforeTest
-    public void initServices(){
+    public void initServices() {
         cf = new CoorCommunicatorFactory(ImmutableList.of(new IntCodec()));
-        NightWatch.regCloseable("CoorCommunicatorFactory",cf);
+        NightWatch.regCloseable("CoorCommunicatorFactory", cf);
     }
-    
+
     @AfterTest
     public void closeCommuFactory() throws IOException {
         //cf.close();
         NightWatch.executeCloseActions();
     }
-    
+
     //@AfterTest
-    public void stopServer() throws IOException{
+    public void stopServer() throws IOException {
         cf.close();
         transService1.stopAsync();
         transService2.stopAsync();
         transService1.awaitTerminated();
         transService2.awaitTerminated();
     }
-    
+
     @BeforeMethod
     public void initCommunicator() throws Exception {
         Maybe<Communicator> maybe = cf.getCommunicator(PEERS);
-        if(!maybe.isRight()){
+        if (!maybe.isRight()) {
             throw new RuntimeException(maybe.getLeft().toString());
         }
         c = maybe.getRight();
@@ -105,11 +107,11 @@ public class CommunicatorTest {
     }
 
     @AfterMethod
-    public void releaseCommunicator(){
-        if(c != null)
+    public void releaseCommunicator() {
+        if (c != null)
             cf.releaseCommunicator(c);
     }
-    
+
     @Test
     public void testStartTrans1() throws InterruptedException, ExecutionException {
         List<Pair<InetSocketAddress, Integer>> tasks = ImmutableList.of(asPair(PEER1, 1), asPair(PEER2, 3));
@@ -117,7 +119,7 @@ public class CommunicatorTest {
         RoundResult<Boolean> result = future.get();
         assertTrue(result.isAllOK());
     }
-    
+
     @Test
     public void testStartTrans2() throws InterruptedException, ExecutionException {
         List<Pair<InetSocketAddress, Integer>> tasks = ImmutableList.of(asPair(PEER1, 2), asPair(PEER2, 3));
@@ -133,15 +135,15 @@ public class CommunicatorTest {
         assertTrue(err.getDescription().indexOf("I dislike even") > 0);
         //assertTrue(result.isAllOK());
     }
-    
-    @Test 
-    public void testVoteReq1() throws InterruptedException, ExecutionException{
+
+    @Test
+    public void testVoteReq1() throws InterruptedException, ExecutionException {
         RoundResult<Boolean> result = c.gatherVote(1L, ImmutableList.of(PEER1)).get();
         assertTrue(result.isAllOK());
     }
-    
+
     @Test
-    public void testVoteReq2() throws InterruptedException, ExecutionException{
+    public void testVoteReq2() throws InterruptedException, ExecutionException {
         RoundResult<Boolean> result = c.gatherVote(2L, ImmutableList.of(PEER1)).get();
         assertEquals(0, result.okResultCount(), "ok result count");
         ActionStatus err = result.getAnError();
@@ -150,7 +152,7 @@ public class CommunicatorTest {
         assertTrue(err.getDescription().indexOf("2002") > 0);
         assertTrue(err.getDescription().indexOf("I am busy") > 0);
     }
-    
+
     @Test
     public void testNotifyDecision1() throws InterruptedException, ExecutionException {
         RoundResult<Boolean> result = c.notifyDecision(1L, Decision.COMMIT, ImmutableList.of(PEER1)).get();
@@ -158,7 +160,7 @@ public class CommunicatorTest {
         assertNotNull(this.peerTransManager.getLastDecision());
         assertEquals(asPair(1L, Decision.COMMIT), this.peerTransManager.getLastDecision());
     }
-    
+
     @Test
     public void testNotifyDecision2() throws InterruptedException, ExecutionException {
         RoundResult<Boolean> result = c.notifyDecision(1L, Decision.ABORT, ImmutableList.of(PEER1)).get();
@@ -166,21 +168,21 @@ public class CommunicatorTest {
         assertNotNull(this.peerTransManager.getLastDecision());
         assertEquals(this.peerTransManager.getLastDecision(), asPair(1L, Decision.ABORT));
     }
-    
+
     @Test
     public void testFullProcess2() throws Exception {
         List<Pair<InetSocketAddress, Integer>> tasks2 = ImmutableList.of(asPair(PEER1, 1), asPair(PEER2, 3));
         Future<RoundResult<Boolean>> future = c.askBeginTrans(startRec(1L), tasks2);
         RoundResult<Boolean> result = future.get();
         assertTrue(result.isAllOK());
-        
+
         RoundResult<Boolean> voteResult = c.gatherVote(1L, PEERS).get();
         assertTrue(voteResult.isAllOK());
-        
+
         RoundResult<Boolean> notifyResult = c.notifyDecision(1L, Decision.COMMIT, PEERS).get();
         assertTrue(notifyResult.isAllOK());
     }
-    
+
     @Test
     public void testFullProcess1() throws Exception {
         List<InetSocketAddress> peers = ImmutableList.of(PEER1);
@@ -188,42 +190,42 @@ public class CommunicatorTest {
         Future<RoundResult<Boolean>> future = c.askBeginTrans(startRec(1L), task1);
         RoundResult<Boolean> result = future.get();
         assertTrue(result.isAllOK());
-        
+
         RoundResult<Boolean> voteResult = c.gatherVote(1L, peers).get();
         assertTrue(voteResult.isAllOK());
-        
+
         RoundResult<Boolean> notifyResult = c.notifyDecision(1L, Decision.COMMIT, peers).get();
         assertTrue(notifyResult.isAllOK());
     }
-    
-    private TransStartRec startRec(long xid){
+
+    private TransStartRec startRec(long xid) {
         TransStartRec rec = new TransStartRec();
         rec.setXid(xid);
         rec.setCoordinator(SELF);
         rec.setParticipants(PEERS);
         return rec;
     }
-    
- 
-    private static class IntTransactionManager  implements PeerTransactionManager<Integer>{
+
+
+    private static class IntTransactionManager implements PeerTransactionManager<Integer> {
 
         @Override
         public ActionStatus beginTrans(TransStartRec transNode, Integer i) {
             logger.info("BeginTrans " + transNode + ", " + String.valueOf(i));
-            
-            if(i % 2 == 1)
+
+            if (i % 2 == 1)
                 return ActionStatus.OK;
             else
-                return new ActionStatus((short)2001, "I dislike even");
+                return new ActionStatus((short) 2001, "I dislike even");
         }
 
         @Override
         public ActionStatus processVoteReq(long xid) {
             logger.info("processVoteReq for XID " + xid);
-            if((xid / 100000000) % 2 == 1)
+            if ((xid / 100000000) % 2 == 1)
                 return ActionStatus.OK;
             else
-                return new ActionStatus((short)2002, "I am busy");
+                return new ActionStatus((short) 2002, "I am busy");
         }
 
         @Override
@@ -236,8 +238,8 @@ public class CommunicatorTest {
         public Optional<Decision> queryDecision(long xid) {
             return Optional.absent();
         }
-        
-        
+
+
         public Pair<Long, Decision> getLastDecision() {
             return lastDecision;
         }
@@ -249,7 +251,7 @@ public class CommunicatorTest {
         @Override
         public void close() throws IOException {
             // TODO Auto-generated method stub
-            
+
         }
     }
 }

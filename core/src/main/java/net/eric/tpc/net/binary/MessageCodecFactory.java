@@ -43,20 +43,13 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
     }
 
     public MessageCodecFactory(List<ObjectCodec> extraCodecs) {
-        List<ObjectCodec> codecs= new ArrayList<ObjectCodec>(extraCodecs.size() + 4);
-        // listBuilder.add(new SerializeCodec(ActionStatus.class,
-        // Message.TypeCode.ACTION_STATUS));
-        // listBuilder.add(new SerializeCodec(TransStartRec.class,
-        // Message.TypeCode.TRANS_START_REC));
-        // listBuilder.add(new SerializeCodec(TransferBill.class,
-        // Message.TypeCode.TRANSFER_BILL));
+        List<ObjectCodec> codecs= new ArrayList<>(extraCodecs.size() + 4);
 
         codecs.add(new ActionStatusCodec());
         codecs.add(new TransStartRecCodec());
         for(ObjectCodec c: extraCodecs){
             codecs.add(c);
         }
-        // listBuilder.add(new TransferBillCodec());
 
         Builder<Short, ObjectCodec> codeMapBuilder = ImmutableMap.builder();
         Builder<Class<?>, ObjectCodec> classMapBuilder = ImmutableMap.builder();
@@ -104,20 +97,19 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             Message msg = (Message) message;
             IoBuffer buf = IoBuffer.allocate(32).setAutoExpand(true);
 
-            Pair<Short, Integer> param = encodeObject(msg.getParam(), buf, 32);
-            Pair<Short, Integer> content = encodeObject(msg.getContent(), buf, 32 + param.snd());
-            final int length = param.snd() + content.snd() + 28;
+            Pair<Short, Integer> param = encodeObject(msg.getParam(), buf, 30);
+            Pair<Short, Integer> content = encodeObject(msg.getContent(), buf, 30 + param.snd());
+            final int length = param.snd() + content.snd() + 26;
             buf.position(0);
-            buf.putInt(length);
-            buf.putShort(msg.getVersion());
-            buf.putShort(msg.getRound());
-            buf.putLong(msg.getXid());
-            buf.putShort(msg.getCommandCode());
-            buf.putShort(msg.getCommandAnswer());
-            buf.putShort(param.fst());
-            buf.putShort(content.fst());
-            buf.putInt(param.snd());
-            buf.putInt(content.snd());
+            buf.putInt(length); //4
+            buf.putShort(msg.getVersion());//2
+            buf.putShort(msg.getRound());//2
+            buf.putLong(msg.getXid());//8
+            buf.putShort(msg.getCode());//2
+            buf.putShort(param.fst());//2
+            buf.putShort(content.fst());//2
+            buf.putInt(param.snd());//4
+            buf.putInt(content.snd());//4
             // total length is data length plus length field int (4 bytes)
             buf.position(length + 4);
             buf.flip();
@@ -148,15 +140,6 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
                 return false;
             }
 
-            // int n = in.getInt(0);
-            // byte[] bytes = new byte[n + 4];
-            // in.get(bytes);
-            // FileOutputStream fs = new FileOutputStream("/tmp/message.bin");
-            // fs.write(bytes);
-            // fs.close();
-            // if(n > 0)
-            // throw new RuntimeException();
-
             Message msg = new Message();
             @SuppressWarnings("unused")
             final int length = in.getInt();
@@ -164,8 +147,7 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             msg.setVersion(in.getShort());
             msg.setRound(in.getShort());
             msg.setXid(in.getLong());
-            msg.setCommandCode(in.getShort());
-            msg.setCommandAnswer(in.getShort());
+            msg.setCode(in.getShort());
             short paramType = in.getShort();
             short contentType = in.getShort();
             int paramLength = in.getInt();
@@ -189,7 +171,7 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
         }
     }
 
-    static class SerializeCodec implements ObjectCodec {
+    public static class SerializeCodec implements ObjectCodec {
         private short typeCode = 0;
         private Class<?> objectClass;
 
@@ -320,7 +302,7 @@ public class MessageCodecFactory implements ProtocolCodecFactory {
             InetSocketAddress coorAddress = (InetSocketAddress) addressCodec.decode(0, in);
 
             int n = in.getInt();
-            List<InetSocketAddress> addresses = new ArrayList<InetSocketAddress>(n);
+            List<InetSocketAddress> addresses = new ArrayList<>(n);
             for (int i = 0; i < n; i++) {
                 addresses.add((InetSocketAddress) addressCodec.decode(0, in));
             }

@@ -30,20 +30,15 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
     }
 
     @Override
-    public <B> Future<RoundResult<Boolean>> askBeginTrans(//
-            TransStartRec transStartRec, //
-            List<Pair<InetSocketAddress, B>> tasks) {
-        List<Pair<InetSocketAddress, Message>> requests = Pair.map2(tasks, //
-                (addr, b) -> {
-                    return new Message(transStartRec.getXid(), (short) 0, //
-                            CommandCodes.BEGIN_TRANS, (short) 0, transStartRec, b);
-                });
+    public <B> Future<RoundResult<Boolean>> askBeginTrans(TransStartRec transStartRec,
+                                                          List<Pair<InetSocketAddress, B>> tasks) {
+        List<Pair<InetSocketAddress, Message>> requests = Pair.map2(tasks,
+                (InetSocketAddress addr, B b) -> new Message(transStartRec.getXid(), (short) 0, CommandCodes.BEGIN_TRANS, transStartRec, b)
+        );
 
-        final Future<RoundResult<Boolean>> result = super.communicate(requests, //
-                RoundType.WAIT_ALL, //
-                new YesOrNoAssembler(transStartRec.getXid(), //
-                        CommandCodes.BEGIN_TRANS_ANSWER, ErrorCode.REFUSE_TRANS));
-
+        final Future<RoundResult<Boolean>> result = super.communicate(requests,
+                RoundType.WAIT_ALL,
+                new YesOrNoAssembler(transStartRec.getXid(), ErrorCode.REFUSE_TRANS));
         return result;
     }
 
@@ -52,8 +47,7 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
         List<Pair<InetSocketAddress, Message>> requests = Lists.transform(nodes, //
                 node -> asPair(node, new Message(xid, (short) 1, CommandCodes.VOTE_REQ)));
 
-        return super.communicate(requests, RoundType.WAIT_ALL, //
-                new YesOrNoAssembler(xid, CommandCodes.VOTE_ANSWER, ErrorCode.REFUSE_COMMIT));
+        return super.communicate(requests, RoundType.WAIT_ALL, new YesOrNoAssembler(xid, ErrorCode.REFUSE_COMMIT));
     }
 
     @Override
@@ -68,14 +62,14 @@ public class CoorCommunicator extends BasicCommunicator<Message> implements Comm
                     }
                     short code = 0;
                     if (decision == Decision.COMMIT) {
-                        code = CommandCodes.YES;
+                        code = CommandCodes.COMMIT_TRANS;
                     } else if (decision == Decision.ABORT) {
-                        code = CommandCodes.NO;
+                        code = CommandCodes.ABORT_TRANS;
                     } else {
                         throw new UnImplementedException();
                     }
 
-                    return new Message(xid, (short) 2, CommandCodes.TRANS_DECISION, code);
+                    return new Message(xid, (short) 2, code);
                 });
 
         return this.notify(requests, RoundType.WAIT_ALL);

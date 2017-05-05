@@ -37,9 +37,9 @@ public class AccountRepositoryTest {
         return msg;
     }
 
-    public static void prepareCommit(long xid, PeerBizStrategy bizStrategy) {
+    public static void prepareCommit(long xid, PeerBizStrategy<TransferBill> bizStrategy) {
         TransferBill bill = genTransferMessage("SN", xid);
-        ActionStatus result = null;//FIXME ActionStatus.force(bizStrategy.checkAndPrepare(xid, bill));
+        ActionStatus result = bizStrategy.checkAndPrepare(xid, bill);
         System.out.println(result);
     }
 

@@ -28,7 +28,11 @@ public class TransProtoPeerServer {
 
         @Override
         public ActionStatus checkAndPrepare(long xid, Integer b) {
+            int a = 100;
             logger.debug("PeerBizStrategy.checkAndPrepare " + xid + ", " + b);
+            if( a!= 100){
+                throw new IllegalStateException("planed exception ");
+            }
             return ActionStatus.OK;
         }
 
@@ -74,7 +78,7 @@ public class TransProtoPeerServer {
     
     public static void main(String[] args) {
         final String bankCode = "boc";
-        final String jdbcUrl = "jdbc:h2:/home/bison/workspace/tpc/deploy/database/data_" + bankCode.toLowerCase();
+        final String jdbcUrl = "jdbc:h2:~/workspace/tpc/deploy/database/data_" + bankCode.toLowerCase();
  
         Service s = getPeerService(10021, jdbcUrl);
         s.startAsync();

@@ -17,18 +17,21 @@ public class Message implements Serializable {
         public static final short TRANS_START_REC = 1002;
 
         private TypeCode() {
-        };
+        }
     }
 
-    public static Message fromRequest(Message request, short command, short answer) {
-        return new Message(request.xid, request.round, command, answer);
+    public static Message fromRequest(Message request, short command) {
+        return new Message(request.xid, request.round, command);
     }
 
-    public static Message fromRequest(Message request, short command, short answer, Object param) {
-        return new Message(request.xid, request.round, command, answer, param, null);
+    public static Message fromRequest(Message request, short command, Object param) {
+        return new Message(request.xid, request.round, command, param, null);
     }
 
     public static Maybe<Boolean> checkYesOrNo(short answer) {
+        if (answer == CommandCodes.SERVER_ERROR) {
+            return Maybe.fail(ErrorCode.PEER_INNER_ERROR, "Peer inner error");
+        }
         return Maybe.fromCondition(answer == CommandCodes.YES || answer == CommandCodes.NO, //
                 CommandCodes.YES == answer, //
                 ErrorCode.PEER_PRTC_ERROR,
@@ -38,41 +41,40 @@ public class Message implements Serializable {
     private short version = 1;
     private long xid;
     private short round;
-    private short commandCode;
-    private short commandAnswer;
+    private short code;
     private Object param;
     private Object content;
     private SocketAddress sender;
-    
+
     public Message() {
     }
 
-    public Message(long xid, short round, short commandCode) {
-        this(xid, round, commandCode, (short) 0, null, null);
+    public Message(long xid, short round, short code) {
+        this(xid, round, code, null, null);
     }
 
-    public Message(long xid, short round, short commandCode, short commandAnswer) {
-        this(xid, round, commandCode, commandAnswer, null, null);
+    public Message(long xid, short round, short code, Object param) {
+        this(xid, round, code, param, null);
     }
 
-    public Message(long xid, short round, short commandCode, short commandAnswer, Object param, Object content) {
+    public Message(long xid, short round, short code, Object param, Object content) {
         this.version = 11;
         this.xid = xid;
         this.round = round;
-        this.commandCode = commandCode;
-        this.commandAnswer = commandAnswer;
+        this.code = code;
         this.param = param;
         this.content = content;
     }
 
-    public ActionStatus assureCommand(long xid, short command) {
-        if (command != this.commandCode) {
-            return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want " + command + " but got " + this.commandCode);
-        }
+    public ActionStatus assureCommand(long xid, short... command) {
         if (xid != this.xid) {
             return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want xid " + xid + " but got " + this.xid);
         }
-        return ActionStatus.OK;
+        for (short c : command) {
+            if (c == this.code)
+                return ActionStatus.OK;
+        }
+        return ActionStatus.create(ErrorCode.WRONG_ANSWER, "want " + command + " but got " + this.code);
     }
 
     public short getVersion() {
@@ -99,20 +101,12 @@ public class Message implements Serializable {
         this.round = round;
     }
 
-    public short getCommandCode() {
-        return commandCode;
+    public short getCode() {
+        return code;
     }
 
-    public void setCommandCode(short commandCode) {
-        this.commandCode = commandCode;
-    }
-
-    public short getCommandAnswer() {
-        return commandAnswer;
-    }
-
-    public void setCommandAnswer(short commandAnswer) {
-        this.commandAnswer = commandAnswer;
+    public void setCode(short code) {
+        this.code = code;
     }
 
     public Object getParam() {
@@ -131,11 +125,10 @@ public class Message implements Serializable {
         this.content = content;
     }
 
-    public ActionStatus paramAsActionStatus(){
-        return (ActionStatus)this.param;
+    public ActionStatus paramAsActionStatus() {
+        return (ActionStatus) this.param;
     }
-    
-    
+
     public SocketAddress getSender() {
         return sender;
     }
@@ -146,8 +139,7 @@ public class Message implements Serializable {
 
     @Override
     public String toString() {
-        return "Message [version=" + version + ", xid=" + xid + ", round=" + round + ", commandCode=" + commandCode
-                + ", commandAnswer=" + commandAnswer + ", param=" + String.valueOf(param) + ", content="
-                + String.valueOf(content) + "]";
+        return "Message [version=" + version + ", xid=" + xid + ", round=" + round + ", code=" + code
+                + ", param=" + String.valueOf(param) + ", content=" + String.valueOf(content) + "]";
     }
 }

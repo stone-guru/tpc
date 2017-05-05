@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -27,13 +26,10 @@ import net.eric.tpc.base.Pair;
 import net.eric.tpc.entity.DtRecord;
 import net.eric.tpc.net.CoorCommunicatorFactory;
 import net.eric.tpc.net.binary.ObjectCodec;
+import net.eric.tpc.persist.CorePersistModule;
 import net.eric.tpc.persist.DtRecordDao;
 import net.eric.tpc.persist.KeyRecord;
 import net.eric.tpc.persist.KeyStoreDao;
-import net.eric.tpc.proto.Communicator;
-import net.eric.tpc.proto.CoorBizStrategy;
-import net.eric.tpc.proto.RoundResult;
-import net.eric.tpc.proto.TransactionManager;
 import net.eric.tpc.proto.Types.Decision;
 import net.eric.tpc.proto.Types.TransStartRec;
 
@@ -61,16 +57,13 @@ public class ProtoTotalTest {
         this.injector = this.initModules();
 
         this.ccf = injector.getInstance(CoorCommunicatorFactory.class);
-        NightWatch.regCloseable("CoorCommunicatorFactory", ccf);
-
         this.tm = injector.getInstance(Key.get(new TypeLiteral<TransactionManager<Integer>>() {
         }));
-        NightWatch.regCloseable("Coordinator", tm);
     }
     
     private void doTrans2() throws Exception {
         tm.transaction(3);
-        Thread.sleep(1500);
+        Thread.sleep(100);
     }
 
     private void doTrans1() throws Exception {
@@ -102,15 +95,15 @@ public class ProtoTotalTest {
     }
 
     private Injector initModules() {
-        //final String jdbcUrl2 = "jdbc:h2:/home/bison/workspace/tpc/deploy/database/data_abc";
-        // Module cm1 = new CorePersistModule(jdbcUrl2);
-        Module cm1 = new Module() {
-            @Override
-            public void configure(Binder binder) {
-                binder.bind(DtRecordDao.class).to(DummyDtRecordDao.class);
-                binder.bind(KeyStoreDao.class).to(DummyKeyStoreDao.class);
-            }
-        };
+        final String jdbcUrl2 = "jdbc:h2:~/workspace/tpc/deploy/database/data_abc";
+        Module cm1 = new CorePersistModule(jdbcUrl2);
+//        Module cm1 = new Module() {
+//            @Override
+//            public void configure(Binder binder) {
+//                binder.bind(DtRecordDao.class).to(DummyDtRecordDao.class);
+//                binder.bind(KeyStoreDao.class).to(DummyKeyStoreDao.class);
+//            }
+//        };
 
         Module cm2 = new CoorModule<Integer>(Integer.class) {
             @Override
@@ -174,6 +167,7 @@ public class ProtoTotalTest {
         }
     }
 
+ /*   @SuppressWarnings("unused")
     private static class DummyDtRecordDao implements DtRecordDao {
         @Override
         public void insert(DtRecord dtRecord) {
@@ -197,6 +191,7 @@ public class ProtoTotalTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class DummyKeyStoreDao implements KeyStoreDao {
         @Override
         public List<KeyRecord> selectAll() {
@@ -215,5 +210,5 @@ public class ProtoTotalTest {
         @Override
         public void update(KeyRecord keyRecord) {
         }
-    }
+    }*/
 }

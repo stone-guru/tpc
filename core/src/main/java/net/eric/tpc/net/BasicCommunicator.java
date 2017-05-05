@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,7 @@ public class BasicCommunicator<M> {
     public BasicCommunicator(TaskPoolProvider poolProvider, List<PeerChannel<M>> channels) {
         this.poolProvider = poolProvider;
 
-        this.channelMap = new HashMap<InetSocketAddress, PeerChannel<M>>();
+        this.channelMap = new HashMap<>();
         channels.forEach(channel -> this.channelMap.put(channel.getPeer(), channel));
     }
 
@@ -39,18 +38,15 @@ public class BasicCommunicator<M> {
         final CommunicationRound<Boolean> round = new CommunicationRound<Boolean>(Pair.projectFirst(messages), //
                 roundType);
 
-        Runnable startAction = new Runnable() {
-            @Override
-            public void run() {
-                for (final Pair<InetSocketAddress, M> p : messages) {
-                    final PeerChannel<M> channel = channelMap.get(p.fst());
-                    if (channel == null) {
-                        final InetSocketAddress node = p.fst();
-                        round.regResult(node, Maybe.fail(ErrorCode.PEER_NOT_CONNECTED, node.toString()));
-                    } else {
-                        @SuppressWarnings("unused")
-                        Future<Boolean> notCareHere = channel.notify(p.snd(), round);
-                    }
+        Runnable startAction = () -> {
+            for (final Pair<InetSocketAddress, M> p : messages) {
+                final PeerChannel<M> channel = channelMap.get(p.fst());
+                if (channel == null) {
+                    final InetSocketAddress node = p.fst();
+                    round.regResult(node, Maybe.fail(ErrorCode.PEER_NOT_CONNECTED, node.toString()));
+                } else {
+                    @SuppressWarnings("unused")
+                    Future<Boolean> notCareHere = channel.notify(p.snd(), round);
                 }
             }
         };
@@ -59,7 +55,7 @@ public class BasicCommunicator<M> {
     }
 
     public <R> Future<RoundResult<R>> communicate(List<Pair<InetSocketAddress, M>> messages, final RoundType roundType,
-            Function<Object, Maybe<R>> assembler) {
+                                                  Function<Object, Maybe<R>> assembler) {
         final CommunicationRound<R> round = new CommunicationRound<R>(Pair.projectFirst(messages), roundType,
                 assembler);
 

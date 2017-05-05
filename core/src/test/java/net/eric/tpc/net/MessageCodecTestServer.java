@@ -25,7 +25,6 @@ public class MessageCodecTestServer {
             public void messageReceived(IoSession session, Object message) throws Exception {
                 System.out.println(message.toString());
                 Message request = (Message)message;
-                request.setCommandAnswer((short)3);
                 request.setParam(ActionStatus.innerError("Shit!"));
                 session.write(request);
             }

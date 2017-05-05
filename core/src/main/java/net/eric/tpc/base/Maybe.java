@@ -9,18 +9,18 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
         if (t == null) {
             throw new NullPointerException("Maybe.success should not be null");
         }
-        return new Success<T>(t);
+        return new Success<>(t);
     }
 
     public static <T> Maybe<T> fail(ActionStatus status) {
         if (status == null) {
             throw new NullPointerException("Maybe.status should not be null");
         }
-        return new Failure<T>(status);
+        return new Failure<>(status);
     }
 
     public static <T> Maybe<T> fail(short code, String description) {
-        return new Failure<T>(ActionStatus.create(code, description));
+        return new Failure<>(ActionStatus.create(code, description));
     }
 
     public static <T> Maybe<T> fromNullable(ActionStatus status, T v) {
@@ -79,7 +79,13 @@ public abstract class Maybe<T> extends Either<ActionStatus, T> {
             return ma.castLeft();
         return success(f.apply(ma.getRight()));
     }
-    
+
+    public static <A, B> Maybe<B> when(ActionStatus s, Function<A, Maybe<B>> f, A a ){
+        if(s.isOK())
+            return f.apply(a);
+        return Maybe.fail(s);
+    }
+
     public abstract <B> Maybe<B> castLeft();
     
     final static class Success<T> extends Maybe<T> {

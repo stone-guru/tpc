@@ -9,8 +9,8 @@ import net.eric.tpc.proto.Types.Decision;
 public abstract class DecisionQueryHandler implements RequestHandler {
 
     @Override
-    public short getCorrespondingCode() {
-        return CommandCodes.DECISION_QUERY;
+    public short[] getCorrespondingCodes() {
+        return new short[]{CommandCodes.DECISION_QUERY};
     }
 
     @Override
@@ -35,7 +35,7 @@ public abstract class DecisionQueryHandler implements RequestHandler {
             answer = CommandCodes.UNKNOWN;
         }
 
-        return new ProcessResult(Message.fromRequest(request, CommandCodes.DECISION_ANSWER, answer), true);
+        return new ProcessResult(Message.fromRequest(request, answer), true);
     }
 
     protected abstract Optional<Decision> getDecisionFor(long xid);
