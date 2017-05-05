@@ -6,7 +6,11 @@ function start_server()
     BANK_CODE="$3"
     PORT="$4"
 
+<<<<<<< HEAD
     CLASS_PATH=~/workspace/tpc/core/target/classes:~/workspace/tpc/bank/target/classes
+=======
+    CLASS_PATH=/home/bison/workspace/tpc/core/target/classes:/home/bison/workspace/tpc/bank/target/classes
+>>>>>>> 635438f0c8a614c6782189a20279246c2709671a
     for f in `ls $INST_DIR/lib/*.jar`
     do
 	CLASS_PATH="$CLASS_PATH:$f"

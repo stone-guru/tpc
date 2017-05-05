@@ -42,6 +42,7 @@ public class PeerServer {
 
     public PeerServer(ServerConfig config, Class<PeerBizStrategy<TransferBill>> c, Module... extraModules) {
         Injector injector = this.initInjector(config, c, extraModules);
+
         this.service = injector.getInstance(Service.class);
         this.config = config;
     }

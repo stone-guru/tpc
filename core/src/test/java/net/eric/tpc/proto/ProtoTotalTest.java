@@ -96,6 +96,7 @@ public class ProtoTotalTest {
 
     private Injector initModules() {
         final String jdbcUrl2 = "jdbc:h2:~/workspace/tpc/deploy/database/data_abc";
+
         Module cm1 = new CorePersistModule(jdbcUrl2);
 //        Module cm1 = new Module() {
 //            @Override
@@ -167,7 +168,7 @@ public class ProtoTotalTest {
         }
     }
 
- /*   @SuppressWarnings("unused")
+    /*
     private static class DummyDtRecordDao implements DtRecordDao {
         @Override
         public void insert(DtRecord dtRecord) {

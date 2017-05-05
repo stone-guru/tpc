@@ -32,6 +32,7 @@ import net.eric.tpc.proto.TransactionManager;
 public class TransferTest {
     private static final Logger logger = LoggerFactory.getLogger(TransferTest.class);
     public static final InetSocketAddress PEER1 = new InetSocketAddress("localhost", 10021);
+
     public static final InetSocketAddress PEER2 = new InetSocketAddress("localhost", 10022);
 
     public static final String JDBC_URL = "jdbc:h2:~/Workspace/tpc/deploy/database/data_abc";
